@@ -34,6 +34,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/login", handlers.LoginHandler)
 	mux.HandleFunc("POST /api/register", handlers.RegisterHandler)
+	mux.HandleFunc("POST /api/register", handlers.LogoutHandler)
 
 	mux.HandleFunc("GET /api/posts", middleware.RequireAuth(handlers.PostsHandler))
 

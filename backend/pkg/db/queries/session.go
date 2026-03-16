@@ -1,8 +1,10 @@
 package queries
 
 import (
-	"social/pkg/db/sqlite"
+	"net/http"
 	"time"
+
+	"social/pkg/db/sqlite"
 
 	"github.com/google/uuid"
 )
@@ -15,7 +17,6 @@ func CreateSession(userID string) (string, error) {
 		INSERT INTO sessions (id, user_id, expires_at)
 		VALUES (?, ?, ?)
 	`, sessionID, userID, expiresAt)
-
 	if err != nil {
 		return "", err
 	}
@@ -32,10 +33,24 @@ func ValidateSession(sessionID string) (string, error) {
 		FROM sessions
 		WHERE id = ? AND expires_at > ?
 	`, sessionID, time.Now()).Scan(&userID, &expiresAt)
-
 	if err != nil {
 		return "", err
 	}
 
 	return userID, nil
+}
+
+func DeleteSession(w http.ResponseWriter, userId string) error {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+	})
+	_, err := sqlite.DB.Exec("DELETE FROM sessions WHERE user_id = ?", userId)
+	if err != nil {
+		return err
+	}
+	return nil
 }

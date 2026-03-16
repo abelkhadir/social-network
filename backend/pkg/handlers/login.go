@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -71,4 +72,22 @@ func validateLoginReq(req *LoginRequest) map[string]string {
 		errs["password"] = "password is required"
 	}
 	return errs
+}
+
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(cookieName)
+	if err != nil {
+		errors.New("unauthorized")
+	}
+	userId, err := queries.ValidateSession(cookie.Value)
+	if err != nil {
+		response.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	err = queries.DeleteSession(w, userId)
+	if err != nil {
+		response.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	response.Success(w, "logout successful", http.StatusOK)
 }
