@@ -15,20 +15,21 @@ type RegisterRequest struct {
 	DateOfBirth string `json:"date_of_birth"`
 	Nickname    string `json:"nickname"`
 	AboutMe     string `json:"about_me"`
+	Avatar      string `json:"Avatar"`
 }
 
 func CreateUser(req RegisterRequest) error {
-    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-    if err != nil {
-        return err
-    }
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
 
-    userID := uuid.New().String()
+	userID := uuid.New().String()
 
-    _, err = sqlite.DB.Exec(`
+	_, err = sqlite.DB.Exec(`
         INSERT INTO users (id, email, password_hash, first_name, last_name, date_of_birth, nickname, about_me)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, userID, req.Email, string(hashedPassword), req.FirstName, req.LastName, req.DateOfBirth, req.Nickname, req.AboutMe)
 
-    return err
+	return err
 }
