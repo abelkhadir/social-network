@@ -6,3 +6,4 @@ Run backend:
 Run frontend:
     cd frontend/
     npm run dev
+    
