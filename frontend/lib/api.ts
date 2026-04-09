@@ -1,5 +1,13 @@
-// const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const API_URL ="http://localhost:8080" ;
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
+export function resolveApiUrl(path: string) {
+  if (!path) return path;
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${API_URL}${normalized}`;
+}
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const url = `${API_URL}${endpoint}`;

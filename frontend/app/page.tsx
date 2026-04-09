@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { fetchApi } from "../lib/api";
+import { fetchApi, resolveApiUrl } from "../lib/api";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -114,7 +114,7 @@ export default function HomePage() {
               </div>
 
         <img 
-          src={post.image ? (post.image.startsWith('http') ? post.image : `http://localhost:8081/${post.image}`) : defaultImage} 
+          src={post.image ? resolveApiUrl(post.image) : defaultImage} 
           className="post-image" 
           alt="Post Image" 
           style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }} 

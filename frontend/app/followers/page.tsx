@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useToast } from "@/context/ToastContext"; 
 
 export default function FollowersPage() {
   const [activeTab, setActiveTab] = useState<"discover" | "followers" | "following">("discover");
+  const [searchTerm, setSearchTerm] = useState("");
   
   const [mockUsers, setMockUsers] = useState([
     { id: "u1", name: "Ahmed Ali", username: "@ahmed", bio: "Golang Backend Dev", isPrivate: false, relationship: "none" }, // relationship: none, following, follower, mutual, requested
@@ -29,19 +29,48 @@ export default function FollowersPage() {
     }));
   };
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
   const displayedUsers = mockUsers.filter(user => {
-    if (activeTab === "discover") return user.relationship === "none" || user.relationship === "requested";
-    if (activeTab === "followers") return user.relationship === "follower" || user.relationship === "mutual";
-    if (activeTab === "following") return user.relationship === "following" || user.relationship === "mutual";
-    return true;
+    const matchTab =
+      activeTab === "discover"
+        ? user.relationship === "none" || user.relationship === "requested"
+        : activeTab === "followers"
+        ? user.relationship === "follower" || user.relationship === "mutual"
+        : activeTab === "following"
+        ? user.relationship === "following" || user.relationship === "mutual"
+        : true;
+
+    if (!matchTab) return false;
+
+    if (!normalizedSearch) return true;
+
+    const haystack = `${user.name} ${user.username} ${user.bio}`.toLowerCase();
+    return haystack.includes(normalizedSearch);
   });
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto", paddingBottom: "40px" }}>
       
-      <div style={{ marginBottom: "20px" }}>
-        <h1 style={{ color: "var(--color-primary)", margin: 0 }}>👥 Connect & Follow</h1>
-        <p style={{ color: "var(--text-muted)", marginTop: "5px" }}>Find friends to chat with and see their private posts.</p>
+      <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div>
+          <h1 style={{ color: "var(--color-primary)", margin: 0 }}>👥 Connect & Follow</h1>
+          <p style={{ color: "var(--text-muted)", marginTop: "5px" }}>Find friends to chat with and see their private posts.</p>
+        </div>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search users by name or username..."
+          style={{
+            width: "100%",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            border: "1px solid #3a3f44",
+            background: "var(--color-input-bg)",
+            color: "var(--text-main)",
+            outline: "none",
+          }}
+        />
       </div>
 
       <div style={{ display: "flex", borderBottom: "1px solid #2f3336", marginBottom: "20px" }}>
