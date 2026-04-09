@@ -1,0 +1,113 @@
+
+ #todo
+#  Social Network - ToDo List
+
+##  Codebase Refactoring & Setup
+- [x] Reorganize project structure (models, handlers, middlewares, etc.)
+- [x] Migrate Vanilla JS Frontend to **Next.js (App Router)**
+- [x] Apply a unified Dark & Orange Theme across the application
+
+---
+
+##  Frontend Implementation
+- [x] Implement global layout (Header, Left/Right Sidebars, Main Feed)
+- [x] Implement responsive design (Mobile-friendly menus & views)
+- [x] Implement Toast Notification system (Context-based)
+- [x] Create mock UIs for upcoming features (Profile, Groups, Followers)
+
+---
+
+##  REST API Implementation (Backend Core)
+- [x] Implement Post endpoints (Create, Get All, Get By ID)
+- [x] Implement User endpoints (Login, Register, Logout, Me)
+- [x] Implement Category endpoints
+- [x] Implement Comment endpoints
+- [x] Implement Like/Dislike endpoints (Posts & Comments)
+- [ ] Refactor Migrations to use `golang-migrate` (up/down SQL files)
+
+---
+
+##  Authentication System
+### Backend
+- [x] Implement user registration (Hash passwords)
+- [x] Implement login with cookie-based sessions (UUID)
+- [x] Implement logout functionality (Session invalidation)
+- [ ] Add `Date of Birth`, `Avatar`, and `About Me` to User Registration (Required by Subject)
+
+### Frontend (UI)
+- [x] Implement Login page
+- [x] Implement Registration page
+- [x] Implement Logout functionality (Header Dropdown)
+
+---
+
+##  Posts & Comments Functionality
+### Posts
+- [x] Create posts with categories
+- [x] Create posts with image uploads (Multipart form data)
+- [ ] **Privacy Levels:** Allow users to choose if post is Public, Almost Private, or Private.
+
+### Comments & Likes
+- [x] Allow registered users to create comments
+- [x] Like and Dislike functionality for Posts
+- [x] Like and Dislike functionality for Comments
+
+---
+
+## 🔍 Post Listing & Filtering
+- [x] List all posts (Feed)
+- [x] Filter posts by category
+- [x] Filter posts by Author (My Posts)
+- [x] Filter posts by Liked posts
+
+---
+
+## 💬 Chat & Real-Time Features (WebSockets)
+- [x] Implement message sending and receiving
+- [x] Load previous chat history (1-on-1 Chat)
+- [x] Track and update user online/offline status live
+- [x] Real-time Typing Indicator
+- [ ] **Restriction:** Only allow chatting with followed users / followers.
+
+---
+
+## NEW FEATURES (The Final Bosses )
+
+### Followers System
+- [ ] Implement DB tables for followers (user_id, follower_id, status: pending/accepted)
+- [ ] Backend routes to Follow, Unfollow, Accept, and Decline requests
+- [ ] Frontend integration with `app/followers/page.tsx`
+
+###  User Profiles
+- [ ] Backend route to fetch a single user's profile data (Posts + Follower count)
+- [ ] Toggle profile privacy (Public vs Private)
+- [ ] Frontend integration with `app/profile/page.tsx`
+
+###  Groups System
+- [ ] Implement DB tables for Groups and Group Members
+- [ ] Backend routes to Create Group, Join, Accept Invites, and Leave
+- [ ] Group-specific Posts and Comments logic
+- [ ] Frontend integration with `app/groups/page.tsx`
+- [ ] Group Chat (Common chat room via WebSockets)
+
+###  Events (Inside Groups)
+- [ ] Implement DB tables for Events and Event Responses
+- [ ] Backend logic to create events (Title, Desc, Date/Time)
+- [ ] Options for users: "Going" or "Not Going"
+- [ ] Frontend integration inside Group Page
+
+###  Global Notifications
+- [ ] Implement DB table for Notifications (Type, Read Status)
+- [ ] Notify on: Follow Request, Group Invite, Event Creation
+- [ ] Push notifications live via WebSockets
+- [ ] Frontend integration (Bell Icon in Header)
+
+---
+
+## 🐳 Deployment & DevOps
+- [ ] Create Dockerfile for Backend (Golang)
+- [ ] Create Dockerfile for Frontend (Next.js)
+- [ ] Create `docker-compose.yml` to link them together
+
+---
+

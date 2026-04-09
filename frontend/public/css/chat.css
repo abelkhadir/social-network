@@ -1,0 +1,31 @@
+/* =========================================
+   CHAT USER LIST STYLES (Sidebar)
+   ========================================= */
+.chat-user-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    text-decoration: none;
+    background: var(--color-input-bg);
+    border-radius: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.chat-user-item:hover {
+    background: #2a2f34;
+    border-color: var(--color-primary-blue);
+    transform: translateY(-2px);
+}
+
+.chat-users-list::-webkit-scrollbar {
+    width: 6px;
+}
+.chat-users-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.chat-users-list::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 10px;
+}

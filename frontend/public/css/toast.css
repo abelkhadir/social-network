@@ -1,0 +1,60 @@
+/* =========================================
+   CUSTOM TOAST ALERTS
+   ========================================= */
+
+toast-list {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    pointer-events: none; 
+}
+
+.custom-toast {
+    min-width: 250px;
+    max-width: 400px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    color: white;
+    background-color: #333;
+    font-family: Arial, sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    pointer-events: auto; 
+    
+    transform: translateX(150%);
+    animation: toastSlideIn 0.5s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.toast-error { 
+    background-color: #e74c3c; 
+    border-left: 8px solid #900000; 
+}
+
+.toast-success { 
+    background-color: #40c514; 
+    border-left: 8px solid #144404; 
+}
+
+.toast-info { 
+    background-color: #3498db; 
+    border-left: 8px solid #003080; 
+}
+
+.toast-fade-out { 
+    animation: toastFadeOut 0.4s ease-in forwards; 
+}
+
+@keyframes toastSlideIn {
+    from { transform: translateX(150%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastFadeOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(150%); opacity: 0; }
+}

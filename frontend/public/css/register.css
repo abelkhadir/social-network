@@ -1,0 +1,181 @@
+:root {
+    --color-bg: #212529;
+    --color-card-bg: #212529;
+    --color-primary: #32d106;
+    --color-primary-dark: #165804;
+    --color-primary-darker: #2fa60e;
+    --color-text: #e8ecef;
+    --color-text-muted: #adb5bd;
+    --color-footer-bg: #1c2526;
+    --color-menu-bg: linear-gradient(135deg, #088717 0%, #1c2526 100%);
+    --color-input-bg: #343a40;
+
+    --space-xs: 0.5rem;
+    --space-sm: 0.8rem;
+    --space-md: 1.5rem;
+    --space-lg: 4rem;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 10px;
+
+    --font-size-base: 1rem;
+    --font-size-sm: 0.9rem;
+    --font-size-label: 0.95rem;
+    --font-size-h1: 1.8rem;
+    --font-size-h1-mobile: 1.5rem;
+
+    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.2);
+    --shadow-menu: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+    --transition-fast: 0.2s ease;
+    --transition-medium: 0.3s ease;
+}
+
+/* Main Content */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem; 
+}
+
+.signup-section {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-lg) 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.signup-section::before {
+    content: '💾';
+    font-size: 12rem;
+    position: absolute;
+    top: -2rem;
+    left: -2rem;
+    opacity: 0.08;
+    transform: rotate(-15deg);
+    z-index: 0;
+}
+
+.signup-section::after {
+    content: '🖥️';
+    font-size: 10rem;
+    position: absolute;
+    bottom: -2rem;
+    right: -2rem;
+    opacity: 0.08;
+    z-index: 0;
+}
+
+.signup-card {
+    background-color: var(--color-card-bg);
+    padding: 2rem 2.5rem; 
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    transition: transform var(--transition-medium);
+    text-align: center;
+    width: 100%;
+    
+    max-width: 700px; 
+    
+    position: relative;
+    z-index: 1;
+}
+
+.signup-card:hover {
+    transform: translateY(-4px);
+}
+
+.signup-card h1 {
+    font-size: var(--font-size-h1);
+    font-weight: 600;
+    margin-bottom: var(--space-md);
+    color: var(--color-primary);
+}
+
+.form-row {
+    display: flex;
+    gap: 1.5rem; 
+    width: 100%;
+}
+
+.form-group {
+    flex: 1; 
+    margin-bottom: var(--space-md);
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    font-size: var(--font-size-label);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+}
+
+.form-group input {
+    width: 100%;
+    padding: var(--space-sm);
+    border: 1px solid transparent; 
+    border-radius: var(--radius-sm);
+    background-color: var(--color-input-bg);
+    color: var(--color-text);
+    font-size: var(--font-size-base);
+    transition: box-shadow var(--transition-medium), border-color var(--transition-fast);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 8px rgba(50, 209, 6, 0.2);
+}
+
+.btn {
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-base);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform var(--transition-fast), background var(--transition-medium);
+    margin-top: 1rem;
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-darker) 100%);
+    transform: translateY(-2px);
+}
+
+.signup-card p {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin-top: var(--space-md);
+}
+
+.signup-card a {
+    color: var(--color-primary);
+    font-weight: 500;
+    transition: color var(--transition-fast);
+    text-decoration: none;
+}
+
+.signup-card a:hover {
+    color: var(--color-primary-dark);
+    text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+    .signup-card {
+        padding: 1.5rem;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+}
