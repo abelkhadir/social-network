@@ -26,7 +26,9 @@ func EnsureSchema(db *sql.DB) error {
 			gender TEXT,
 			email TEXT UNIQUE NOT NULL,
 			password TEXT NOT NULL,
-			avatarURL TEXT
+			avatarURL TEXT,
+			about_me TEXT DEFAULT '',
+			is_private INTEGER NOT NULL DEFAULT 0
 		);`,
 		`CREATE TABLE IF NOT EXISTS sessions(
 			token TEXT PRIMARY KEY,
@@ -107,6 +109,55 @@ func EnsureSchema(db *sql.DB) error {
 	for _, table := range tables {
 		if _, err := db.Exec(table); err != nil {
 			return fmt.Errorf("create tables: %w", err)
+		}
+	}
+
+	if err := ensureUserProfileColumns(db); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureUserProfileColumns(db *sql.DB) error {
+	columns := map[string]string{
+		"about_me":   "TEXT DEFAULT ''",
+		"is_private": "INTEGER NOT NULL DEFAULT 0",
+	}
+	return ensureColumns(db, "user", columns)
+}
+
+func ensureColumns(db *sql.DB, table string, columns map[string]string) error {
+	rows, err := db.Query("PRAGMA table_info(" + table + ")")
+	if err != nil {
+		return fmt.Errorf("inspect table %s: %w", table, err)
+	}
+	defer rows.Close()
+
+	existing := map[string]bool{}
+	for rows.Next() {
+		var cid int
+		var name string
+		var ctype string
+		var notnull int
+		var dfltValue sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltValue, &pk); err != nil {
+			return fmt.Errorf("read table info %s: %w", table, err)
+		}
+		existing[name] = true
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("read table info %s: %w", table, err)
+	}
+
+	for name, definition := range columns {
+		if existing[name] {
+			continue
+		}
+		query := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, name, definition)
+		if _, err := db.Exec(query); err != nil {
+			return fmt.Errorf("add column %s.%s: %w", table, name, err)
 		}
 	}
 

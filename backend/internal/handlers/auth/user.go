@@ -58,12 +58,16 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	authUser := models.AuthUser{
 		ID:        user.ID,
 		Nickname:  user.Nickname,
+		Username:  user.Nickname,
 		Firstname: user.Firstname,
 		Lastname:  user.Lastname,
 		Age:       user.Age,
 		Gender:    user.Gender,
 		Email:     user.Email,
 		AvatarURL: user.AvatarURL,
+		Avatar:    user.AvatarURL,
+		AboutMe:   user.AboutMe,
+		IsPrivate: user.IsPrivate == 1,
 	}
 
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{
@@ -113,6 +117,7 @@ func SignIn(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	authUser := models.AuthUser{
 		ID:         user.ID,
 		Nickname:   user.Nickname,
+		Username:   user.Nickname,
 		Firstname:  user.Firstname,
 		Lastname:   user.Lastname,
 		Age:        user.Age,
@@ -120,6 +125,9 @@ func SignIn(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		Gender:     user.Gender,
 		Email:      user.Email,
 		AvatarURL:  user.AvatarURL,
+		Avatar:     user.AvatarURL,
+		AboutMe:    user.AboutMe,
+		IsPrivate:  user.IsPrivate == 1,
 	}
 
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{
@@ -162,6 +170,7 @@ func Me(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	authUser := models.AuthUser{
 		ID:         user.ID,
 		Nickname:   user.Nickname,
+		Username:   user.Nickname,
 		Firstname:  user.Firstname,
 		Lastname:   user.Lastname,
 		Age:        user.Age,
@@ -169,6 +178,9 @@ func Me(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		Gender:     user.Gender,
 		Email:      user.Email,
 		AvatarURL:  user.AvatarURL,
+		Avatar:     user.AvatarURL,
+		AboutMe:    user.AboutMe,
+		IsPrivate:  user.IsPrivate == 1,
 	}
 
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{

@@ -7,6 +7,7 @@ import (
 	authandler "social/internal/handlers/auth"
 	notificationshandler "social/internal/handlers/notifications"
 	posthandler "social/internal/handlers/post"
+	"social/internal/handlers/profile"
 	websockethandler "social/internal/handlers/websocket"
 	"social/pkg/middleware"
 	"time"
@@ -15,6 +16,9 @@ import (
 // SetupRoutes registers all routes, using a single *app.Application instance
 func SetupRoutes(a *app.Application) {
 	rateLimiter := middleware.NewRateLimiter(time.Minute)
+
+	// Static uploads (avatars, post images)
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads/"))))
 
 	// Single Page
 	// http.Handle("/", rateLimiter.Wrap("auth", http.HandlerFunc(handler.Index)))
@@ -43,6 +47,13 @@ func SetupRoutes(a *app.Application) {
 	})))
 	http.Handle("/logout", rateLimiter.Wrap("auth", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		authandler.Logout(a, res, req)
+	})))
+	//================== Profile routes =======================///
+	http.Handle("/profile", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		profile.Profile(a, res, req)
+	})))
+	http.Handle("/profile/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		profile.Profile(a, res, req)
 	})))
 
 	// Post Handlers

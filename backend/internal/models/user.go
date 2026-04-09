@@ -10,6 +10,9 @@ type User struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 	AvatarURL string `json:"avatar_url"`
+	Avatar    string `json:"avatar,omitempty"`
+	AboutMe   string `json:"aboutMe"`
+	IsPrivate int    `json:"isPrivate"`
 }
 
 type UserSignIn struct {
@@ -20,6 +23,7 @@ type UserSignIn struct {
 type AuthUser struct {
 	ID         string `json:"id"`
 	Nickname   string `json:"nickname"`
+	Username   string `json:"username,omitempty"`
 	Firstname  string `json:"firstname"`
 	Lastname   string `json:"lastname"`
 	Age        int    `json:"age"`
@@ -27,6 +31,9 @@ type AuthUser struct {
 	IsLoggedIn bool   `json:"is_logged_in"`
 	Email      string `json:"email"`
 	AvatarURL  string `json:"avatar_url"`
+	Avatar     string `json:"avatar,omitempty"`
+	AboutMe    string `json:"aboutMe,omitempty"`
+	IsPrivate  bool   `json:"isPrivate"`
 }
 
 type UserItem struct {

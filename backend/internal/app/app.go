@@ -8,6 +8,7 @@ import (
 	"social/internal/repositories/auth"
 	"social/internal/repositories/notifications"
 	"social/internal/repositories/post"
+	profilerepo "social/internal/repositories/profile"
 	"social/internal/repositories/sessions"
 	"social/internal/repositories/websocket"
 	dbschema "social/pkg/database/db"
@@ -21,6 +22,7 @@ type Application struct {
 	CommentRepo      *post.CommentRepository
 	CategoryRepo     *post.CategoryRepository
 	PostCategoryRepo *post.PostCategoryRepository
+	ProfileRepo      *profilerepo.ProfileRepository
 	MessageRepo      *websocket.MessageRepository
 	SessionRepo      *sessions.SessionRepository
 	NotificationRepo *notifications.NotificationRepository
@@ -67,6 +69,7 @@ func NewApp() *Application {
 	commentRepo := post.NewCommentRepository(db)
 	categoryRepo := post.NewCategoryRepository(db)
 	postCategoryRepo := post.NewPostCategoryRepository(db)
+	profileRepo := profilerepo.NewProfileRepository(db)
 	messageRepo := websocket.NewMessageRepository(db)
 	sessionRepo := sessions.NewSessionRepository(db, userRepo)
 	notificationRepo := notifications.NewNotificationRepository(db)
@@ -77,6 +80,7 @@ func NewApp() *Application {
 		CommentRepo:      commentRepo,
 		CategoryRepo:     categoryRepo,
 		PostCategoryRepo: postCategoryRepo,
+		ProfileRepo:      profileRepo,
 		MessageRepo:      messageRepo,
 		SessionRepo:      sessionRepo,
 		NotificationRepo: notificationRepo,

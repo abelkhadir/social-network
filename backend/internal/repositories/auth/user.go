@@ -32,7 +32,10 @@ func (ur *UserRepository) CreateUser(user *models.User) error {
 	user.ID = ID.String()
 	user.Email = strings.ToLower(user.Email)
 	user.Nickname = strings.ToLower(user.Nickname)
-	_, err = ur.db.Exec("INSERT INTO user (id, nickname, firstname, lastname, age, gender, email, password, avatarURL) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+	if user.AvatarURL == "" {
+		user.AvatarURL = DEFAULT_AVATAR
+	}
+	_, err = ur.db.Exec("INSERT INTO user (id, nickname, firstname, lastname, age, gender, email, password, avatarURL, about_me, is_private) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		user.ID,
 		user.Nickname,
 		user.Firstname,
@@ -42,6 +45,8 @@ func (ur *UserRepository) CreateUser(user *models.User) error {
 		user.Email,
 		user.Password,
 		user.AvatarURL,
+		user.AboutMe,
+		user.IsPrivate,
 	)
 	return err
 }
@@ -49,28 +54,30 @@ func (ur *UserRepository) CreateUser(user *models.User) error {
 // Get a user by ID from the database
 func (ur *UserRepository) GetUserByID(userID string) (*models.User, error) {
 	var user models.User
-	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL FROM user WHERE id = ?", userID)
-	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL)
+	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL, COALESCE(about_me, ''), COALESCE(is_private, 0) FROM user WHERE id = ?", userID)
+	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL, &user.AboutMe, &user.IsPrivate)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // User not found
 		}
 		return nil, err
 	}
+	user.Avatar = user.AvatarURL
 	return &user, nil
 }
 
 // Get a user by email from the database
 func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL FROM user WHERE email = ?", email)
-	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL)
+	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL, COALESCE(about_me, ''), COALESCE(is_private, 0) FROM user WHERE email = ?", email)
+	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL, &user.AboutMe, &user.IsPrivate)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // User not found
 		}
 		return nil, err
 	}
+	user.Avatar = user.AvatarURL
 	return &user, nil
 }
 
@@ -78,14 +85,15 @@ func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 func (ur *UserRepository) GetUserByNickname(nickname string) (*models.User, error) {
 	fmt.Printf("get user by neckname")
 	var user models.User
-	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL FROM user WHERE nickname = ?", nickname)
-	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL)
+	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL, COALESCE(about_me, ''), COALESCE(is_private, 0) FROM user WHERE nickname = ?", nickname)
+	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL, &user.AboutMe, &user.IsPrivate)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // User not found
 		}
 		return nil, err
 	}
+	user.Avatar = user.AvatarURL
 	return &user, nil
 }
 
@@ -202,9 +210,9 @@ func (ur *UserRepository) IsExistedByIdentifiant(identifiant string) (*models.Us
 	var user models.User
 	identifiant = strings.ToLower(identifiant)
 	// fmt.Println("the indentifiant",identifiant)
-	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL, password FROM user WHERE nickname = ? OR email = ?", identifiant, identifiant)
+	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL, COALESCE(about_me, ''), COALESCE(is_private, 0), password FROM user WHERE nickname = ? OR email = ?", identifiant, identifiant)
 	// fmt.Print("the row where user ",row)
-	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL, &user.Password)
+	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL, &user.AboutMe, &user.IsPrivate, &user.Password)
 	fmt.Println("the user nickname", user)
 	if err != nil {
 		log.Println("❌ ", err)
@@ -213,6 +221,7 @@ func (ur *UserRepository) IsExistedByIdentifiant(identifiant string) (*models.Us
 		}
 		return nil, false
 	}
+	user.Avatar = user.AvatarURL
 	return &user, true
 }
 

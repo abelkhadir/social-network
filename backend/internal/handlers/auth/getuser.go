@@ -3,6 +3,7 @@ package authandler
 import (
 	"net/http"
 	"social/internal/app"
+	"social/internal/models"
 	"social/pkg/utils"
 )
 
@@ -23,8 +24,24 @@ func GetUser(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	authUser := models.AuthUser{
+		ID:         user.ID,
+		Nickname:   user.Nickname,
+		Username:   user.Nickname,
+		Firstname:  user.Firstname,
+		Lastname:   user.Lastname,
+		Age:        user.Age,
+		IsLoggedIn: true,
+		Gender:     user.Gender,
+		Email:      user.Email,
+		AvatarURL:  user.AvatarURL,
+		Avatar:     user.AvatarURL,
+		AboutMe:    user.AboutMe,
+		IsPrivate:  user.IsPrivate == 1,
+	}
+
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{
 		"message": "User retrieved successfully",
-		"user":    user,
+		"user":    authUser,
 	})
 }
