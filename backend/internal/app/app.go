@@ -13,6 +13,8 @@ import (
 	"social/internal/repositories/websocket"
 	dbschema "social/pkg/database/db"
 	"social/pkg/utils"
+	// _ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4"
 )
 
 type Application struct {
@@ -53,13 +55,13 @@ func NewApp() *Application {
 		log.Fatal("❌ Database not reachable:", err)
 	}
 	// Ensure tables / migrations
-	if err := dbschema.EnsureSchema(db); err != nil {
-		log.Fatal("❌ Failed to ensure database schema:", err)
-	}
+	// if err := dbschema.EnsureSchema(db); err != nil {
+	// 	log.Fatal("❌ Failed to ensure database schema:", err)
+	// }
 	if err := dbschema.SeedData(db); err != nil {
 		log.Fatal("❌ Failed to seed database:", err)
 	}
-
+	// RunMigration()
 	// ensurePostImageColumn(db)
 	// ensureCommentVoteTable(db)
 	// ensureMessageTable(db)
@@ -160,5 +162,18 @@ func ensureMessageTable(db *sql.DB) {
 	if _, err := db.Exec(ddl); err != nil {
 		log.Printf("❌ Failed to ensure message table: %v", err)
 		return
+	}
+}
+func RunMigration() {
+	m, err := migrate.New(
+		"file://sql/migrations",
+		"sqlite3://./database/socialdb.db",
+	)
+	if err != nil {
+		log.Fatal("failed to create DB driver:", err)
+	}
+
+	if err = m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal(err)
 	}
 }

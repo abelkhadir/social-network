@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/add-post/page": "/add-post",
+  "/chat/[id]/page": "/chat/[id]",
+  "/followers/page": "/followers",
+  "/groups/[id]/page": "/groups/[id]",
+  "/groups/page": "/groups",
+  "/login/page": "/login",
+  "/page": "/",
+  "/post/[id]/page": "/post/[id]",
+  "/profile/[id]/page": "/profile/[id]",
+  "/profile/page": "/profile",
+  "/register/page": "/register"
+}
