@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { fetchApi } from "../../lib/api";
+import { fetchJoinedGroups, fetchSuggestedGroups, GroupSummary } from "../../lib/groups";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,6 +12,8 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
   const { user } = useAuth();
   const pathname = usePathname();
   const [users, setUsers] = useState<any[]>([]);
+  const [joinedGroups, setJoinedGroups] = useState<GroupSummary[]>([]);
+  const [suggestedGroups, setSuggestedGroups] = useState<GroupSummary[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
   const [lastMessages, setLastMessages] = useState<{ [key: string]: { text: string; time: string } }>({});
   const [loading, setLoading] = useState(true);
@@ -18,16 +21,19 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
 
   const [activeTab, setActiveTab] = useState<"users" | "groups">("users");
 
-  const mockGroups = [
-    { id: "g1", name: "Golang Developers", members: 42, icon: "🐹" },
-    { id: "g2", name: "Next.js Masters", members: 15, icon: "⚛️" }
-  ];
-
   useEffect(() => {
     if (user) {
-      fetchApi("/chat/users")
-        .then((data) => setUsers(data.users || []))
-        .catch((err) => console.error("Error fetching users:", err))
+      Promise.all([
+        fetchApi("/chat/users"),
+        fetchJoinedGroups().catch(() => []),
+        fetchSuggestedGroups().catch(() => []),
+      ])
+        .then(([chatData, joined, suggested]) => {
+          setUsers(chatData.users || []);
+          setJoinedGroups(joined);
+          setSuggestedGroups(suggested);
+        })
+        .catch((err) => console.error("Error fetching sidebar data:", err))
         .finally(() => setLoading(false));
     }
   }, [user]);
@@ -92,19 +98,24 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
             🛡️ Suggested Groups
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {mockGroups.map(g => (
+            {suggestedGroups.slice(0, 4).map((g) => (
               <div key={g.id} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{ width: "35px", height: "35px", background: "#2a2e33", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>
-                  {g.icon}
+                <div style={{ width: "35px", height: "35px", background: "#2a2e33", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.9rem", color: "var(--color-primary)", fontWeight: "bold" }}>
+                  #{g.id}
                 </div>
                 <div style={{ flex: 1 }}>
                   <Link href={`/groups/${g.id}`} style={{ color: "var(--text-main)", fontWeight: "bold", textDecoration: "none", fontSize: "0.9rem", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.color = "var(--text-main)"}>
-                    {g.name}
+                    {g.title}
                   </Link>
-                  <div style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>{g.members} members</div>
+                  <div style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
+                    {g.description || "Open the group to learn more"}
+                  </div>
                 </div>
               </div>
             ))}
+            {suggestedGroups.length === 0 && (
+              <div style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>No suggested groups right now.</div>
+            )}
             <Link href="/groups" style={{ color: "var(--color-primary)", fontSize: "0.85rem", textDecoration: "none", marginTop: "10px", display: "block", fontWeight: "bold" }}>
               Show more groups ➔
             </Link>
@@ -164,17 +175,24 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
           )}
 
           {activeTab === "groups" && (
-            mockGroups.map((g) => (
+            joinedGroups.length > 0 ? joinedGroups.map((g) => (
               <Link href={`/groups/${g.id}`} key={g.id} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--color-input-bg)", borderRadius: "8px", alignItems: "center", border: "1px solid transparent", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "transparent"}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "#1e2124", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>
-                  {g.icon}
+                <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "#1e2124", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.95rem", color: "var(--color-primary)", fontWeight: "bold" }}>
+                  #{g.id}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: "bold", color: "var(--text-main)" }}>{g.name}</div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{g.members} Members</div>
+                  <div style={{ fontWeight: "bold", color: "var(--text-main)" }}>{g.title}</div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                    {g.description || "Group discussion"}
+                  </div>
                 </div>
               </Link>
-            ))
+            )) : (
+              <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "10px", lineHeight: "1.5" }}>
+                Join a group to see it here. <br /><br />
+                <Link href="/groups" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: "bold" }}>Browse groups ➔</Link>
+              </p>
+            )
           )}
 
         </div>
