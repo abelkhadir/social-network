@@ -44,3 +44,13 @@ type UserItem struct {
 	LastMessage     string `json:"last_message"`
 	LastMessageTime string `json:"last_message_time"`
 }
+type UserError struct {
+	Nickname    string
+	Email       string
+	PassWord    string
+	FirstName   string
+	Lastname    string
+	DateofBirth string
+	AboutMe     string
+	HasErro     bool
+}
