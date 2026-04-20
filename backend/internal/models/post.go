@@ -36,6 +36,10 @@ type Post struct {
 	Dislikes    int    `json:"dislikes"`
 	VoteStatus  *int   `json:"vote_status"`
 	ImageURL    string `json:"image"`
+	AllowedUsres  []int   `json:"omitempty"` // if the post is private
+    Author        User    `json:"author"`
+	MediaLink     string  `json:"media_link,omitempty"`
+	TotalComments int     `json:"total_comments"`
 }
 
 type PostCreation struct {

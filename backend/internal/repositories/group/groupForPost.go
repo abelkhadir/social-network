@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"social/internal/models"
+	"social/pkg/utils"
 )
 
 func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.GroupPost, img *models.Image) (models.Post, models.GroupError) {
@@ -41,7 +42,7 @@ func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.G
 		group.GroupId,
 		group.Post.Author.ID,
 		group.Post.Title,
-		group.Post.Content,
+		group.Post.Description,
 		fileName,
 		time.Now(),
 	)
@@ -61,19 +62,19 @@ func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.G
 	}
 
 	postID, _ := res.LastInsertId()
-	group.Post.ID = int(postID)
+	group.Post.ID = string(postID)
 	tx.Commit()
 	return models.Post{
 			Author: models.User{
-				ID:        id,
+				ID:        string(id),
 				Nickname:  neckname,
-				FirstName: first,
+				Firstname: first,
 				Lastname:  last,
 			},
-			ID:        int(postID),
+			ID:        string(postID),
 			MediaLink: fileName.String,
 			Title:     group.Post.Title,
-			Content:   group.Post.Content,
+			Description:   group.Post.Description,
 		}, models.GroupError{
 			Code:    http.StatusOK,
 			Message: "The post was saved into the database successfully.",
@@ -127,11 +128,11 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid in
 			&post.ID,
 			&post.Author.ID,
 			&post.Title,
-			&post.Content,
+			&post.Description,
 			&media,
 			&post.TotalComments,
-			&post.CreatedAt,
-			&post.Author.FirstName,
+			&post.CreateDate,
+			&post.Author.Firstname,
 			&post.Author.Lastname,
 			&post.Author.Nickname,
 			&post.Author.Avatar,
@@ -173,7 +174,7 @@ func (r *GroupRepository) AddGroupComment(comments models.Comment, img *models.I
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(comments.PostID, comments.Author.ID, comments.Comment, fileName, time.Now())
+	_, err = stmt.Exec(comments.PostID, comments.Author.ID, comments.Text, fileName, time.Now())
 	if err != nil {
 		return nil, models.GroupError{
 			Code:    http.StatusInternalServerError,
@@ -223,11 +224,11 @@ ORDER BY c.created_at DESC;
 			&comment.PostID,
 			&comment.Author.ID,
 
-			&comment.Comment,
+			&comment.Text,
 			&media,
 
-			&comment.CreatedAt,
-			&comment.Author.FirstName,
+			&comment.CreateDate,
+			&comment.Author.Firstname,
 			&comment.Author.Lastname,
 			&comment.Author.Nickname,
 			&comment.Author.Avatar,

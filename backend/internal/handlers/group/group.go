@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"social/internal/models"
+	services "social/internal/services/group"
 	"social/pkg/utils"
 )
 
@@ -13,9 +14,9 @@ type GroupHandler struct {
 	service *services.GroupService
 }
 
-// func NewGroupHandler(service *services.GroupService) *GroupHandler {
-// 	return &GroupHandler{service: service}
-// }
+func NewGroupHandler(service *services.GroupService) *GroupHandler {
+	return &GroupHandler{service: service}
+}
 
 func (h *GroupHandler) CreateGroupHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

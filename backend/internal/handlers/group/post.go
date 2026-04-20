@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"social/internal/models"
 
@@ -51,11 +52,9 @@ func (h *GroupHandler) AddGroupPost(w http.ResponseWriter, r *http.Request) {
 	post := &models.GroupPost{
 		GroupId: groupId,
 		Post: models.Post{
-			Author: models.User{
-				ID: userId,
-			},
-			Title:   r.FormValue("title"),
-			Content: r.FormValue("content"),
+			AuthorID:    string(userId), // or strconv.Itoa(userId)
+			Title:       r.FormValue("title"),
+			Description: r.FormValue("content"),
 		},
 	}
 
@@ -143,12 +142,12 @@ func (h *GroupHandler) AddGroupComment(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	// groupcomments := models.Comment{
-	// 	Comment:   r.FormValue("comment"),
-	// 	PostID:    postId,
-	// 	CreatedAt: time.Now().Format(time.RFC3339),
-	// 	Author:    models.User{ID: r.Context().Value("userID").(int)},
-	// }
+	groupcomments := models.Comment{
+		ID:         r.FormValue("comment"),
+		PostID:     string(postId),
+		CreateDate: time.Now().Format(time.RFC3339),
+		AuthorID:  r.FormValue("comment"),
+	}
 
 	file, header, err := r.FormFile("image")
 
