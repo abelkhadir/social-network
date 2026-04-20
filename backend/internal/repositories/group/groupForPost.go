@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -64,6 +65,7 @@ func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.G
 	postID, _ := res.LastInsertId()
 	group.Post.ID = string(postID)
 	tx.Commit()
+	fmt.Println("i think the post on the group saved ")
 	return models.Post{
 			Author: models.User{
 				ID:        string(id),

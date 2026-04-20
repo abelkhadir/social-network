@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -30,6 +31,7 @@ func (s *GroupService) SaveGroupePost(ctx context.Context, group *models.GroupPo
 			Message: "error while validating the image",
 		}
 	}
+	fmt.Println("the post will go to saved into the database")
 	return s.repo.SaveGroupPostRepo(ctx, group, img)
 }
 
