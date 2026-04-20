@@ -36,7 +36,7 @@
     "**/*.mts",
     "**/*.ts",
     "**/*.tsx"
-  ],
+, "app/profile/page.js", "app/post/[id]/page.js", "app/login/page.js", "app/groups/page.js"  ],
   "exclude": [
     "node_modules"
   ]
