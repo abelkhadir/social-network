@@ -1,8 +1,9 @@
-package repositories
+package groupsrepos
 
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,6 +19,7 @@ func NewGroupRepo(db *sql.DB) *GroupRepository {
 }
 
 func (r *GroupRepository) SaveGroup(group *models.Group) (int, *models.GroupError) {
+	fmt.Println("the use now want to save the use on database let's see if he can ")
 	query := `
 		INSERT INTO groups(user_id, title, description, created_at) VALUES (?, ?, ?, ?) RETURNING id
 	`

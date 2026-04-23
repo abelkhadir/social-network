@@ -1,4 +1,4 @@
-package repositories
+package groupsrepos
 
 import (
 	"database/sql"

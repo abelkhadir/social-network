@@ -2,12 +2,12 @@ package routers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
 	"social/internal/app"
 	authandler "social/internal/handlers/auth"
+	groupshandler "social/internal/handlers/group"
 	notificationshandler "social/internal/handlers/notifications"
 	posthandler "social/internal/handlers/post"
 	"social/internal/handlers/profile"
@@ -97,14 +97,21 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.SendChatMessage(a, res, req)
 	})))
+	// http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	// 	// websockethandler.SendChatMessage(a, res, req)
+	// 	groupshandler.GroupHandler(res,req)
+	// })))
 	// groups
 	// http.Handle("/groups/create", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 	// 	fmt.Println("the user want to create gouuup")
 	// 	websockethandler.SendChatMessage(a, res, req)
 	// })))
-	http.HandleFunc("/api/groups/create",func (w http.ResponseWriter,r *http.Request)  {
-		fmt.Print("the use want to create group")
-	})
+	// http.HandleFunc("/api/groups/create",func (w http.ResponseWriter,r *http.Request)  {
+	// 	fmt.Print("the use want to create group")
+	// })
+	http.Handle("/groups/create", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		groupshandler.CreateGroupHandler(a,res,req)
+	})))
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(websockethandler.HandleWebSocket))
 }
