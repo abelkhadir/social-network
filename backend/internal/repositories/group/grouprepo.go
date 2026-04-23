@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"social/internal/models"
@@ -18,37 +19,41 @@ func NewGroupRepo(db *sql.DB) *GroupRepository {
 	return &GroupRepository{db: db}
 }
 
-func (r *GroupRepository) SaveGroup(group *models.Group) (int, *models.GroupError) {
+func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupError) {
 	fmt.Println("the use now want to save the use on database let's see if he can ")
 	query := `
 		INSERT INTO groups(user_id, title, description, created_at) VALUES (?, ?, ?, ?) RETURNING id
 	`
 
-	var groupID int
-	err := r.db.QueryRow(query, group.UserID, group.Title, group.Description, time.Now()).Scan(&groupID)
+	var groupID string
+	res, err := r.db.Exec(query,
+		group.UserID,
+		group.Title,
+		group.Description,
+		time.Now(),
+	)
 	if err != nil {
-		return -1, &models.GroupError{
+		return "", &models.GroupError{
 			Message: err.Error(),
 			Code:    http.StatusInternalServerError,
 		}
 	}
 
-	queryGroupMember := `
-		INSERT INTO group_members(group_id, member_id) VALUES (?, ?)
-	`
-
-	_, err = r.db.Exec(queryGroupMember, groupID, group.UserID)
+	id, err := res.LastInsertId()
 	if err != nil {
-		return -1, &models.GroupError{
+		return "", &models.GroupError{
 			Message: err.Error(),
 			Code:    http.StatusInternalServerError,
 		}
 	}
+
+	groupID = strconv.FormatInt(id, 10)
+	return groupID, nil
 
 	return groupID, nil
 }
 
-func (r *GroupRepository) GetJoinedGroups(userID int) ([]*models.Group, error) {
+func (r *GroupRepository) GetJoinedGroups(userID string) ([]*models.Group, error) {
 	query := `
 		SELECT g.* FROM groups g
 		INNER JOIN group_members mb ON g.id = mb.group_id

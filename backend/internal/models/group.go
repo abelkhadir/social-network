@@ -3,8 +3,8 @@ package models
 import "time"
 
 type Group struct {
-	ID            int       `json:"id,omitempty"`
-	UserID        int       `json:"user_id,omitempty"`
+	ID            string       `json:"id,omitempty"`
+	UserID        string       `json:"user_id,omitempty"`
 	Title         string    `json:"title,omitempty"`
 	Description   string    `json:"description,omitempty"`
 	CreatedAt     time.Time `json:"created_at,omitempty"`

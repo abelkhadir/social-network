@@ -7,6 +7,7 @@ import (
 
 	"social/internal/app"
 	"social/internal/models"
+	"social/pkg/middleware"
 	"social/pkg/utils"
 )
 
@@ -19,10 +20,9 @@ import (
 // }
 
 func CreateGroupHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
-	if utils.ValidateRequest(r, w, "/post", http.MethodPost) {
+	if utils.ValidateRequest(r, w, "/groups/create", http.MethodPost) {
 	}
-
-	fmt.Println("the user want to create a group let see if he can")
+	fmt.Println("the user want to create a group let see if he can fgfgdgdf")
 
 	if r.Method != http.MethodPost {
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
@@ -40,13 +40,15 @@ func CreateGroupHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	userID, ok := r.Context().Value("userID").(int)
-	if !ok {
-		utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{
-			"error": "Unauthorized",
-		})
-		return
-	}
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+		if !ok {
+				fmt.Println("userID not found in context")
+	// fmt.Printf("CTX KEY TYPE HANDLER: %T\n",userID)
+			utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{
+		"error": "Unauthorized",
+	})
+	return
+	}	
 
 	group.UserID = userID
 
@@ -71,28 +73,30 @@ func CreateGroupHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 	})
 }
 
-// func (h *GroupHandler) GetJoinedGroupsHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodGet {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
+func  GetJoinedGroupsHandler(app *app.Application ,w http.ResponseWriter, r *http.Request) {
+	fmt.Println("the user bghaaaa groups")
+	if r.Method != http.MethodGet {
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
+			"error": "Method not allowed",
+		})
+		return
+	}
 
-// 	userID := r.Context().Value("userID").(int)
+	userID := r.Context().Value(middleware.UserIDKey).(string)
 
-// 	groups, err := h.service.GetJoinedGroups(userID)
-// 	if err != nil {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": err.Error(),
-// 		})
-// 		return
-// 	}
+	// groups, err := h.service.GetJoinedGroups(userID)
+	groups, err := app.GroupPostRepo.GetJoinedGroups(userID)
+	if err != nil {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
+			"error": err.Error(),
+		})
+		return
+	}
 
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"data": groups,
-// 	})
-// }
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
+		"data": groups,
+	})
+}
 
 // func (h *GroupHandler) GetSuggestedGroupsHandler(w http.ResponseWriter, r *http.Request) {
 // 	if r.Method != http.MethodGet {
