@@ -118,7 +118,7 @@ func EnsureSchema(db *sql.DB) error {
 
 		// Groups (FIXED: TEXT IDs + correct FK)
 		`CREATE TABLE IF NOT EXISTS groups (
-			id TEXT PRIMARY KEY,
+			id TEXT  PRIMARY KEY ,
 			user_id TEXT NOT NULL,
 			title TEXT NOT NULL,
 			description TEXT NOT NULL,

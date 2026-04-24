@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"social/internal/models"
+
+	"github.com/google/uuid"
 )
 
 type GroupRepository struct {
@@ -20,13 +21,17 @@ func NewGroupRepo(db *sql.DB) *GroupRepository {
 }
 
 func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupError) {
-	fmt.Println("the use now want to save the use on database let's see if he can ")
+	fmt.Println("saving group...")
+
+	id := uuid.New().String()
+
 	query := `
-		INSERT INTO groups(user_id, title, description, created_at) VALUES (?, ?, ?, ?) RETURNING id
+		INSERT INTO groups(id, user_id, title, description, created_at)
+		VALUES (?, ?, ?, ?, ?)
 	`
 
-	var groupID string
-	res, err := r.db.Exec(query,
+	_, err := r.db.Exec(query,
+		id,
 		group.UserID,
 		group.Title,
 		group.Description,
@@ -39,32 +44,28 @@ func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupE
 		}
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return "", &models.GroupError{
-			Message: err.Error(),
-			Code:    http.StatusInternalServerError,
-		}
-	}
-
-	groupID = strconv.FormatInt(id, 10)
-	return groupID, nil
-
-	return groupID, nil
+	return id, nil
 }
 
 func (r *GroupRepository) GetJoinedGroups(userID string) ([]*models.Group, error) {
+	// query := `
+	// 	SELECT g.id, g.user_id, g.title, g.description, g.created_at FROM groups g
+	// 	INNER JOIN group_members mb ON g.id = mb.group_id
+	// 	WHERE mb.member_id = ?
+	// 	ORDER BY g.id desc
+	// `
 	query := `
-		SELECT g.* FROM groups g
-		INNER JOIN group_members mb ON g.id = mb.group_id
-		WHERE mb.member_id = ?
-		ORDER BY g.id desc
+		SELECT id, user_id, title, description, created_at
+		FROM groups
+		WHERE user_id = ?
+		ORDER BY id DESC
 	`
 
 	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var groups []*models.Group
 	for rows.Next() {
@@ -76,6 +77,7 @@ func (r *GroupRepository) GetJoinedGroups(userID string) ([]*models.Group, error
 
 		groups = append(groups, &group)
 	}
+	fmt.Println("mchaaaaa ijiib liyaaa grouuups l9aa mochkiil 🇺🇸 🇺🇸", groups)
 
 	return groups, err
 }

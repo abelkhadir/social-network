@@ -109,15 +109,21 @@ func SetupRoutes(a *app.Application) {
 	// http.HandleFunc("/api/groups/create",func (w http.ResponseWriter,r *http.Request)  {
 	// 	fmt.Print("the use want to create group")
 	// })
-http.Handle("/groups/create",
-    rateLimiter.Wrap("api",
-        middleware.AuthMiddleware(a.DB,
-            http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-                groupshandler.CreateGroupHandler(a, w, r)
-            }),
-        ),
-    ),
-)
+	// create grouuup
+	http.Handle("/groups/create",
+		rateLimiter.Wrap("api",
+			middleware.AuthMiddleware(a.DB,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					groupshandler.CreateGroupHandler(a, w, r)
+				}),
+			),
+		),
+	)
+	// get joindedd groups
+	http.Handle("/groups/joined",rateLimiter.Wrap("api",middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetJoinedGroupsHandler(a,w,r)
+	}))))
+
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(websockethandler.HandleWebSocket))
 }
