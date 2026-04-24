@@ -1,6 +1,7 @@
 package groupshandler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -47,7 +48,7 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	groupIdstr, groupErr := utils.GetGroupId(r, "post")
-	groupIdstr="e458b682-8345-4e12-b4bf-d4b2560c711c"
+	groupIdstr = "e458b682-8345-4e12-b4bf-d4b2560c711c"
 	fmt.Println(" 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 groupid ", groupIdstr)
 	if groupErr != nil {
 
@@ -98,40 +99,46 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 	// utils.SendJSONResponse(w, http.StatusOK, savepost)
 }
 
-// func  GetGroupPosts(App *app.Application ,w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"message": "Method not allowed ",
-// 			"status":  http.StatusMethodNotAllowed,
-// 		})
-// 		return
-// 	}
+func GetGroupPosts(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("user daba bghaaaa kaa3 poosssts  🃏🃏🃏🃏🃏")
+	if r.Method != http.MethodPost {
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
+			"message": "Method not allowed ",
+			"status":  http.StatusMethodNotAllowed,
+		})
+		return
+	}
 
-// 	defer r.Body.Close()
+	defer r.Body.Close()
 
-// 	var req models.PaginationRequest
-// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-// 		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
-// 			"message": "Invalid JSON payload",
-// 			"status":  http.StatusBadRequest,
-// 		})
-// 		return
-// 	}
-// 	groupIdstr, groupErr := utils.GetGroupId(r, "post")
-// 	if groupErr != nil {
-// 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
-// 			"message": "Invalid URL",
-// 			"status":  http.StatusNotFound,
-// 		})
-// 		return
-// 	}
-// 	posts, postsErr := h.service.GetGroupsPost(req, groupIdstr)
-// 	if postsErr.Code != http.StatusOK {
-// 		utils.SendJSONResponse(w, postsErr.Code, postsErr)
-// 		return
-// 	}
-// 	utils.SendJSONResponse(w, postsErr.Code, posts)
-// }
+	var req models.PaginationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+			"message": "Invalid JSON payload",
+			"status":  http.StatusBadRequest,
+		})
+		return
+	}
+	groupIdstr, groupErr := utils.GetGroupId(r, "post")
+	groupIdstr="e458b682-8345-4e12-b4bf-d4b2560c711c"
+	fmt.Println("3andaak tinsaaa groupid dimaaa 0 daba ")
+	if groupErr != nil {
+		fmt.Println("kaaaaaasdfsfsdafasddddddddd  🃏🃏🃏🃏🃏")
+		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
+			"message": "Invalid URL",
+			"status":  http.StatusNotFound,
+		})
+		return
+	}
+	// posts, postsErr := h.service.GetGroupsPost(req, groupIdstr)
+	posts, postsErr := app.GroupPostRepo.GetGroupPosts(req,groupIdstr)
+		fmt.Println("posts from db  🃏🃏 ",posts)
+	if postsErr.Code != http.StatusOK {
+		utils.SendJSONResponse(w, postsErr.Code, postsErr)
+		return
+	}
+	utils.SendJSONResponse(w, postsErr.Code, posts)
+}
 
 // func  AddGroupComment(App *app.Application ,w http.ResponseWriter, r *http.Request) {
 // 	if r.Method != http.MethodPost {

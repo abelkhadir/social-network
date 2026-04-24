@@ -16,7 +16,7 @@ func GetGroupId(r *http.Request, endpoint string) (string, error) {
 	// fmt.Println("the part in 🃏🃏",parts[3])
 	// fmt.Println("the part in 🃏🃏",parts[4])
 
-	if len(parts)<4|| parts[1] != "groups" ||parts[2] != "joined" ||parts[3] != "post" {
+	if len(parts)<4|| parts[1] != "groups" ||parts[2] != "joined"  {
 	fmt.Println("check wisdfndskfn 🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏 ")
 		return "", fmt.Errorf("Invalid URL")
 	}

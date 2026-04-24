@@ -84,13 +84,13 @@ func (r *GroupRepository) SaveGroupePost(ctx context.Context, group *models.Grou
 	if strings.TrimSpace(group.Post.Description) == "" {
 		return models.Post{}, models.GroupError{Code: 400, Message: "Content is required"}
 	}
-	//paaasit liha dakxi howaa haadaaak
+	// paaasit liha dakxi howaa haadaaak
 	return r.SaveGroupPostRepo(ctx, group, img)
 }
 
+func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid string) ([]models.Post, models.GroupError) {
+	fmt.Println("dkhaalt njiiib posts min database  🃏🃏🃏🃏🃏")
 
-
-func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid int) ([]models.Post, models.GroupError) {
 	GetQuery := `
 	SELECT 
 		p.id,
@@ -100,19 +100,21 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid in
 		p.media,
 		p.comments,
 		p.created_at,
-		u.first_name,
-		u.last_name,
-		u.nickname,
-		u.avatar
+		u.firstname,
+		u.lastname,
+		u.nickname
 	FROM group_posts p
-	JOIN users u ON u.id = p.member_id
+	INNER JOIN user u ON p.member_id = u.id 
 	WHERE p.group_id = ?
 	ORDER BY p.created_at DESC
 	LIMIT ? OFFSET ?
 `
 
 	rows, rowsErr := r.db.Query(GetQuery, groupid, reg.Limit, reg.Offset)
+	// fmt.Println("check wisdfndskfn 🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏 ",rows)
+
 	if rowsErr != nil {
+		fmt.Println("Database error:", rowsErr)
 		if rowsErr == sql.ErrNoRows {
 			return []models.Post{}, models.GroupError{
 				Code:    http.StatusNotFound,
@@ -144,8 +146,9 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid in
 			&post.Author.Firstname,
 			&post.Author.Lastname,
 			&post.Author.Nickname,
-			&post.Author.Avatar,
 		); err != nil {
+			fmt.Println("dbbbb errrr 🃏🃏🃏🃏", err)
+			fmt.Println("the imaage", post.MediaLink)
 			return []models.Post{}, models.GroupError{
 				Code:    http.StatusInternalServerError,
 				Message: err.Error(),

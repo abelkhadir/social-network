@@ -130,6 +130,9 @@ func SetupRoutes(a *app.Application) {
 		// fmt.Println("groupID:", groupID)
 		groupshandler.AddGroupPost(a, w, r)
 	}))))
+		http.Handle("/groups/joined/posts/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetGroupPosts(a, w, r)
+	}))))
 
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(websockethandler.HandleWebSocket))
