@@ -1,5 +1,15 @@
 package groupshandler
 
+import (
+	"fmt"
+	"net/http"
+
+	"social/internal/app"
+	"social/internal/models"
+	"social/pkg/middleware"
+	"social/pkg/utils"
+)
+
 // import (
 // 	"encoding/json"
 // 	"fmt"
@@ -13,71 +23,80 @@ package groupshandler
 // 	"social/pkg/utils"
 // )
 
-// const maxUpload = 10 << 20
+const maxUpload = 10 << 20
 
-// func  AddGroupPost(App *app.Application ,w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"message": "Method not allowed",
-// 			"status":  http.StatusMethodNotAllowed,
-// 		})
-// 		return
-// 	}
-// 	userId := r.Context().Value("userID").(int)
+func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("user daba bghaaaa ideer post fgrouuuup 🃏🃏🃏🃏🃏")
+	if r.Method != http.MethodPost {
+		fmt.Println("the methood is ", r.Method)
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
+			"message": "Method not allowed",
+			"status":  http.StatusMethodNotAllowed,
+		})
+		return
+	}
+	userId := r.Context().Value(middleware.UserIDKey).(string)
+	fmt.Println(" 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 usrsefsdf 🃏🃏🃏🃏🃏 ", userId)
+	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
+	err := r.ParseMultipartForm(maxUpload)
+	if err != nil {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+			"message": "Bad Request",
+			"status":  http.StatusBadRequest,
+		})
+		return
+	}
+	groupIdstr, groupErr := utils.GetGroupId(r, "post")
+	groupIdstr="e458b682-8345-4e12-b4bf-d4b2560c711c"
+	fmt.Println(" 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 groupid ", groupIdstr)
+	if groupErr != nil {
 
-// 	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
-// 	err := r.ParseMultipartForm(maxUpload)
-// 	if err != nil {
-// 		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
-// 			"message": "Bad Request",
-// 			"status":  http.StatusBadRequest,
-// 		})
-// 		return
-// 	}
-// 	groupIdstr, groupErr := utils.GetGroupId(r, "post")
-// 	if groupErr != nil {
-// 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
-// 			"message": "Invalid URL",
-// 			"status":  http.StatusNotFound,
-// 		})
-// 		return
-// 	}
-// 	groupId, err := strconv.Atoi(groupIdstr)
-// 	if err != nil || groupId <= 0 {
-// 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
-// 			"message": "Invalid URL",
-// 			"status":  http.StatusNotFound,
-// 		})
-// 		return
-// 	}
-// 	post := &models.GroupPost{
-// 		GroupId: groupId,
-// 		Post: models.Post{
-// 			AuthorID:    string(userId), // or strconv.Itoa(userId)
-// 			Title:       r.FormValue("title"),
-// 			Description: r.FormValue("content"),
-// 		},
-// 	}
+		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
+			"message": "Invalid URL",
+			"status":  http.StatusNotFound,
+		})
+		return
+	}
 
-// 	file, header, err := r.FormFile("image")
+	// if err != nil || groupId <= 0 {
+	// 	utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
+	// 		"message": "Invalid URL",
+	// 		"status":  http.StatusNotFound,
+	// 	})
+	// 	return
+	// }
+	post := &models.GroupPost{
+		GroupId: groupIdstr,
+		Post: models.Post{
+			AuthorID:    string(userId),
+			Title:       r.FormValue("title"),
+			Description: r.FormValue("content"),
+		},
+	}
 
-// 	var img *models.Image // nil unless file is provided
-// 	if err == nil {
-// 		img = &models.Image{
-// 			ImgHeader:  header,
-// 			ImgContent: file,
-// 		}
+	file, header, err := r.FormFile("image")
 
-// 		defer file.Close()
-// 	}
-// 	savepost, ErrSavePost := h.service.SaveGroupePost(r.Context(), post, img)
-// 	if ErrSavePost.Code != http.StatusOK {
-// 		utils.SendJSONResponse(w, ErrSavePost.Code, ErrSavePost)
-// 		return
-// 	}
+	var img *models.Image
+	if err == nil {
+		img = &models.Image{
+			ImgHeader:  header,
+			ImgContent: file,
+		}
 
-// 	utils.SendJSONResponse(w, http.StatusOK, savepost)
-// }
+		defer file.Close()
+	}
+	fmt.Println(" 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 ", img, post)
+	// savepost, ErrSavePost := h.service.SaveGroupePost(r.Context(), post, img)
+
+	_, ErrSavePost := app.GroupPostRepo.SaveGroupPostRepo(r.Context(), post, img)
+
+	if ErrSavePost.Code != http.StatusOK {
+		utils.SendJSONResponse(w, ErrSavePost.Code, ErrSavePost)
+		return
+	}
+
+	// utils.SendJSONResponse(w, http.StatusOK, savepost)
+}
 
 // func  GetGroupPosts(App *app.Application ,w http.ResponseWriter, r *http.Request) {
 // 	if r.Method != http.MethodPost {

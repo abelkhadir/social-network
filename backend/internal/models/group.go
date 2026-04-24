@@ -13,7 +13,7 @@ type Group struct {
 	RequestID     int       `json:"request_id,omitempty"`
 }
 type GroupPost struct {
-	GroupId int `json:"group_id"`
+	GroupId string `json:"group_id"`
 	Post    Post
 }
 

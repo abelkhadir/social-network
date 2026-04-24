@@ -8,7 +8,6 @@ import (
 
 	"social/internal/repositories/auth"
 	groupsrepos "social/internal/repositories/group"
-	repositories "social/internal/repositories/group"
 	"social/internal/repositories/notifications"
 	"social/internal/repositories/post"
 	profilerepo "social/internal/repositories/profile"
@@ -32,7 +31,7 @@ type Application struct {
 	MessageRepo      *websocket.MessageRepository
 	SessionRepo      *sessions.SessionRepository
 	NotificationRepo *notifications.NotificationRepository
-	GroupPostRepo    *repositories.GroupRepository
+	GroupPostRepo    *groupsrepos.GroupRepository
 }
 
 // NewApp initializes the database and repositories
@@ -80,7 +79,7 @@ func NewApp() *Application {
 	messageRepo := websocket.NewMessageRepository(db)
 	sessionRepo := sessions.NewSessionRepository(db, userRepo)
 	notificationRepo := notifications.NewNotificationRepository(db)
-			groupsRepo:=groupsrepos.NewGroupRepo(db)
+	groupsRepo := groupsrepos.NewGroupRepo(db)
 	app := &Application{
 		DB:               db,
 		UserRepo:         userRepo,
@@ -92,7 +91,7 @@ func NewApp() *Application {
 		MessageRepo:      messageRepo,
 		SessionRepo:      sessionRepo,
 		NotificationRepo: notificationRepo,
-		GroupPostRepo: groupsRepo,
+		GroupPostRepo:    groupsRepo,
 	}
 
 	log.Println("✅ Application initialized successfully")

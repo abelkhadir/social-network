@@ -120,8 +120,15 @@ func SetupRoutes(a *app.Application) {
 		),
 	)
 	// get joindedd groups
-	http.Handle("/groups/joined",rateLimiter.Wrap("api",middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		groupshandler.GetJoinedGroupsHandler(a,w,r)
+	http.Handle("/groups/joined", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetJoinedGroupsHandler(a, w, r)
+	}))))
+	http.Handle("/groups/joined/post/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// path := strings.TrimPrefix(r.URL.Path, "/groups/joined/post/")
+		// groupID := path
+
+		// fmt.Println("groupID:", groupID)
+		groupshandler.AddGroupPost(a, w, r)
 	}))))
 
 	// WebSocket
