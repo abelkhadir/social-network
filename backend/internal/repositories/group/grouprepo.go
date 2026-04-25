@@ -43,9 +43,38 @@ func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupE
 			Code:    http.StatusInternalServerError,
 		}
 	}
+		queryGroupMember := `
+		INSERT INTO group_members(group_id, member_id) VALUES (?, ?)
+	`
+
+	_, err = r.db.Exec(queryGroupMember, id, group.UserID)
+	if err != nil {
+		return "", &models.GroupError{
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		}
+	}
 
 	return id, nil
 }
+// func (r *GroupRepository) SaveGroup(group *models.Group) (int, *models.GroupError) {
+// 	query := `
+// 		INSERT INTO groups(user_id, title, description, created_at) VALUES (?, ?, ?, ?) RETURNING id
+// 	`
+
+// 	var groupID int
+// 	err := r.db.QueryRow(query, group.UserID, group.Title, group.Description, time.Now()).Scan(&groupID)
+// 	if err != nil {
+// 		return -1, &models.GroupError{
+// 			Message: err.Error(),
+// 			Code:    http.StatusInternalServerError,
+// 		}
+// 	}
+
+
+
+// 	return groupID, nil
+// }
 
 func (r *GroupRepository) GetJoinedGroups(userID string) ([]*models.Group, error) {
 	// query := `
@@ -77,7 +106,13 @@ func (r *GroupRepository) GetJoinedGroups(userID string) ([]*models.Group, error
 
 		groups = append(groups, &group)
 	}
+	fmt.Println("______________ 🇺🇸 🇺🇸", groups)
+	// for i := 0; i < len(groups); i++ {
+	// 	fmt.Println("the groups that we have ",groups[i])
+	// }
 	fmt.Println("mchaaaaa ijiib liyaaa grouuups l9aa mochkiil 🇺🇸 🇺🇸", groups)
+	fmt.Println("____________________ 🇺🇸 🇺🇸")
+
 
 	return groups, err
 }

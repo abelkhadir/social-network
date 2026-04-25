@@ -92,7 +92,14 @@ func  GetJoinedGroupsHandler(app *app.Application ,w http.ResponseWriter, r *htt
 		})
 		return
 	}
+	fmt.Println("___________________________________________________")
 	fmt.Println("the grouuups that the user createeeed 🇲🇽 ",groups)
+	for i := 0; i < len(groups); i++ {
+		fmt.Println("the groups that we have ",groups[i])
+	}
+	
+	fmt.Println("___________________________________________________")
+
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 		"data": groups,
 	})

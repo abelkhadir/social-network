@@ -11,7 +11,7 @@ import (
 
 	"social/internal/models"
 )
-
+const defaultimage="./uploads/grouupimages/20260425213211_istockphoto-814423752-612x612.jpg"
 func HandleImage(img *models.Image, dir string) (sql.NullString, error) {
 	var fileName sql.NullString
 

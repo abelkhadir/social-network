@@ -16,6 +16,9 @@ import (
 
 func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.GroupPost, img *models.Image) (models.Post, models.GroupError) {
 	tx, err := r.db.BeginTx(ctx, nil)
+	fmt.Println("((((((((((((((((((((((((())))))))))))))))))))))))) ")
+	fmt.Println("blaaaaaaaaaaaaaaaaaaaaaaaaaaaaati bi3adaa rah kayna photto " ,img)
+	fmt.Println("(((((((((((((((((((((((((()))))))))))))))))))))))))) ")
 	if err != nil {
 		return models.Post{}, models.GroupError{Code: 500, Message: "Database error"}
 	}
@@ -29,7 +32,7 @@ func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.G
 	postID := uuid.New().String()
 	userID := group.Post.AuthorID
 
-	fmt.Printf("INSERTING: GroupID=%s, MemberID=%s\n", group.GroupId, userID)
+	fmt.Printf("INSERTING: GroupID=%s, MemberID=%s\n ---------------------------------------------", group.GroupId, userID)
 
 	const insertQuery = `
 		INSERT INTO group_posts (id, group_id, member_id, title, content, media, created_at)
@@ -89,7 +92,9 @@ func (r *GroupRepository) SaveGroupePost(ctx context.Context, group *models.Grou
 }
 
 func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid string) ([]models.Post, models.GroupError) {
+	fmt.Println("---------------------------------  🃏🃏🃏🃏🃏")
 	fmt.Println("dkhaalt njiiib posts min database  🃏🃏🃏🃏🃏")
+	 fmt.Println("--------------------------------  🃏🃏🃏🃏🃏")
 
 	GetQuery := `
 	SELECT 
@@ -102,19 +107,22 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 		p.created_at,
 		u.firstname,
 		u.lastname,
-		u.nickname
+		u.nickname,
+		u.avatarURL
 	FROM group_posts p
-	INNER JOIN user u ON p.member_id = u.id 
+	JOIN user u ON u.id = p.member_id
 	WHERE p.group_id = ?
 	ORDER BY p.created_at DESC
 	LIMIT ? OFFSET ?
 `
-
+// khaadni ndir inner join m3a member id
+	// rows, rowsErr := r.db.Query(GetQuery, groupid, reg.Limit, reg.Offset)
 	rows, rowsErr := r.db.Query(GetQuery, groupid, reg.Limit, reg.Offset)
+
 	// fmt.Println("check wisdfndskfn 🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏 ",rows)
 
 	if rowsErr != nil {
-		fmt.Println("Database error:", rowsErr)
+		fmt.Println("Database error kbiiir:", rowsErr)
 		if rowsErr == sql.ErrNoRows {
 			return []models.Post{}, models.GroupError{
 				Code:    http.StatusNotFound,
@@ -137,8 +145,8 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 		if err := rows.Scan(
 
 			&post.ID,
-			&post.Author.ID,
 			&post.Title,
+			&post.Author.ID,
 			&post.Description,
 			&media,
 			&post.TotalComments,
@@ -146,6 +154,7 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 			&post.Author.Firstname,
 			&post.Author.Lastname,
 			&post.Author.Nickname,
+			&post.Author.AvatarURL,
 		); err != nil {
 			fmt.Println("dbbbb errrr 🃏🃏🃏🃏", err)
 			fmt.Println("the imaage", post.MediaLink)
@@ -155,11 +164,18 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 			}
 		}
 		if media.Valid {
-			post.MediaLink = media.String
+			post.MediaLink = "/uploads/grouupimages/"+media.String
 		}
+		// if post.ImageURL != "" {
+		// 	post.ImageURL =  + post.ImageURL
+		// }
 		posts = append(posts, post)
 
 	}
+	fmt.Println("______________________________")
+	fmt.Println("postaaaat lil9aaaa ",posts)
+	fmt.Println("______________________________")
+
 
 	return posts, models.GroupError{
 		Code:    http.StatusOK,

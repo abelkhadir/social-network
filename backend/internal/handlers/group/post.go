@@ -48,7 +48,7 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	groupIdstr, groupErr := utils.GetGroupId(r, "post")
-	groupIdstr = "e458b682-8345-4e12-b4bf-d4b2560c711c"
+	// groupIdstr = "e458b682-8345-4e12-b4bf-d4b2560c711c"
 	fmt.Println(" 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 groupid ", groupIdstr)
 	if groupErr != nil {
 
@@ -120,7 +120,11 @@ func GetGroupPosts(app *app.Application, w http.ResponseWriter, r *http.Request)
 		return
 	}
 	groupIdstr, groupErr := utils.GetGroupId(r, "post")
-	groupIdstr="e458b682-8345-4e12-b4bf-d4b2560c711c"
+	fmt.Println("______________________________")
+	fmt.Println("tha grouuup id ",groupIdstr)
+	fmt.Println("______________________________")
+
+	// groupIdstr="e458b682-8345-4e12-b4bf-d4b2560c711c"
 	fmt.Println("3andaak tinsaaa groupid dimaaa 0 daba ")
 	if groupErr != nil {
 		fmt.Println("kaaaaaasdfsfsdafasddddddddd  🃏🃏🃏🃏🃏")
