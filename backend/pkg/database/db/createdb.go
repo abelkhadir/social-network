@@ -144,6 +144,7 @@ func EnsureSchema(db *sql.DB) error {
 			created_at DATETIME NOT NULL,
 			total_going INTEGER DEFAULT 0,
 			total_not_going INTEGER DEFAULT 0,
+			status TEXT,
 			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
 			FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE
 		);`,

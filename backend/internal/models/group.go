@@ -22,9 +22,9 @@ type GroupComment struct {
 	Comment Comment
 }
 type Event struct {
-	ID            int       `json:"id"`
-	GroupId       int       `json:"group_id,omitempty"`
-	UserID        int       `json:"user_id,omitempty"`
+	ID            string     `json:"id"`
+	GroupId       string       `json:"group_id,omitempty"`
+	UserID        string       `json:"user_id,omitempty"`
 	Title         string    `json:"title"`
 	Description   string    `json:"description"`
 	EventDate     time.Time `json:"event_date"`

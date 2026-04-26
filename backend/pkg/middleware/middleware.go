@@ -22,9 +22,7 @@ import (
 //	↓
 //
 // Handler (يستعمل userID فقط)
-type ContextKey string
 
-const UserIDKey ContextKey = "userID"
 func AuthMiddleware(db *sql.DB, next http.Handler) http.Handler {
 	fmt.Println("daze min meddileware")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

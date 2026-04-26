@@ -32,6 +32,9 @@ type Application struct {
 	SessionRepo      *sessions.SessionRepository
 	NotificationRepo *notifications.NotificationRepository
 	GroupPostRepo    *groupsrepos.GroupRepository
+	GroupMembers  	*groupsrepos.GroupRepository
+	GroupEvents  	*groupsrepos.GroupRepository
+
 }
 
 // NewApp initializes the database and repositories

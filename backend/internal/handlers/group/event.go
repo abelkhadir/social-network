@@ -1,123 +1,123 @@
 package groupshandler
 
-// func (h *GroupHandler) CreateEventHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		// utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{
-// 		// 	"error": "Method not allowed",
-// 		// })
-// 		utils.SendJSONResponse(w,http.StatusMethodNotAllowed,map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
 
-// 	var event *models.Event
-// 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+	"social/internal/app"
+	"social/internal/models"
+	"social/pkg/middleware"
+	"social/pkg/utils"
+)
 
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": "Bad Request",
-// 		})
-// 		return
-// 	}
+func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("---------------------------------------")
+	fmt.Println("we talkiiing about greating event now ")
+	fmt.Println("---------------------------------------")
 
-// 	event.UserID = r.Context().Value("userID").(int)
-// 	newevent, err := h.service.SaveEvent(r.Context(), event)
-// 	if err.Code != http.StatusOK {
-// 		utils.SendJSONResponse(w, err.Code, map[string]any{
-// 			"error": err.Message,
-// 		})
-// 		return
-// 	}
+	if r.Method != http.MethodPost {
+		// utils.ResponseJSON(w, http.StatusMethodNotAllowed, map[string]any{
+		// 	"error": "Method not allowed",
+		// })
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
+			"error": "Method not allowed",
+		})
+		return
+	}
 
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"message": "Event created succefully!",
-// 		"data":    newevent,
-// 	})
-// }
+	// 	fmt.Printf("KEY TYPE IN HANDLER: %T\n", middleware.UserIDKey)
+	// fmt.Printf("VALUE: %#v\n", r.Context().Value(middleware.UserIDKey))
+	var event models.Event
+	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+		fmt.Println("tha event", event)
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+    "error": err.Error(),
+		})
+		return
+	}
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	fmt.Println("===========c23afc9c-af2e-49c5-be57-88576ddada0d===============", userID)
+	if !ok {
+		fmt.Println("--1112-----------------111-1userID not found in context")
+		// fmt.Printf("CTX KEY TYPE HANDLER: %T\n",userID)
+		utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{
+			"error": "Unauthorized",
+		})
+		return
+	}
+	fmt.Println("===========c23afc9c-af2e-49c5-be57-88576ddada0d===============")
+	fmt.Println("===========c23afc9c-af2e-49c5-be57-88576ddada0d===============")
+		event.UserID = userID
 
-// func (h *GroupHandler) GetGroupEventHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodGet {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
+	// newevent, err := h.service.SaveEvent(r.Context(), event)
+	newevent, err := app.GroupPostRepo.SaveEvent(r.Context(), &event)
+	// fmt.Println("---------------------------------------")
+	// fmt.Println("the grouuuup was createeeeed  ", newevent)
+	// fmt.Println("---------------------------------------")
 
-// 	groupIDStr, errId := utils.GetGroupId(r, "events")
-// 	if errId != nil {
-// 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
-// 			"error": errId,
-// 		})
-// 		return
-// 	}
-// 	UserID := r.Context().Value("userID").(int)
-// 	events, err := h.service.GetGroupEvents(UserID, groupIDStr)
-// 	if err.Code != http.StatusOK {
-// 		utils.SendJSONResponse(w, err.Code, map[string]any{
-// 			"error": err.Message,
-// 		})
-// 		return
-// 	}
+	if err.Code != http.StatusOK {
+		utils.SendJSONResponse(w, err.Code, map[string]any{
+			"error": err.Message,
+		})
+		return
+	}
 
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"data": events,
-// 	})
-// }
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
+		"message": "Event created succefully!",
+		"data":    newevent,
+	})
+}
 
-// func (h *GroupHandler) GetGroupMembersHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodGet {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
+func  GetGroupEventsHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	if r.Method != http.MethodGet {
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
+			"error": "Method not allowed",
+		})
+		return
+	}
 
-// 	groupIDStr, errId := utils.GetGroupId(r, "events")
-// 	if errId != nil {
-// 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
-// 			"error": errId,
-// 		})
-// 		return
-// 	}
+	groupIDStr, errId := utils.GetGroupId(r, "events")
+	fmt.Println("---------------------------------------",groupIDStr)
 
-// 	events, err := h.service.GetGroupMembers(groupIDStr)
-// 	if err.Code != http.StatusOK {
-// 		utils.SendJSONResponse(w, err.Code, map[string]any{
-// 			"error": err.Message,
-// 		})
-// 		return
-// 	}
+	if errId != nil {
+		fmt.Println("---------------------------------------")
+			fmt.Println("the user group id ",groupIDStr)
+		fmt.Println("---------------------------------------")
+		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
+			"error": errors.New(errId.Error()),
+		})
+		return
+	}
+	UserID := r.Context().Value(middleware.UserIDKey).(string)
+	fmt.Println("---------------------------------------",UserID)
+	// fmt.Println("---------------------------------------")
+	// fmt.Println("---------------------------------------")
+	// fmt.Println("the user group id ",)
+	// fmt.Println("the user group id ",UserID)
+	// fmt.Println("---------------------------------------")
+	// // events, err := h.service.GetGroupEvents(UserID, groupIDStr)
+	events, err := app.GroupPostRepo.GetGroupEvents(UserID, groupIDStr)
+	fmt.Println("---------------------------------------")
+	fmt.Println("eveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeent",events)
+	fmt.Println("---------------------------------------")
+	if err.Code != http.StatusOK {
+		utils.SendJSONResponse(w, err.Code, map[string]any{
+			"error": err.Message,
+		})
+		return
+	}
 
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"data": events,
-// 	})
-// }
-
-// func (h *GroupHandler) VoteEventHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
-
-// 	var vote models.EventVote
-// 	if err := json.NewDecoder(r.Body).Decode(&vote); err != nil {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": "Bad Reauest",
-// 		})
-// 		return
-// 	}
-// 	vote.UserID = r.Context().Value("userID").(int)
-// 	err := h.service.VoteOnEvent(r.Context(), vote)
-// 	if err.Code != http.StatusOK {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": err.Message,
-// 		})
-// 		return
-// 	}
-
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"message": "Event voted succefully!",
-// 	})
-// }
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
+		"data": events,
+	})
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+}

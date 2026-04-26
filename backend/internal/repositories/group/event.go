@@ -3,14 +3,23 @@ package groupsrepos
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"time"
+
 	"social/internal/models"
+
+	"github.com/google/uuid"
 )
 
 func (r *GroupRepository) SaveEvent(c context.Context, event *models.Event) (models.Event, *models.GroupError) {
+	// fmt.Println("---------------------------------------")
+	// fmt.Println("dakhaaaal bghaaaa save event ")
+	// fmt.Println("---------------------------------------")
+
+	eventID := uuid.New().String()
 	query := `
-		INSERT INTO group_events( group_id,  member_id, title, descreption, event_date, created_at,total_going, total_not_going) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO group_events(id, group_id,  member_id, title, description, event_date, created_at,total_going, total_not_going) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	tx, err := r.db.BeginTx(c, nil)
@@ -26,46 +35,53 @@ func (r *GroupRepository) SaveEvent(c context.Context, event *models.Event) (mod
 		}
 	}()
 
-	res, err := tx.Exec(query, event.GroupId, event.UserID, event.Title, event.Description, event.EventDate, time.Now(), 0, 0)
+	_, err = tx.Exec(query, eventID, event.GroupId, event.UserID, event.Title, event.Description, event.EventDate, time.Now(), 0, 0)
 	if err != nil {
 		return models.Event{}, &models.GroupError{
 			Message: err.Error(),
 			Code:    http.StatusInternalServerError,
 		}
 	}
-	eventID, _ := res.LastInsertId()
+	// eventID, _ := res.LastInsertId()
+
 	tx.Commit()
-	return models.Event{ID: int(eventID)}, &models.GroupError{
+	return models.Event{ID: string(eventID)}, &models.GroupError{
 		Message: "succefully craetd event",
 		Code:    http.StatusOK,
 	}
 }
 
-func (r *GroupRepository) GetGroupEvents(userID, groupID int) ([]*models.Event, models.GroupError) {
+func (r *GroupRepository) GetGroupEvents(userID, groupID string) ([]*models.Event, models.GroupError) {
+	// fmt.Println("---------------------------------------")
+	// fmt.Println("eveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeent")
 	query := `
-		SELECT 
-			e.id, 
-			e.title, 
-			e.descreption, 
-			e.event_date, 
-			e.created_at,
-			e.total_going,
-			e.total_not_going, 
-			ev.status,
-			u.id,
-			u.first_name,
-			u.last_name,
-			u.nickname,
-			u.avatar
-		FROM group_events AS e
-		LEFT JOIN group_events_votes ev 
-			ON ev.event_id = e.id AND ev.member_id = $1
-		INNER JOIN users AS u 
-			ON u.id = e.member_id
-		WHERE e.group_id = $2
-		ORDER BY e.created_at DESC;
+	SELECT 
+	e.id, 
+	e.title, 
+	e.description, 
+	e.event_date, 
+	e.created_at,
+	e.total_going,
+	e.total_not_going, 
+	ev.status,
+	u.id,
+	u.firstname,
+	u.lastname,
+	u.nickname,
+	u.avatarURL
+	FROM group_events AS e
+	LEFT JOIN group_events_votes ev 
+	ON ev.event_id = e.id AND ev.member_id = $1
+	INNER JOIN user AS u 
+	ON u.id = e.member_id
+	WHERE e.group_id = $2
+	ORDER BY e.created_at DESC;
 	`
 
+	fmt.Println("---------------------------------------")
+	fmt.Println("---------------------------------------")
+	fmt.Println(query)
+	fmt.Println("---------------------------------------")
 	rows, err := r.db.Query(query, userID, groupID)
 	if err != nil {
 		return nil, models.GroupError{
@@ -76,32 +92,35 @@ func (r *GroupRepository) GetGroupEvents(userID, groupID int) ([]*models.Event, 
 	defer rows.Close()
 
 	var events []*models.Event
-	var unused int
+	// var unused int
 
 	for rows.Next() {
 		var event models.Event
 		var vote sql.NullString
-		err := rows.Scan(
-			&event.ID,
-			&event.Title,
-			&event.Description,
-			&event.EventDate,
-			&event.CreatedAt,
-			&event.TotalGoing,
-			&event.TotalNotGoing,
-			&vote,
-			&unused,
-			&event.Author.Lastname,
-			&event.Author.Nickname,
-			&event.Author.Avatar,
-		)
+err := rows.Scan(
+    &event.ID,
+    &event.Title,
+    &event.Description,
+    &event.EventDate,
+    &event.CreatedAt,
+    &event.TotalGoing,
+    &event.TotalNotGoing,
+    &vote,
+    &event.Author.ID,
+    &event.Author.Firstname,
+    &event.Author.Lastname,
+    &event.Author.Nickname,
+    &event.Author.Avatar,
+)
 		if err != nil {
 			return nil, models.GroupError{
 				Message: "Internal Server Error",
 				Code:    http.StatusInternalServerError,
 			}
 		}
-		event.UserVote = vote.String
+		if vote.Valid {
+    event.UserVote = vote.String
+}
 
 		events = append(events, &event)
 	}
@@ -116,71 +135,6 @@ func (r *GroupRepository) GetGroupEvents(userID, groupID int) ([]*models.Event, 
 	return events, models.GroupError{
 		Message: "Successfully fetched events",
 		Code:    http.StatusOK,
-	}
-}
-
-func (r *GroupRepository) GetGroupMembers(groupID int) (*models.GroupMembers, models.GroupError) {
-	query := `
-		SELECT 
-			gm.member_id,
-			gm.group_id,
-			u.id,
-			u.first_name,
-			u.last_name,
-			u.nickname,
-			u.avatar
-		FROM group_members AS gm
-		LEFT JOIN users AS u 
-			ON u.id = gm.member_id
-		WHERE gm.group_id = ? ;
-	`
-
-	rows, err := r.db.Query(query, groupID)
-	if err != nil {
-		return nil, models.GroupError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server errror",
-		}
-	}
-	defer rows.Close()
-
-	members := &models.GroupMembers{Members: []models.User{}}
-
-	for rows.Next() {
-		var member models.User
-		var unused1, unused2 int
-		var nickname sql.NullString
-
-		err := rows.Scan(
-			&member.ID,
-			&unused1,
-			&unused2,
-			&member.Lastname,
-			&nickname,
-			&member.Avatar,
-		)
-		if err != nil {
-			return nil, models.GroupError{
-				Code:    http.StatusInternalServerError,
-				Message: "Internal server errror",
-			}
-		}
-		if nickname.Valid {
-			member.Nickname = nickname.String
-		}
-		members.Members = append(members.Members, member)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, models.GroupError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server errror",
-		}
-	}
-
-	return members, models.GroupError{
-		Code:    http.StatusOK,
-		Message: "succefully fetchd members",
 	}
 }
 
