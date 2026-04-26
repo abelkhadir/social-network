@@ -61,7 +61,9 @@ export default function HomePage() {
   if (loading) {
     return <div style={{ textAlign: "center", padding: "20px", color: "var(--text-main)" }}>Loading posts...</div>;
   }
-
+    console.log( filteredPosts.forEach(element => {
+    console.log("the post imaaaage ",element.image)
+  }))
   return (
     <main className="feed" style={{ maxWidth: "600px", margin: "0 auto" }}>
       
@@ -98,7 +100,7 @@ export default function HomePage() {
           ))}
         </select>
       </div>
-
+          
       <div className="posts-container" style={{ marginTop: "20px" }}>
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (

@@ -1,4 +1,12 @@
 "use client";
+//to see your groups 
+// Backend
+//    ↓
+// fetchJoinedGroups()
+//    ↓
+// joinedGroups state
+//    ↓
+// My Groups tab
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -19,7 +27,7 @@ export default function GroupsPage() {
   const [suggestedGroups, setSuggestedGroups] = useState<GroupSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [joiningId, setJoiningId] = useState<number | null>(null);
+  const [joiningId, setJoiningId] = useState<String | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -28,12 +36,17 @@ export default function GroupsPage() {
   const loadGroups = async () => {
     try {
       setLoading(true);
+      // const respinsegroup=await fetchJoinedGroups()
+      // console.log("that is the respose of the group joined ",respinsegroup)
       const [joined, suggested] = await Promise.all([
         fetchJoinedGroups(),
+        
         fetchSuggestedGroups(),
       ]);
+  // console.log("GROUPS:", visibleGroups);
       setJoinedGroups(joined);
       setSuggestedGroups(suggested);
+      
     } catch (error: any) {
       showToast(error.message || "Failed to load groups", "error");
     } finally {
@@ -42,10 +55,12 @@ export default function GroupsPage() {
   };
 
   useEffect(() => {
+      console.log("visibleGroups:", visibleGroups);
     loadGroups();
   }, []);
 
   const handleCreateGroup = async (e: React.FormEvent) => {
+    console.log("we try now to create group")
     e.preventDefault();
     if (!form.title.trim() || !form.description.trim()) {
       showToast("Group title and description are required", "error");
@@ -55,6 +70,7 @@ export default function GroupsPage() {
     try {
       setSubmitting(true);
       const newGroup = await createGroup(form);
+  console.log("GROUPS:", visibleGroups);
       console.log("we will create the group",form)
       setJoinedGroups((prev) => [newGroup, ...prev]);
       setForm({ title: "", description: "" });
@@ -76,7 +92,8 @@ export default function GroupsPage() {
 
     try {
       setJoiningId(group.id);
-      await createJoinRequest(group.id, group.userId);
+      const datafromback=await createJoinRequest(group.id, group.userId);
+      console.log("that what heppen on the backend",datafromback)
       setSuggestedGroups((prev) =>
         prev.map((item) =>
           item.id === group.id ? { ...item, requestId: 1 } : item
