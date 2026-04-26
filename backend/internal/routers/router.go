@@ -3,14 +3,16 @@ package routers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
+
 	"social/internal/app"
 	authandler "social/internal/handlers/auth"
+	groupshandler "social/internal/handlers/group"
 	notificationshandler "social/internal/handlers/notifications"
 	posthandler "social/internal/handlers/post"
 	"social/internal/handlers/profile"
 	websockethandler "social/internal/handlers/websocket"
 	"social/pkg/middleware"
-	"time"
 )
 
 // SetupRoutes registers all routes, using a single *app.Application instance
@@ -95,7 +97,70 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.SendChatMessage(a, res, req)
 	})))
+	// http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	// 	// websockethandler.SendChatMessage(a, res, req)
+	// 	groupshandler.GroupHandler(res,req)
+	// })))
+	// groups
+	// http.Handle("/groups/create", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	// 	fmt.Println("the user want to create gouuup")
+	// 	websockethandler.SendChatMessage(a, res, req)
+	// })))
+	// http.HandleFunc("/api/groups/create",func (w http.ResponseWriter,r *http.Request)  {
+	// 	fmt.Print("the use want to create group")
+	// })
+	// create grouuup
+	http.Handle("/groups/create",
+		rateLimiter.Wrap("api",
+			middleware.AuthMiddleware(a.DB,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					groupshandler.CreateGroupHandler(a, w, r)
+				}),
+			),
+		),
+	)
+	// get joindedd groups
+	http.Handle("/groups/joined", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetJoinedGroupsHandler(a, w, r)
+	}))))
+	http.Handle("/groups/joined/post/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// path := strings.TrimPrefix(r.URL.Path, "/groups/joined/post/")
+		// groupID := path
 
+		// fmt.Println("groupID:", groupID)
+		groupshandler.AddGroupPost(a, w, r)
+	}))))
+		http.Handle("/groups/joined/posts/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetGroupPosts(a, w, r)
+	}))))
+	//to get the members of the groups 
+	http.Handle("/groups/joined/members/",rateLimiter.Wrap("api",middleware.AuthMiddleware(a.DB,http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetGroupMembersHandler(a,w,r)	
+	}))))
+	//to create the event
+
+	// http.Handle("/groups/joined/events/",rateLimiter.Wrap("api",middleware.AuthMiddleware(a.DB,http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	groupshandler.CreateEventHandler(a,w,r)
+	// }))))
+	http.Handle("/groups/joined/event/",
+		rateLimiter.Wrap("api",
+			middleware.AuthMiddleware(a.DB,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					groupshandler.CreateEventHandler(a, w, r)
+				}),
+			),
+		),
+	)
+	//get events
+		http.Handle("/groups/joined/events/",
+		rateLimiter.Wrap("api",
+			middleware.AuthMiddleware(a.DB,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					groupshandler.GetGroupEventsHandler(a, w, r)
+				}),
+			),
+		),
+	)
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(websockethandler.HandleWebSocket))
 }

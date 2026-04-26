@@ -1,5 +1,7 @@
 package models
 
+import "mime/multipart"
+
 type PostItem struct {
 	ID               string   `json:"id"`
 	Title            string   `json:"title"`
@@ -18,6 +20,12 @@ type CompletePost struct {
 	Comments []*CommentItem
 }
 
+type ComentPaginationRequest struct {
+	PostId int `json:"post_id"`
+	Offset int `json:"offset"` // 0‑based index
+	Limit  int `json:"limit"`  // page size
+}
+
 type Post struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -28,6 +36,10 @@ type Post struct {
 	Dislikes    int    `json:"dislikes"`
 	VoteStatus  *int   `json:"vote_status"`
 	ImageURL    string `json:"image"`
+	AllowedUsres  []int   `json:"omitempty"` // if the post is private
+    Author        User    `json:"author"`
+	MediaLink     string  `json:"media_link,omitempty"`
+	TotalComments int     `json:"total_comments"`
 }
 
 type PostCreation struct {
@@ -38,4 +50,13 @@ type PostCreation struct {
 	ImageURL    string   `json:"image"`
 	Categories  []string `json:"categories"`
 	CreateDate  string   `json:"createDate"`
+}
+type Image struct {
+	ImgHeader  *multipart.FileHeader
+	ImgContent multipart.File
+}
+
+type PaginationRequest struct {
+	Offset int `json:"offset"` // 0‑based index
+	Limit  int `json:"limit"`  // page size
 }

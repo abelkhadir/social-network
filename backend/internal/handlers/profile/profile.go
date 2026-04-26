@@ -150,7 +150,7 @@ func UpdateProfile(app *app.Application, res http.ResponseWriter, req *http.Requ
 				return
 			}
 
-			if err := os.MkdirAll("./uploads/avatars", 0755); err != nil {
+			if err := os.MkdirAll("./uploads/avatars", 0o755); err != nil {
 				utils.HandleError(res, http.StatusInternalServerError, "Failed to prepare uploads directory")
 				return
 			}
