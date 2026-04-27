@@ -33,7 +33,7 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		fmt.Println("tha event", event)
 		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
-    "error": err.Error(),
+			"error": err.Error(),
 		})
 		return
 	}
@@ -49,7 +49,7 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 	}
 	fmt.Println("===========c23afc9c-af2e-49c5-be57-88576ddada0d===============")
 	fmt.Println("===========c23afc9c-af2e-49c5-be57-88576ddada0d===============")
-		event.UserID = userID
+	event.UserID = userID
 
 	// newevent, err := h.service.SaveEvent(r.Context(), event)
 	newevent, err := app.GroupPostRepo.SaveEvent(r.Context(), &event)
@@ -70,10 +70,10 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 	})
 }
 
-func  GetGroupEventsHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+func GetGroupEventsHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	// fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	if r.Method != http.MethodGet {
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
 			"error": "Method not allowed",
@@ -82,11 +82,11 @@ func  GetGroupEventsHandler(app *app.Application, w http.ResponseWriter, r *http
 	}
 
 	groupIDStr, errId := utils.GetGroupId(r, "events")
-	fmt.Println("---------------------------------------",groupIDStr)
+	fmt.Println("---------------------------------------", groupIDStr)
 
 	if errId != nil {
 		fmt.Println("---------------------------------------")
-			fmt.Println("the user group id ",groupIDStr)
+		fmt.Println("the user group id ", groupIDStr)
 		fmt.Println("---------------------------------------")
 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
 			"error": errors.New(errId.Error()),
@@ -94,7 +94,7 @@ func  GetGroupEventsHandler(app *app.Application, w http.ResponseWriter, r *http
 		return
 	}
 	UserID := r.Context().Value(middleware.UserIDKey).(string)
-	fmt.Println("---------------------------------------",UserID)
+	fmt.Println("---------------------------------------", UserID)
 	// fmt.Println("---------------------------------------")
 	// fmt.Println("---------------------------------------")
 	// fmt.Println("the user group id ",)
@@ -103,7 +103,7 @@ func  GetGroupEventsHandler(app *app.Application, w http.ResponseWriter, r *http
 	// // events, err := h.service.GetGroupEvents(UserID, groupIDStr)
 	events, err := app.GroupPostRepo.GetGroupEvents(UserID, groupIDStr)
 	fmt.Println("---------------------------------------")
-	fmt.Println("eveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeent",events)
+	fmt.Println("eveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeent", events)
 	fmt.Println("---------------------------------------")
 	if err.Code != http.StatusOK {
 		utils.SendJSONResponse(w, err.Code, map[string]any{
@@ -115,9 +115,9 @@ func  GetGroupEventsHandler(app *app.Application, w http.ResponseWriter, r *http
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 		"data": events,
 	})
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	// fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 }

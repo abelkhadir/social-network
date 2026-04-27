@@ -2,13 +2,24 @@ package groupsrepos
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
 	"social/internal/models"
 )
 
-func (r *GroupRepository) GetInfoGroupeRepo(GrpID string, sessionID int) (*models.Group, error) {
+type MessageRepository struct {
+	db *sql.DB
+}
+
+func NewMessageRepository(db *sql.DB) *MessageRepository {
+	return &MessageRepository{
+		db: db,
+	}
+}
+
+func (r *MessageRepository) GetInfoGroupeRepo(GrpID string, sessionID int) (*models.Group, error) {
 	query := `SELECT 
 				g.id, 
 				g.title, 
@@ -46,16 +57,22 @@ func (r *GroupRepository) GetGroupMessagesRepo(GrpID string) ([]models.GroupMess
 				g.group_id, 
 				g.content,
 				g.sent_at,
-				u.avatar, 
-				u.first_name || ' ' || u.last_name AS fullName
+				u.avatarURL, 
+				u.firstname || ' ' || u.lastname AS fullName
 				
 			FROM 
 				group_messages g
-			INNER JOIN users u ON u.id = g.sender_id
+			INNER JOIN user u ON u.id = g.sender_id
 			WHERE g.group_id = ?
 			ORDER BY g.sent_at ASC;
+		
 			`
+	fmt.Println("the query is correct", query)
 	rows, err := r.db.Query(query, GrpID)
+	fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
+	fmt.Println("((((((((((((((((((((((((((rowss))))))))))))))))))))))))))", rows)
+	fmt.Println("((((((((((((((((((((((((((the error))))))))))))))))))))))))))", err)
+	fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}

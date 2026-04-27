@@ -36,8 +36,8 @@ type Event struct {
 }
 
 type EventVote struct {
-	ID     int    `json:"id"`
-	UserID int    `json:"user_id"`
+	ID     string    `json:"id"`
+	UserID string    `json:"user_id"`
 	Vote   string `json:"vote"` // going or not going
 }
 

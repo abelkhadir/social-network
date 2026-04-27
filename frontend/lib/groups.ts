@@ -191,7 +191,7 @@ export async function fetchJoinedGroups() {
     "/groups/joined",
     "/groups/joined",
   ]);
-  // console.log("the joined group response  ",response)
+  console.log("the joined group response  ",response)
 
   const groups = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   // console.log("the grouuuuuuuuuuups",groups.map(normalizeGroup))
@@ -240,9 +240,9 @@ export async function createJoinRequest(groupId: string, ownerId: string) {
 
 export async function fetchGroupDetails(groupId: string | number) {
   const response = await requestWithFallback<any>([
-    `/api/v1/groups/joined/${groupId}`,
-    `/groups/joined/${groupId}`,
-    `/api/v1/groups/${groupId}`,
+    `/groups/joined/info/${groupId}`,
+    // `/groups/joined/${groupId}`,
+    // `/api/v1/groups/${groupId}`,
   ]);
 
   const raw = response?.data || response;
@@ -288,9 +288,9 @@ export async function createGroupEvent(
 export async function voteOnGroupEvent(groupId: string | number, eventId: string, vote: string) {
   return requestWithFallback<any>(
     [
-      `/api/v1/groups/joined/${groupId}/events/vote`,
-      `/api/v1/groups/events/vote`,
-      `/groups/joined/${groupId}/events/vote`,
+      `/groups/events/vote/${groupId}`,
+      // `/api/v1/groups/events/vote`,
+      // `/groups/joined/${groupId}/events/vote`,
     ],
     {
       method: "POST",

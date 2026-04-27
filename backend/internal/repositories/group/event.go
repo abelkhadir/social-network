@@ -3,7 +3,6 @@ package groupsrepos
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -78,10 +77,10 @@ func (r *GroupRepository) GetGroupEvents(userID, groupID string) ([]*models.Even
 	ORDER BY e.created_at DESC;
 	`
 
-	fmt.Println("---------------------------------------")
-	fmt.Println("---------------------------------------")
-	fmt.Println(query)
-	fmt.Println("---------------------------------------")
+	// fmt.Println("---------------------------------------")
+	// fmt.Println("---------------------------------------")
+	// fmt.Println(query)
+	// fmt.Println("---------------------------------------")
 	rows, err := r.db.Query(query, userID, groupID)
 	if err != nil {
 		return nil, models.GroupError{
@@ -97,21 +96,21 @@ func (r *GroupRepository) GetGroupEvents(userID, groupID string) ([]*models.Even
 	for rows.Next() {
 		var event models.Event
 		var vote sql.NullString
-err := rows.Scan(
-    &event.ID,
-    &event.Title,
-    &event.Description,
-    &event.EventDate,
-    &event.CreatedAt,
-    &event.TotalGoing,
-    &event.TotalNotGoing,
-    &vote,
-    &event.Author.ID,
-    &event.Author.Firstname,
-    &event.Author.Lastname,
-    &event.Author.Nickname,
-    &event.Author.Avatar,
-)
+		err := rows.Scan(
+			&event.ID,
+			&event.Title,
+			&event.Description,
+			&event.EventDate,
+			&event.CreatedAt,
+			&event.TotalGoing,
+			&event.TotalNotGoing,
+			&vote,
+			&event.Author.ID,
+			&event.Author.Firstname,
+			&event.Author.Lastname,
+			&event.Author.Nickname,
+			&event.Author.Avatar,
+		)
 		if err != nil {
 			return nil, models.GroupError{
 				Message: "Internal Server Error",
@@ -119,8 +118,8 @@ err := rows.Scan(
 			}
 		}
 		if vote.Valid {
-    event.UserVote = vote.String
-}
+			event.UserVote = vote.String
+		}
 
 		events = append(events, &event)
 	}
@@ -139,6 +138,16 @@ err := rows.Scan(
 }
 
 func (r *GroupRepository) VoteOnEvent(ctx context.Context, vote models.EventVote) models.GroupError {
+	// 	fmt.Println("---------------------------------------")
+	// 	fmt.Println("---------------------------------------")
+	// 	fmt.Println("---------------------------------------")
+	// fmt.Println("chiiiii daad dkhaaaal ivotee")
+	// fmt.Println("---------------------------------------")
+	// 	fmt.Println("---------------------------------------")
+	// 	fmt.Println("---------------------------------------")
+	// 	fmt.Println("---------------------------------------")
+	// 	fmt.Println("---------------------------------------")
+	// 	fmt.Println("---------------------------------------")
 	var (
 		query string
 		args  []any

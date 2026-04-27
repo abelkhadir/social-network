@@ -366,14 +366,14 @@ export default function SingleGroupPage() {
                       disabled={votingId === event.id}
                       style={{ flex: 1, padding: "10px", borderRadius: "8px", fontWeight: "bold", cursor: votingId === event.id ? "not-allowed" : "pointer", border: "none", background: event.vote === "going" ? "#2ecc71" : "#343a40", color: "white", opacity: votingId === event.id ? 0.7 : 1 }}
                     >
-                      Going ({event.totalGoing})
+                      I will participate ({event.totalGoing})
                     </button>
                     <button
                       onClick={() => handleVote(event, "not going")}
                       disabled={votingId === event.id}
                       style={{ flex: 1, padding: "10px", borderRadius: "8px", fontWeight: "bold", cursor: votingId === event.id ? "not-allowed" : "pointer", border: "none", background: event.vote === "not going" ? "#e63946" : "#343a40", color: "white", opacity: votingId === event.id ? 0.7 : 1 }}
                     >
-                      Not going ({event.totalNotGoing})
+                      I couldn't participate ({event.totalNotGoing})
                     </button>
                   </div>
                 </div>

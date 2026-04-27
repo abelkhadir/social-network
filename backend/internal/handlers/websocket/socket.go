@@ -2,10 +2,12 @@ package websockethandler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"social/internal/models"
 	"sync"
+
+	"social/internal/models"
 
 	"github.com/gorilla/websocket"
 )
@@ -42,12 +44,14 @@ func HandleWebSocket(res http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			break
 		}
-
+		
 		var data models.WsInput
 		if err := json.Unmarshal(incoming, &data); err != nil {
 			log.Println("Error unmarshalling message:", err)
 			continue
 		}
+		
+		fmt.Println("we read the messages",data)
 
 		switch data.Type {
 		case "login":

@@ -34,7 +34,7 @@ type Application struct {
 	GroupPostRepo    *groupsrepos.GroupRepository
 	GroupMembers  	*groupsrepos.GroupRepository
 	GroupEvents  	*groupsrepos.GroupRepository
-
+	GroupMessage *groupsrepos.MessageRepository
 }
 
 // NewApp initializes the database and repositories

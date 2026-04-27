@@ -161,6 +161,27 @@ func SetupRoutes(a *app.Application) {
 			),
 		),
 	)
+	//vote the event 
+		http.Handle("/groups/events/vote/",
+		rateLimiter.Wrap("api",
+			middleware.AuthMiddleware(a.DB,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					groupshandler.VoteEventHandler(a, w, r)
+				}),
+			),
+		),
+	)
+	//get the meesssages of group
+	http.Handle("/chat/messages/group/",
+		rateLimiter.Wrap("api",
+			middleware.AuthMiddleware(a.DB,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					groupshandler.GetGroupMessages(a, w, r)
+				}),
+			),
+		),
+	)
+	
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(websockethandler.HandleWebSocket))
 }
