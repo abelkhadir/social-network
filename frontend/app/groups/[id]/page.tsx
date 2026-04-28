@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react"; // Added useRef for chat
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useToast } from "@/context/ToastContext";
-import { useAuth } from "@/context/AuthContext";     // Added for chat
-import { useSocket } from "@/context/SocketContext"; // Added for chat
-import { fetchApi, resolveApiUrl } from "@/lib/api";  // Added fetchApi for history
+import { useAuth } from "@/context/AuthContext";
+import { resolveApiUrl } from "@/lib/api";
+import GroupChat from "@/context/Chat";
 import { timeAgo } from "@/lib/time";
 import {
   createGroupEvent,
@@ -32,7 +32,7 @@ function formatEventDate(value: string) {
     weekday: "short",
     month: "short",
     day: "numeric",
-    year:"numeric",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -45,8 +45,7 @@ function displayName(user: GroupMember | GroupDetails["author"]) {
 export default function SingleGroupPage() {
   const params = useParams();
   const { showToast } = useToast();
-  const { user: currentUser } = useAuth(); // Auth context
-  const { socket, latestMessage, playSendSound, playReceiveSound } = useSocket(); // Socket context
+  const { user: currentUser } = useAuth();
 
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -71,12 +70,6 @@ export default function SingleGroupPage() {
     description: "",
     eventDate: "",
   });
-
-  // --- chaaaaaaaaaaaaaaaaat setion---
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const myId = currentUser?.id || currentUser?.ID || "me";
 
   const loadGroupPage = async () => {
     if (!id) return;
@@ -104,48 +97,7 @@ export default function SingleGroupPage() {
     loadGroupPage();
   }, [id]);
 
-  // --- Chat loggginc ---
-  useEffect(() => {
-    if (activeTab === "chat" && id) {
-      fetchApi(`/chat/messages/group/${id}`).then((data) => {
-        setChatMessages(data.messages || []);
-      }).catch(() => console.error("Failed to load chat history"));
-    }
-  }, [activeTab, id]);
-
-  useEffect(() => {
-    if (latestMessage) {
-      const msgGroupId = latestMessage.groupId || latestMessage.GroupID || latestMessage.group_id;
-      if (String(msgGroupId) === String(id)) {
-        setChatMessages((prev) => [...prev, latestMessage]);
-        if (latestMessage.senderID !== myId) playReceiveSound();
-      }
-    }
-  }, [latestMessage, id, myId]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, activeTab]);
-
-  const handleSendChatMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || !socket) return;
-    const payload = {
-      type: "group_message",
-      data: {
-        groupId: id,
-        senderID: myId,
-        senderNickname: currentUser?.nickname || "Me",
-        text: chatInput,
-        createDate: new Date().toISOString()
-      }
-    };
-    socket.send(JSON.stringify(payload));
-    setChatMessages((prev) => [...prev, payload.data]);
-    setChatInput("");
-    playSendSound();
-  };
-  //handlers 
+  //handlers
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
@@ -221,15 +173,15 @@ export default function SingleGroupPage() {
       </div>
     );
   }
-  console.log( posts.forEach(element => {
-    console.log("the imaaage",element.mediaLink)
-  }))
-    const mockEvents = [
+  // console.log( posts.forEach(element => {
+  //   // console.log("the imaaage",element.mediaLink)
+  // }))
+  const mockEvents = [
     { id: "e1", title: "Golang Q&A Session", desc: "Let's discuss channels and goroutines.", date: "Tomorrow at 20:00", going: 12, notGoing: 3, myChoice: null },
     { id: "e2", name: "Hackathon Preparation", desc: "Team building for the upcoming hackathon.", date: "Next Saturday", going: 25, notGoing: 1, myChoice: "going" }
   ];
 
-  const defualteimage="https://www.techexplorist.com/wp-content/uploads/2019/12/happiness.jpg"
+  const defualteimage = "https://www.techexplorist.com/wp-content/uploads/2019/12/happiness.jpg"
   return (
     <div style={{ maxWidth: "840px", margin: "0 auto", paddingBottom: "40px" }}>
       {/* Group Info Header */}
@@ -279,7 +231,7 @@ export default function SingleGroupPage() {
                 </div>
                 <h3 style={{ margin: "0 0 10px 0", color: "var(--color-primary)" }}>{post.title || "Untitled post"}</h3>
                 <p style={{ color: "#dee2e6", margin: "0 0 12px 0", whiteSpace: "pre-wrap", lineHeight: "1.6" }}>{post.description}</p>
-                {(post.mediaLink 
+                {(post.mediaLink
                   || defualteimage) && <img src={resolveApiUrl(post.mediaLink || defualteimage)} style={{ width: "100%", maxHeight: "420px", objectFit: "cover", borderRadius: "12px", marginTop: "8px" }} />}
               </div>
             ))
@@ -289,30 +241,11 @@ export default function SingleGroupPage() {
         </div>
       )}
 
-      {/* CHAT TAB (NEW) */}
-      {activeTab === "chat" && (
-        <div style={{ background: "var(--bg-card)", borderRadius: "12px", border: "1px solid #2f3336", height: "500px", display: "flex", flexDirection: "column" }}>
-          <div style={{ flex: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
-            {chatMessages.length === 0 && <p style={{ textAlign: "center", color: "#555" }}>No messages yet. Say hello!</p>}
-            {chatMessages.map((msg, i) => {
-              const isMe = (msg.senderID || msg.sender_id) === myId;
-              return (
-                <div key={i} style={{ alignSelf: isMe ? "flex-end" : "flex-start", maxWidth: "80%" }}>
-                  {!isMe && <small style={{ color: "var(--color-primary)", display: "block", marginBottom: "2px" }}>{msg.senderNickname || "User"}</small>}
-                  <div style={{ background: isMe ? "var(--color-primary-dark)" : "#333", color: "white", padding: "10px 14px", borderRadius: "14px", fontSize: "0.95rem" }}>{msg.text || msg.content}</div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </div>
-          <form onSubmit={handleSendChatMessage} style={{ padding: "15px", borderTop: "1px solid #2f3336" }}>
-            <input value={chatInput} onChange={e => setChatInput(e.target.value)} placeholder="Type a message to the group..." style={{ width: "100%", padding: "12px 15px", borderRadius: "25px", background: "var(--color-input-bg)", color: "white", border: "none", outline: "none" }} />
-          </form>
-        </div>
-      )}
+      {/* CHAT TAB */}
+      {activeTab === "chat" && <GroupChat groupId={id} />}
 
       {/* EVENTS TAB */}
-  {activeTab === "events" && (
+      {activeTab === "events" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <form onSubmit={handleCreateEvent} style={{ background: "var(--bg-card)", padding: "18px", borderRadius: "12px", border: "1px solid #2f3336" }}>
             <h3 style={{ marginTop: 0, color: "var(--text-main)" }}>Create an event</h3>

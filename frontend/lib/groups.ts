@@ -201,7 +201,6 @@ export async function fetchJoinedGroups() {
 
 export async function fetchSuggestedGroups() {
   const response = await requestWithFallback<any>([
-    "/api/v1/groups/suggested",
     "/groups/suggested",
   ]);
 
@@ -224,16 +223,12 @@ export async function createGroup(payload: { title: string; description: string 
   return normalizeGroup(response?.data || response);
 }
 
-export async function createJoinRequest(groupId: string, ownerId: string) {
+export async function createJoinRequest(groupId: string, _ownerId: string) {
   return requestWithFallback<any>(
-    ["/api/v1/groups/request", "/api/v1/groups/requests", "/groups/request"],
+    ["/groups/request"],
     {
       method: "POST",
-      body: JSON.stringify({
-        group_id: groupId,
-        requested_id: [ownerId],
-        type: "demande",
-      }),
+      body: JSON.stringify({ group_id: groupId }),
     }
   );
 }
