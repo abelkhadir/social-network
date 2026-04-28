@@ -3,6 +3,8 @@ package routers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
+
 	"social/internal/app"
 	authandler "social/internal/handlers/auth"
 	notificationshandler "social/internal/handlers/notifications"
@@ -10,7 +12,6 @@ import (
 	"social/internal/handlers/profile"
 	websockethandler "social/internal/handlers/websocket"
 	"social/pkg/middleware"
-	"time"
 )
 
 // SetupRoutes registers all routes, using a single *app.Application instance
@@ -95,7 +96,22 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.SendChatMessage(a, res, req)
 	})))
-
+	// http.Handle("/user/folowers", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	// 	// websockethandler.GetUsers(a, res, req)
+	// 	profile.GetUserFollowers(a,res,req)
+	// })))
+	// vote the event
+	http.Handle("/user/followers/",
+		rateLimiter.Wrap("api",
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				middleware.AuthMiddleware(a.DB,
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						profile.GetUserFollowers(a, w, r)
+					}),
+				).ServeHTTP(w, r)
+			}),
+		),
+	)
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(websockethandler.HandleWebSocket))
 }

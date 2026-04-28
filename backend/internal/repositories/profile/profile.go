@@ -1,4 +1,4 @@
-package profile
+package profilerepo
 
 import (
 	"database/sql"

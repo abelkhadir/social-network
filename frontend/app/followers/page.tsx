@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { log } from "node:console";
+import { useEffect } from "react";
+import { fetchApi, resolveApiUrl } from "@/lib/api";
 
 export default function FollowersPage() {
   const [activeTab, setActiveTab] = useState<"discover" | "followers" | "following">("discover");
@@ -13,11 +16,24 @@ export default function FollowersPage() {
     { id: "u3", name: "Younsse Amazzal", username: "@younsse", bio: "Fullstack Engineer", isPrivate: false, relationship: "mutual" },
     { id: "u4", name: "Karim Code", username: "@karim", bio: "I love bugs.", isPrivate: false, relationship: "follower" }
   ]);
+const folowers =null
+async function follower() {
+  try {
+    const res = await fetchApi("http://localhost:8080/user/followers/");
+    const folowers = await res.json();
+    console.log("followers:", folowers);
+  } catch (err) {
+    console.log("error:", err);
+  }
+}
 
+useEffect(() => {
+  follower();
+}, []);
   const defaultAvatar = "https://img6.arthub.ai/65266a51-47b8.webp";
 
   const handleFollowAction = (userId: string, isPrivate: boolean, currentRel: string) => {
-    setMockUsers(mockUsers.map(user => {
+    setMockUsers(folowers.map(user => {
       if (user.id === userId) {
         if (currentRel === "none") {
           return { ...user, relationship: isPrivate ? "requested" : "following" };

@@ -103,6 +103,17 @@ func EnsureSchema(db *sql.DB) error {
 			FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
 			FOREIGN KEY (actor_id) REFERENCES user(id) ON DELETE SET NULL
 		);`,
+		`CREATE TABLE IF NOT EXISTS followers (
+	follower_id TEXT NOT NULL,
+	following_id TEXT NOT NULL,
+	status TEXT NOT NULL DEFAULT 'pending',
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+	FOREIGN KEY (follower_id) REFERENCES user(id) ON DELETE CASCADE,
+	FOREIGN KEY (following_id) REFERENCES user(id) ON DELETE CASCADE,
+
+	UNIQUE(follower_id, following_id)
+);`,
 		`CREATE INDEX IF NOT EXISTS idx_notification_user ON notification(user_id, is_read, created_at);`,
 	}
 
