@@ -157,27 +157,38 @@ func EnsureSchema(db *sql.DB) error {
 			FOREIGN KEY (event_id) REFERENCES group_events(id) ON DELETE CASCADE,
 			FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE
 		);`,
-		`CREATE TABLE group_posts (
-    id TEXT PRIMARY KEY,
-    group_id TEXT,
-    member_id TEXT,
-    title TEXT NOT NULL, 
-    content TEXT NOT NULL,
-    media TEXT, 
-    comments INTEGER DEFAULT 0,
-    created_at DATETIME NOT NULL,
-    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE ON UPDATE CASCADE
-);`,
-`CREATE TABLE group_messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sender_id INTEGER NOT NULL,
-    group_id INTEGER NOT NULL,
-    content TEXT NOT NULL,
-    sent_at DATETIME NOT NULL,
-    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
-)`,
+		`CREATE TABLE IF NOT EXISTS group_posts  (
+			id TEXT PRIMARY KEY,
+			group_id TEXT,
+			member_id TEXT,
+			title TEXT NOT NULL, 
+			content TEXT NOT NULL,
+			media TEXT, 
+			comments INTEGER DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE,
+			FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE ON UPDATE CASCADE
+		);`,
+		`CREATE TABLE IF NOT EXISTS group_requests (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			group_id TEXT NOT NULL,
+			sender_id TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(group_id, sender_id),
+			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+			FOREIGN KEY (sender_id) REFERENCES user(id) ON DELETE CASCADE
+		)`,
+
+		`CREATE TABLE IF NOT EXISTS group_messages (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			sender_id TEXT NOT NULL,
+			group_id TEXT NOT NULL,
+			content TEXT NOT NULL,
+			sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (sender_id) REFERENCES user(id) ON DELETE CASCADE ON UPDATE CASCADE,
+			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
+		)`,
 	}
 
 	// Execute tables safely
@@ -245,6 +256,7 @@ func EnsureSchema(db *sql.DB) error {
 
 	return nil
 }
+
 func ensureUserProfileColumns(db *sql.DB) error {
 	columns := map[string]string{
 		"about_me":   "TEXT DEFAULT ''",

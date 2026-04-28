@@ -119,9 +119,17 @@ func SetupRoutes(a *app.Application) {
 			),
 		),
 	)
-	// get joindedd groups
+	// get joined groups
 	http.Handle("/groups/joined", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.GetJoinedGroupsHandler(a, w, r)
+	}))))
+	// discover: groups the user hasn't joined
+	http.Handle("/groups/suggested", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetSuggestedGroupsHandler(a, w, r)
+	}))))
+	// send a join request
+	http.Handle("/groups/request", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.JoinGroupRequestHandler(a, w, r)
 	}))))
 	http.Handle("/groups/joined/post/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// path := strings.TrimPrefix(r.URL.Path, "/groups/joined/post/")
@@ -176,12 +184,15 @@ func SetupRoutes(a *app.Application) {
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					groupshandler.GetGroupMessages(a, w, r)
+					groupshandler.
+					GetGroupMessages(a, w, r)
 				}),
 			),
 		),
 	)
 	
 	// WebSocket
-	http.Handle("/ws", http.HandlerFunc(websockethandler.HandleWebSocket))
+	http.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		websockethandler.HandleWebSocket(a, w, r)
+	}))
 }

@@ -105,6 +105,40 @@ func  GetJoinedGroupsHandler(app *app.Application ,w http.ResponseWriter, r *htt
 	})
 }
 
+func GetSuggestedGroupsHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{"error": "Method not allowed"})
+		return
+	}
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	groups, err := app.GroupPostRepo.GetSuggestedGroups(userID)
+	if err != nil {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{"data": groups})
+}
+
+func JoinGroupRequestHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{"error": "Method not allowed"})
+		return
+	}
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	var body struct {
+		GroupID string `json:"group_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.GroupID == "" {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{"error": "group_id required"})
+		return
+	}
+	if err := app.GroupPostRepo.SaveJoinRequest(body.GroupID, userID); err != nil {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{"message": "Join request sent"})
+}
+
 // func (h *GroupHandler) GetSuggestedGroupsHandler(w http.ResponseWriter, r *http.Request) {
 // 	if r.Method != http.MethodGet {
 // 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{

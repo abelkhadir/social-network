@@ -77,17 +77,12 @@ func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupE
 // }
 
 func (r *GroupRepository) GetJoinedGroups(userID string) ([]*models.Group, error) {
-	// query := `
-	// 	SELECT g.id, g.user_id, g.title, g.description, g.created_at FROM groups g
-	// 	INNER JOIN group_members mb ON g.id = mb.group_id
-	// 	WHERE mb.member_id = ?
-	// 	ORDER BY g.id desc
-	// `
 	query := `
-		SELECT id, user_id, title, description, created_at
-		FROM groups
-		WHERE user_id = ?
-		ORDER BY id DESC
+		SELECT g.id, g.user_id, g.title, g.description, g.created_at
+		FROM groups g
+		INNER JOIN group_members gm ON g.id = gm.group_id
+		WHERE gm.member_id = ?
+		ORDER BY g.created_at DESC
 	`
 
 	rows, err := r.db.Query(query, userID)
@@ -99,62 +94,49 @@ func (r *GroupRepository) GetJoinedGroups(userID string) ([]*models.Group, error
 	var groups []*models.Group
 	for rows.Next() {
 		var group models.Group
-		err := rows.Scan(&group.ID, &group.UserID, &group.Title, &group.Description, &group.CreatedAt)
-		if err != nil {
+		if err := rows.Scan(&group.ID, &group.UserID, &group.Title, &group.Description, &group.CreatedAt); err != nil {
 			return nil, err
 		}
-
 		groups = append(groups, &group)
 	}
-	fmt.Println("______________ 🇺🇸 🇺🇸", groups)
-	// for i := 0; i < len(groups); i++ {
-	// 	fmt.Println("the groups that we have ",groups[i])
-	// }
-	fmt.Println("mchaaaaa ijiib liyaaa grouuups l9aa mochkiil 🇺🇸 🇺🇸", groups)
-	fmt.Println("____________________ 🇺🇸 🇺🇸")
-
-
-	return groups, err
+	return groups, rows.Err()
 }
 
-func (r *GroupRepository) GetSuggestedGroups(userID int) ([]*models.Group, error) {
+func (r *GroupRepository) GetSuggestedGroups(userID string) ([]*models.Group, error) {
 	query := `
-		SELECT 
-    g.*,
-    CASE 
-        WHEN gr.id IS NOT NULL THEN gr.id
-        ELSE 0
-    END AS request_id
-	FROM groups g
-	LEFT JOIN group_requests gr
-		ON gr.group_id = g.id 
-		AND gr.sender_id = ? 
-		AND gr.type = 'demande'
-	WHERE g.id NOT IN (
-		SELECT gm.group_id 
-		FROM group_members gm
-		WHERE gm.member_id = ?
-	)
-	ORDER BY g.id DESC;
+		SELECT g.id, g.user_id, g.title, g.description, g.created_at,
+			COALESCE(gr.id, 0) AS request_id
+		FROM groups g
+		LEFT JOIN group_requests gr ON gr.group_id = g.id AND gr.sender_id = ?
+		WHERE g.id NOT IN (
+			SELECT group_id FROM group_members WHERE member_id = ?
+		)
+		ORDER BY g.created_at DESC
 	`
 
 	rows, err := r.db.Query(query, userID, userID)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var groups []*models.Group
 	for rows.Next() {
 		var group models.Group
-		err := rows.Scan(&group.ID, &group.UserID, &group.Title, &group.Description, &group.CreatedAt, &group.RequestID)
-		if err != nil {
+		if err := rows.Scan(&group.ID, &group.UserID, &group.Title, &group.Description, &group.CreatedAt, &group.RequestID); err != nil {
 			return nil, err
 		}
-
 		groups = append(groups, &group)
 	}
+	return groups, rows.Err()
+}
 
-	return groups, nil
+func (r *GroupRepository) SaveJoinRequest(groupID, senderID string) error {
+	_, err := r.db.Exec(
+		`INSERT OR IGNORE INTO group_requests(group_id, sender_id) VALUES (?, ?)`,
+		groupID, senderID,
+	)
+	return err
 }
 
 func (r *GroupRepository) GetGroup(groupID, userID int) (models.GroupIfo, *models.GroupError) {

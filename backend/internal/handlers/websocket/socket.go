@@ -2,11 +2,11 @@ package websockethandler
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"sync"
 
+	"social/internal/app"
 	"social/internal/models"
 
 	"github.com/gorilla/websocket"
@@ -14,14 +14,12 @@ import (
 
 var (
 	upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
+		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 	UserConnections = &sync.Map{}
 )
 
-func HandleWebSocket(res http.ResponseWriter, req *http.Request) {
+func HandleWebSocket(a *app.Application, res http.ResponseWriter, req *http.Request) {
 	conn, err := upgrader.Upgrade(res, req, nil)
 	if err != nil {
 		log.Println("Error upgrading connection:", err)
@@ -44,14 +42,12 @@ func HandleWebSocket(res http.ResponseWriter, req *http.Request) {
 		if err != nil {
 			break
 		}
-		
+
 		var data models.WsInput
 		if err := json.Unmarshal(incoming, &data); err != nil {
 			log.Println("Error unmarshalling message:", err)
 			continue
 		}
-		
-		fmt.Println("we read the messages",data)
 
 		switch data.Type {
 		case "login":
@@ -68,7 +64,51 @@ func HandleWebSocket(res http.ResponseWriter, req *http.Request) {
 				UserConnections.Store(conn, "")
 				SendStatus(userID, false)
 			}
+		case "group_message":
+			senderVal, _ := UserConnections.Load(conn)
+			senderID, _ := senderVal.(string)
+			if senderID == "" {
+				continue
+			}
 
+			msgBytes, _ := json.Marshal(data.Data)
+			var msg models.GroupMessages
+			if err = json.Unmarshal(msgBytes, &msg); err != nil {
+				log.Println("Error unmarshaling group message:", err)
+				continue
+			}
+
+			if _, err := a.GroupPostRepo.SaveMessagesGrpRepo(msg.GroupID, senderID, msg.Message); err != nil {
+				log.Println("Error saving group message:", err)
+				continue
+			}
+
+			grpInfo, err := a.GroupMessage.GetInfoGroupeRepo(msg.GroupID, 0)
+			if err != nil {
+				log.Println("Error getting group members:", err)
+				continue
+			}
+
+			memberSet := make(map[string]bool, len(grpInfo.Members))
+			for _, id := range grpInfo.Members {
+				memberSet[id] = true
+			}
+
+			payload, _ := json.Marshal(map[string]any{
+				"type": "group_message",
+				"message": map[string]any{
+					"group_id":  msg.GroupID,
+					"sender_id": senderID,
+					"message":   msg.Message,
+				},
+			})
+
+			UserConnections.Range(func(key, value any) bool {
+				if memberSet[value.(string)] {
+					key.(*websocket.Conn).WriteMessage(websocket.TextMessage, payload)
+				}
+				return true
+			})
 		case "typing":
 			from, _ := data.Data["from"].(string)
 			to, _ := data.Data["to"].(string)

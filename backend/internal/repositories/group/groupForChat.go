@@ -61,7 +61,7 @@ func (r *GroupRepository) GetGroupMessagesRepo(GrpID string) ([]models.GroupMess
 				u.firstname || ' ' || u.lastname AS fullName
 				
 			FROM 
-				group_messages g
+			group_messages g
 			INNER JOIN user u ON u.id = g.sender_id
 			WHERE g.group_id = ?
 			ORDER BY g.sent_at ASC;
@@ -69,10 +69,6 @@ func (r *GroupRepository) GetGroupMessagesRepo(GrpID string) ([]models.GroupMess
 			`
 	fmt.Println("the query is correct", query)
 	rows, err := r.db.Query(query, GrpID)
-	fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
-	fmt.Println("((((((((((((((((((((((((((rowss))))))))))))))))))))))))))", rows)
-	fmt.Println("((((((((((((((((((((((((((the error))))))))))))))))))))))))))", err)
-	fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -86,4 +82,16 @@ func (r *GroupRepository) GetGroupMessagesRepo(GrpID string) ([]models.GroupMess
 		messges = append(messges, messge)
 	}
 	return messges, nil
+}
+
+func (mr *GroupRepository) SaveMessagesGrpRepo(groupID, senderID, message string) (string, error) {
+	query := `INSERT INTO group_messages(sender_id, group_id, content) VALUES (?, ?, ?) RETURNING id`
+	var idMsg string
+
+	err := mr.db.QueryRow(query, senderID, groupID, message).Scan(&idMsg)
+	if err != nil {
+		return "", err
+	}
+
+	return idMsg, nil
 }

@@ -16,9 +16,6 @@ import (
 
 func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.GroupPost, img *models.Image) (models.Post, models.GroupError) {
 	tx, err := r.db.BeginTx(ctx, nil)
-	fmt.Println("((((((((((((((((((((((((())))))))))))))))))))))))) ")
-	fmt.Println("blaaaaaaaaaaaaaaaaaaaaaaaaaaaaati bi3adaa rah kayna photto " ,img)
-	fmt.Println("(((((((((((((((((((((((((()))))))))))))))))))))))))) ")
 	if err != nil {
 		return models.Post{}, models.GroupError{Code: 500, Message: "Database error"}
 	}

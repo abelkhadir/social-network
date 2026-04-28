@@ -31,9 +31,6 @@ import (
 // }
 
 func GetGroupMessages(app *app.Application, w http.ResponseWriter, r *http.Request) {
-	fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
-	fmt.Println("((((((((((((((((((((((((((he enter to get messages ))))))))))))))))))))))))))")
-	fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
 
 	if r.Method != http.MethodGet {
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
@@ -46,20 +43,12 @@ func GetGroupMessages(app *app.Application, w http.ResponseWriter, r *http.Reque
 	path := r.URL.Path
 	parts := strings.Split(path, "/")
 	groupid := parts[4]
-	groupid=strings.TrimSpace(groupid)
+	groupid = strings.TrimSpace(groupid)
 	// groupIDStr, errId := utils.GetGroupId(r, "members")
 
-	// fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
-	// fmt.Println("((((((((((((((((((((((((((the grouup id ))))))))))))))))))))))))))", groupid)
-	// fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
-
 	// messages, err := h.service.GetGroupMessagesService(groupid)
-	messages,err:= app.GroupPostRepo.GetGroupMessagesRepo(groupid)
+	messages, err := app.GroupPostRepo.GetGroupMessagesRepo(groupid)
 
-	fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
-	fmt.Println("((((((((((((((((((((((((((messages))))))))))))))))))))))))))", messages)
-	fmt.Println("((((((((((((((((((((((((((the error))))))))))))))))))))))))))", err)
-	fmt.Println("(((((((((((((((((((((((((())))))))))))))))))))))))))")
 	if err != nil {
 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
 			"message": "Error, please try again.",
@@ -71,3 +60,59 @@ func GetGroupMessages(app *app.Application, w http.ResponseWriter, r *http.Reque
 		"messages": messages,
 	})
 }
+
+func SendChatMessage(application *app.Application, res http.ResponseWriter, req *http.Request) {
+	fmt.Println("-------------------------------------")
+	fmt.Println("hee   want to sent messages in grouuup")
+	fmt.Println("-------------------------------------")
+	if !utils.ValidateRequest(req, res, "/chat/group/new", http.MethodPost) {
+		return
+	}
+
+	// if !application.SessionRepo.ValidSession(req) {
+	// 	utils.HandleError(res, http.StatusUnauthorized, "No active session")
+	// 	return
+	// }
+
+	// currentUser, _ := application.SessionRepo.GetUserFromSession(req)
+
+	// var payload struct {
+	// 	ReceiverID string `json:"receiverID"`
+	// 	Text       string `json:"text"`
+	// }
+	// if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+	// 	utils.HandleError(res, http.StatusBadRequest, "Invalid JSON format")
+	// 	return
+	// }
+
+	// payload.Text = strings.TrimSpace(payload.Text)
+	// if payload.ReceiverID == "" || payload.Text == "" {
+	// 	utils.HandleError(res, http.StatusBadRequest, "Missing receiver or message text")
+	// 	return
+	// }
+
+	// message := models.Message{
+	// 	SenderID:   currentUser.ID,
+	// 	ReceiverID: payload.ReceiverID,
+	// 	Text:       payload.Text,
+	// }
+
+	// if err := application.MessageRepo.CreateMessage(&message); err != nil {
+	// 	utils.HandleError(res, http.StatusInternalServerError, "Failed to save message")
+	// 	return
+	// }
+
+	// saved, err := application.MessageRepo.GetMessageByID(message.ID)
+	// if err != nil {
+	// 	utils.HandleError(res, http.StatusInternalServerError, "Failed to load saved message")
+	// 	return
+	// }
+
+	// // SendMessage(*saved)
+
+	// utils.SendJSONResponse(res, http.StatusOK, map[string]any{
+	// 	"message": "message sent successfully",
+	// 	"data":    saved,
+	// })
+}
+

@@ -62,9 +62,9 @@ func NewApp() *Application {
 		log.Fatal("❌ Database not reachable:", err)
 	}
 	// Ensure tables / migrations
-	// if err := dbschema.EnsureSchema(db); err != nil {
-	// 	log.Fatal("❌ Failed to ensure database schema:", err)
-	// }
+	if err := dbschema.EnsureSchema(db); err != nil {
+		log.Fatal("❌ Failed to ensure database schema:", err)
+	}
 	if err := dbschema.SeedData(db); err != nil {
 		log.Fatal("❌ Failed to seed database:", err)
 	}
@@ -83,6 +83,7 @@ func NewApp() *Application {
 	sessionRepo := sessions.NewSessionRepository(db, userRepo)
 	notificationRepo := notifications.NewNotificationRepository(db)
 	groupsRepo := groupsrepos.NewGroupRepo(db)
+	groupMsgRepo := groupsrepos.NewMessageRepository(db)
 	app := &Application{
 		DB:               db,
 		UserRepo:         userRepo,
@@ -95,6 +96,7 @@ func NewApp() *Application {
 		SessionRepo:      sessionRepo,
 		NotificationRepo: notificationRepo,
 		GroupPostRepo:    groupsRepo,
+		GroupMessage:     groupMsgRepo,
 	}
 
 	log.Println("✅ Application initialized successfully")

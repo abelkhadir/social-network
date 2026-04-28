@@ -61,11 +61,11 @@ type GroupRequest struct {
 	GroupInfos  *Group `json:"group"`
 }
 type GroupMessages struct {
-	ID       int    `json:"id,omitempty"`
-	GroupID  int    `json:"group_id,omitempty"`
-	SenderID int    `json:"sender_id,omitempty"`
+	ID       string    `json:"id,omitempty"`
+	GroupID  string    `json:"group_id,omitempty"`
+	SenderID string    `json:"sender_id,omitempty"`
 	Message  string `json:"message,omitempty"`
-	Avatar   string `json:"avatar,omitempty"`
-	FullName string `json:"fullName,omitempty"`
+	Avatar   string `json:"avatarURL,omitempty"`
+	FullName string `json:"fullname,omitempty"`
 	SentAt   string `json:"sent_at,omitempty"`
 }
