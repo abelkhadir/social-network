@@ -8,19 +8,20 @@ import (
 
 func GetGroupId(r *http.Request, endpoint string) (string, error) {
 	path := r.URL.Path
-	fmt.Println("the url ",path)
 	parts := strings.Split(path, "/")
-	// fmt.Println("the part in 🃏",parts[0])
-	// fmt.Println("the part in 🃏🃏",parts[1])
-	// fmt.Println("the part in 🃏🃏",parts[2])
-	// fmt.Println("the part in 🃏🃏",parts[3])
-	// fmt.Println("the part in 🃏🃏",parts[4])
 
-	if len(parts)<4|| parts[1] != "groups" ||parts[2] != "joined"  {
-	fmt.Println("check wisdfndskfn 🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏 ")
+	if len(parts) < 4 || parts[1] != "groups" || parts[2] != "joined" {
 		return "", fmt.Errorf("Invalid URL")
 	}
 	id := parts[4]
+	id = strings.TrimSpace(id)
+	return id, nil
+}
+
+func GetGroupIdA(r *http.Request, endpoint string) (string, error) {
+	path := r.URL.Path
+	parts := strings.Split(path, "/")
+	id := parts[3]
 	id = strings.TrimSpace(id)
 	return id, nil
 }

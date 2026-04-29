@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
+
 	"social/internal/models"
 	"social/pkg/utils"
-	"strings"
 
 	"github.com/gofrs/uuid"
 )
@@ -189,12 +190,11 @@ func (ur *UserRepository) SelectAllUsersOfPost(postID string) ([]models.User, er
 		var nickname string
 
 		err = row.Scan(&ID, &AvatarUrl, &nickname)
-
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		var tab = models.User{
+		tab := models.User{
 			ID:        ID,
 			AvatarURL: AvatarUrl,
 			Nickname:  nickname,
@@ -213,7 +213,6 @@ func (ur *UserRepository) IsExistedByIdentifiant(identifiant string) (*models.Us
 	row := ur.db.QueryRow("SELECT id, nickname, firstname, lastname, age, gender, email, avatarURL, COALESCE(about_me, ''), COALESCE(is_private, 0), password FROM user WHERE nickname = ? OR email = ?", identifiant, identifiant)
 	// fmt.Print("the row where user ",row)
 	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL, &user.AboutMe, &user.IsPrivate, &user.Password)
-	fmt.Println("the user nickname", user)
 	if err != nil {
 		log.Println("❌ ", err)
 		if err == sql.ErrNoRows {

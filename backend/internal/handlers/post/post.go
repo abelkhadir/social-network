@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+
 	"social/internal/app"
 	"social/internal/models"
 	"social/pkg/utils"
-	"strings"
 
 	// "errors"
-
-	"net/http"
 
 	uuid "github.com/gofrs/uuid"
 )
@@ -81,7 +81,7 @@ func CreatePost(application *app.Application, res http.ResponseWriter, req *http
 				return
 			}
 
-			if err := os.MkdirAll("./uploads/images", 0755); err != nil {
+			if err := os.MkdirAll("./uploads/images", 0o755); err != nil {
 				utils.HandleError(res, http.StatusInternalServerError, "Failed to prepare uploads directory")
 				return
 			}
@@ -107,7 +107,7 @@ func CreatePost(application *app.Application, res http.ResponseWriter, req *http
 			}
 
 			postInfo.AuthorID = userInSession.ID
-			postInfo.ImageURL = filename
+			postInfo.Image = filename
 			listOfCategories := postInfo.Categories
 
 			if err := application.PostRepo.CreatePost(&postInfo); err != nil {
@@ -188,7 +188,6 @@ func GetPost(application *app.Application, res http.ResponseWriter, req *http.Re
 }
 
 func GetAllPosts(application *app.Application, res http.ResponseWriter, req *http.Request) {
-	fmt.Println("the user need the posts")
 	if utils.ValidateRequest(req, res, "/posts", http.MethodGet) {
 		if application.SessionRepo.ValidSession(req) {
 			userInSession, _ := application.SessionRepo.GetUserFromSession(req)

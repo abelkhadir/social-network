@@ -2,7 +2,6 @@ package groupsrepos
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 
 	"social/internal/models"
@@ -20,26 +19,15 @@ func (r *GroupRepository) GetGroupMembers(groupID string) (*models.GroupMembers,
 	 FROM group_members AS gm LEFT JOIN user AS u ON u.id = gm.member_id 
 	WHERE gm.group_id= ? ;
 	`
-	// "SELECT gm.group_id, gm.member_id, u.id, u.firstname,
-	// u.lastname, avatarURL ,u.nickname
-	//  FROM group_members AS gm LEFT JOIN user AS u ON u.id = gm.member_id
-	// WHERE gm.group_id='8ff6d780-b58a-4aee-ba21-34ea4541d5f1'"
-	// fmt.Println("-----------------------------", query)
 
 	rows, err := r.db.Query(query, groupID)
 	if err != nil {
-		fmt.Println("--------------------------------------------")
-		fmt.Println("he find something in db", rows)
-		fmt.Println("--------------------------------------------")
 		return nil, models.GroupError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server errror",
 		}
 	}
 	defer rows.Close()
-	fmt.Println("--------------------------------------------")
-	fmt.Println("he find something in dbddddddddddddddddddddd", rows)
-	fmt.Println("--------------------------------------------")
 
 	members := &models.GroupMembers{Members: []models.User{}}
 
@@ -72,7 +60,6 @@ func (r *GroupRepository) GetGroupMembers(groupID string) (*models.GroupMembers,
 		if avatar.Valid {
 			member.Avatar = avatar.String
 		}
-		fmt.Println("the nakename aw9 ", member)
 		members.Members = append(members.Members, member)
 	}
 	// fmt.Println("--------------------------------------------")

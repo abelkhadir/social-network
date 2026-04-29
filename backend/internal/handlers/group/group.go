@@ -22,7 +22,6 @@ import (
 func CreateGroupHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
 	if utils.ValidateRequest(r, w, "/groups/create", http.MethodPost) {
 	}
-	fmt.Println("the user want to create a group let see if he can fgfgdgdf")
 
 	if r.Method != http.MethodPost {
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
@@ -41,14 +40,14 @@ func CreateGroupHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 	}
 
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-		if !ok {
-				fmt.Println("userID not found in context")
-	// fmt.Printf("CTX KEY TYPE HANDLER: %T\n",userID)
-			utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{
-		"error": "Unauthorized",
-	})
-	return
-	}	
+	if !ok {
+		fmt.Println("userID not found in context")
+		// fmt.Printf("CTX KEY TYPE HANDLER: %T\n",userID)
+		utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{
+			"error": "Unauthorized",
+		})
+		return
+	}
 
 	group.UserID = userID
 
@@ -73,8 +72,7 @@ func CreateGroupHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 	})
 }
 
-func  GetJoinedGroupsHandler(app *app.Application ,w http.ResponseWriter, r *http.Request) {
-	fmt.Println("the user bghaaaa groups")
+func GetJoinedGroupsHandler(app *app.Application, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
 			"error": "Method not allowed",
@@ -92,13 +90,6 @@ func  GetJoinedGroupsHandler(app *app.Application ,w http.ResponseWriter, r *htt
 		})
 		return
 	}
-	fmt.Println("___________________________________________________")
-	fmt.Println("the grouuups that the user createeeed 🇲🇽 ",groups)
-	for i := 0; i < len(groups); i++ {
-		fmt.Println("the groups that we have ",groups[i])
-	}
-	
-	fmt.Println("___________________________________________________")
 
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 		"data": groups,
@@ -137,6 +128,35 @@ func JoinGroupRequestHandler(app *app.Application, w http.ResponseWriter, r *htt
 		return
 	}
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{"message": "Join request sent"})
+}
+
+func GetGroupInfo(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	groupid, err0 := utils.GetGroupIdA(r, "groups")
+	if err0 != nil {
+		fmt.Println("Group ID not found", groupid)
+		return
+	}
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+
+	if !ok {
+		fmt.Println("userID not found in context")
+		// fmt.Printf("CTX KEY TYPE HANDLER: %T\n",userID)
+		utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{
+			"error": "Unauthorized",
+		})
+		return
+	}
+	info, err := app.GroupPostRepo.GetGroup(groupid, userID)
+	if err != nil {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+			"error": "An error occured",
+		})
+		return
+	}
+
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
+		"data": info,
+	})
 }
 
 // func (h *GroupHandler) GetSuggestedGroupsHandler(w http.ResponseWriter, r *http.Request) {

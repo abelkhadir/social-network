@@ -34,7 +34,7 @@ INSERT INTO category(id, name) VALUES
 -- ========================
 -- POSTS
 -- ========================
-INSERT INTO post(id, title, description, authorID, imageURL, createDate) VALUES
+INSERT INTO post(id, title, description, authorID, Image, createDate) VALUES
 ('1', 'Sunset Landscape', 'A beautiful sunset landscape painting.', '1', '', '2023-06-10 19:59:44'),
 ('2', 'Abstract Expression', 'An abstract expressionist painting with bold colors.', '2', '', '2023-04-27 03:39:42'),
 ('11', 'Bronze Sculpture', 'A classical bronze sculpture of a figure.', '3', '', '2023-01-26 21:14:26'),

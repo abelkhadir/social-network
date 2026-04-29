@@ -3,9 +3,10 @@ package post
 import (
 	"database/sql"
 	"log"
+	"strings"
+
 	"social/internal/models"
 	"social/pkg/utils"
-	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -67,7 +68,7 @@ func (pcr *PostCategoryRepository) GetPostsOfCategory(categoryName string) ([]mo
 			p.createDate,
 			COALESCE(cm.comment_count, 0) AS numberOfComments,
 			COALESCE(GROUP_CONCAT(c.name, ', '), '') AS listOfCategories,
-			COALESCE(p.imageURL, ''),
+			COALESCE(p.Image, ''),
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes
 		FROM post p
@@ -101,7 +102,7 @@ func (pcr *PostCategoryRepository) GetPostsOfCategory(categoryName string) ([]mo
 			&post.CreateDate,
 			&post.NumberOfComments,
 			&listOfCategories,
-			&post.ImageURL,
+			&post.Image,
 			&post.Likes,
 			&post.Dislikes,
 		)
@@ -115,8 +116,8 @@ func (pcr *PostCategoryRepository) GetPostsOfCategory(categoryName string) ([]mo
 			post.ListOfCategories = strings.Split(listOfCategories, ", ")
 		}
 		post.CreateDate = utils.FormatDateDB(post.CreateDate)
-		if post.ImageURL != "" {
-			post.ImageURL = "/uploads/images/" + post.ImageURL
+		if post.Image != "" {
+			post.Image = "/uploads/images/" + post.Image
 		}
 		posts = append(posts, post)
 	}

@@ -3,6 +3,8 @@ package routers
 import (
 	"encoding/json"
 	"net/http"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"social/internal/app"
@@ -18,9 +20,8 @@ import (
 // SetupRoutes registers all routes, using a single *app.Application instance
 func SetupRoutes(a *app.Application) {
 	rateLimiter := middleware.NewRateLimiter(time.Minute)
-
-	// Static uploads (avatars, post images)
-	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads/"))))
+	_, thisFile, _, _ := runtime.Caller(0)
+	uploadsDir := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "../../uploads"))
 
 	// Single Page
 	// http.Handle("/", rateLimiter.Wrap("auth", http.HandlerFunc(handler.Index)))
@@ -50,6 +51,7 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/logout", rateLimiter.Wrap("auth", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		authandler.Logout(a, res, req)
 	})))
+
 	//================== Profile routes =======================///
 	http.Handle("/profile", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		profile.Profile(a, res, req)
@@ -91,19 +93,23 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/chat/users", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.GetUsers(a, res, req)
 	})))
+
 	http.Handle("/chat/messages/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.GetMessages(a, res, req)
 	})))
+
 	http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.SendChatMessage(a, res, req)
 	})))
+
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
+
 	// http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 	// 	// websockethandler.SendChatMessage(a, res, req)
 	// 	groupshandler.GroupHandler(res,req)
 	// })))
 	// groups
 	// http.Handle("/groups/create", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-	// 	fmt.Println("the user want to create gouuup")
 	// 	websockethandler.SendChatMessage(a, res, req)
 	// })))
 	// http.HandleFunc("/api/groups/create",func (w http.ResponseWriter,r *http.Request)  {
@@ -127,40 +133,40 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/groups/suggested", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.GetSuggestedGroupsHandler(a, w, r)
 	}))))
+
 	// send a join request
 	http.Handle("/groups/request", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.JoinGroupRequestHandler(a, w, r)
 	}))))
-	http.Handle("/groups/joined/post/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// path := strings.TrimPrefix(r.URL.Path, "/groups/joined/post/")
-		// groupID := path
 
-		// fmt.Println("groupID:", groupID)
+	http.Handle("/groups/joined/post/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.AddGroupPost(a, w, r)
 	}))))
-		http.Handle("/groups/joined/posts/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	http.Handle("/groups/posts/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.GetGroupPosts(a, w, r)
 	}))))
-	//to get the members of the groups 
-	http.Handle("/groups/joined/members/",rateLimiter.Wrap("api",middleware.AuthMiddleware(a.DB,http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		groupshandler.GetGroupMembersHandler(a,w,r)	
+	// to get the members of the groups
+	http.Handle("/groups/joined/members/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetGroupMembersHandler(a, w, r)
 	}))))
-	//to create the event
+	// to create the event
 
-	// http.Handle("/groups/joined/events/",rateLimiter.Wrap("api",middleware.AuthMiddleware(a.DB,http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	groupshandler.CreateEventHandler(a,w,r)
-	// }))))
-	http.Handle("/groups/joined/event/",
+	http.Handle("/groups/joined/event/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.CreateEventHandler(a, w, r)
+	}))))
+
+	http.Handle("/groups/info/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					groupshandler.CreateEventHandler(a, w, r)
+					groupshandler.GetGroupInfo(a, w, r)
 				}),
 			),
 		),
 	)
-	//get events
-		http.Handle("/groups/joined/events/",
+	// get events
+	http.Handle("/groups/joined/events/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -169,8 +175,8 @@ func SetupRoutes(a *app.Application) {
 			),
 		),
 	)
-	//vote the event 
-		http.Handle("/groups/events/vote/",
+	// vote the event
+	http.Handle("/groups/events/vote/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -179,18 +185,18 @@ func SetupRoutes(a *app.Application) {
 			),
 		),
 	)
-	//get the meesssages of group
+	// get the meesssages of group
 	http.Handle("/chat/messages/group/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					groupshandler.
-					GetGroupMessages(a, w, r)
+						GetGroupMessages(a, w, r)
 				}),
 			),
 		),
 	)
-	
+
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		websockethandler.HandleWebSocket(a, w, r)

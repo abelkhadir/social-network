@@ -27,9 +27,7 @@ import (
 const maxUpload = 10 << 20
 
 func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) {
-	fmt.Println("user daba bghaaaa ideer post fgrouuuup 🃏🃏🃏🃏🃏")
 	if r.Method != http.MethodPost {
-		fmt.Println("the methood is ", r.Method)
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
 			"message": "Method not allowed",
 			"status":  http.StatusMethodNotAllowed,
@@ -37,7 +35,6 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	userId := r.Context().Value(middleware.UserIDKey).(string)
-	fmt.Println(" 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 usrsefsdf 🃏🃏🃏🃏🃏 ", userId)
 	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
 	err := r.ParseMultipartForm(maxUpload)
 	if err != nil {
@@ -48,10 +45,7 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	groupIdstr, groupErr := utils.GetGroupId(r, "post")
-	// groupIdstr = "e458b682-8345-4e12-b4bf-d4b2560c711c"
-	fmt.Println(" 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 groupid ", groupIdstr)
 	if groupErr != nil {
-
 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
 			"message": "Invalid URL",
 			"status":  http.StatusNotFound,
@@ -59,13 +53,6 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// if err != nil || groupId <= 0 {
-	// 	utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
-	// 		"message": "Invalid URL",
-	// 		"status":  http.StatusNotFound,
-	// 	})
-	// 	return
-	// }
 	post := &models.GroupPost{
 		GroupId: groupIdstr,
 		Post: models.Post{
@@ -76,7 +63,6 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 	}
 
 	file, header, err := r.FormFile("image")
-
 	var img *models.Image
 	if err == nil {
 		img = &models.Image{
@@ -86,8 +72,6 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 
 		defer file.Close()
 	}
-	fmt.Println(" 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 🃏🃏🃏🃏🃏 ", img, post)
-	// savepost, ErrSavePost := h.service.SaveGroupePost(r.Context(), post, img)
 
 	_, ErrSavePost := app.GroupPostRepo.SaveGroupPostRepo(r.Context(), post, img)
 
@@ -95,12 +79,9 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		utils.SendJSONResponse(w, ErrSavePost.Code, ErrSavePost)
 		return
 	}
-
-	// utils.SendJSONResponse(w, http.StatusOK, savepost)
 }
 
 func GetGroupPosts(app *app.Application, w http.ResponseWriter, r *http.Request) {
-	fmt.Println("user daba bghaaaa kaa3 poosssts  🃏🃏🃏🃏🃏")
 	if r.Method != http.MethodPost {
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
 			"message": "Method not allowed ",
@@ -119,28 +100,22 @@ func GetGroupPosts(app *app.Application, w http.ResponseWriter, r *http.Request)
 		})
 		return
 	}
-	groupIdstr, groupErr := utils.GetGroupId(r, "post")
-	fmt.Println("______________________________")
-	fmt.Println("tha grouuup id ",groupIdstr)
-	fmt.Println("______________________________")
+	groupIdstr, groupErr := utils.GetGroupIdA(r, "post")
 
-	// groupIdstr="e458b682-8345-4e12-b4bf-d4b2560c711c"
-	fmt.Println("3andaak tinsaaa groupid dimaaa 0 daba ")
 	if groupErr != nil {
-		fmt.Println("kaaaaaasdfsfsdafasddddddddd  🃏🃏🃏🃏🃏")
 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
 			"message": "Invalid URL",
 			"status":  http.StatusNotFound,
 		})
 		return
 	}
-	// posts, postsErr := h.service.GetGroupsPost(req, groupIdstr)
-	posts, postsErr := app.GroupPostRepo.GetGroupPosts(req,groupIdstr)
-		fmt.Println("posts from db  🃏🃏 ",posts)
+	posts, postsErr := app.GroupPostRepo.GetGroupPosts(req, groupIdstr)
 	if postsErr.Code != http.StatusOK {
 		utils.SendJSONResponse(w, postsErr.Code, postsErr)
 		return
 	}
+
+	fmt.Println("aaaaaaaaar", posts)
 	utils.SendJSONResponse(w, postsErr.Code, posts)
 }
 

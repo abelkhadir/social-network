@@ -3,8 +3,8 @@ package models
 import "time"
 
 type Group struct {
-	ID            string       `json:"id,omitempty"`
-	UserID        string       `json:"user_id,omitempty"`
+	ID            string    `json:"id,omitempty"`
+	UserID        string    `json:"user_id,omitempty"`
 	Title         string    `json:"title,omitempty"`
 	Description   string    `json:"description,omitempty"`
 	CreatedAt     time.Time `json:"created_at,omitempty"`
@@ -12,6 +12,7 @@ type Group struct {
 	Members       []string  `json:"members,omitempty"`
 	RequestID     int       `json:"request_id,omitempty"`
 }
+
 type GroupPost struct {
 	GroupId string `json:"group_id"`
 	Post    Post
@@ -22,9 +23,9 @@ type GroupComment struct {
 	Comment Comment
 }
 type Event struct {
-	ID            string     `json:"id"`
-	GroupId       string       `json:"group_id,omitempty"`
-	UserID        string       `json:"user_id,omitempty"`
+	ID            string    `json:"id"`
+	GroupId       string    `json:"group_id,omitempty"`
+	UserID        string    `json:"user_id,omitempty"`
 	Title         string    `json:"title"`
 	Description   string    `json:"description"`
 	EventDate     time.Time `json:"event_date"`
@@ -36,8 +37,8 @@ type Event struct {
 }
 
 type EventVote struct {
-	ID     string    `json:"id"`
-	UserID string    `json:"user_id"`
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
 	Vote   string `json:"vote"` // going or not going
 }
 
@@ -61,9 +62,9 @@ type GroupRequest struct {
 	GroupInfos  *Group `json:"group"`
 }
 type GroupMessages struct {
-	ID       string    `json:"id,omitempty"`
-	GroupID  string    `json:"group_id,omitempty"`
-	SenderID string    `json:"sender_id,omitempty"`
+	ID       string `json:"id,omitempty"`
+	GroupID  string `json:"group_id,omitempty"`
+	SenderID string `json:"sender_id,omitempty"`
 	Message  string `json:"message,omitempty"`
 	Avatar   string `json:"avatarURL,omitempty"`
 	FullName string `json:"fullname,omitempty"`

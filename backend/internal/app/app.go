@@ -32,9 +32,9 @@ type Application struct {
 	SessionRepo      *sessions.SessionRepository
 	NotificationRepo *notifications.NotificationRepository
 	GroupPostRepo    *groupsrepos.GroupRepository
-	GroupMembers  	*groupsrepos.GroupRepository
-	GroupEvents  	*groupsrepos.GroupRepository
-	GroupMessage *groupsrepos.MessageRepository
+	GroupMembers     *groupsrepos.GroupRepository
+	GroupEvents      *groupsrepos.GroupRepository
+	GroupMessage     *groupsrepos.MessageRepository
 }
 
 // NewApp initializes the database and repositories
@@ -105,7 +105,7 @@ func NewApp() *Application {
 
 // func ensurePostImageColumn(db *sql.DB) {
 // 	const tableName = "post"
-// 	const columnName = "imageURL"
+// 	const columnName = "Image"
 
 // 	rows, err := db.Query("PRAGMA table_info(" + tableName + ")")
 // 	if err != nil {

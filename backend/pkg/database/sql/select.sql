@@ -1,7 +1,7 @@
 SELECT p.id AS ID,
     p.title AS Title,
     u.nickname AS AuthorName,
-    p.imageURL AS ImageURL,
+    p.Image AS Image,
     p.createDate AS LastEditionDate,
     COALESCE(cmt_counts.comment_count, 0) AS NumberOfComments,
     COALESCE(cmt.commentators, '') AS ListOfCommentator
@@ -61,7 +61,7 @@ WHERE c.id IN (
 GROUP BY c.postID;
 SELECT p.id AS post_id,
     p.title AS post_title,
-    p.imageURL AS post_image,
+    p.Image AS post_image,
     COALESCE(commentators.avatar1, '') AS top_commentator_avatar1,
     COALESCE(commentators.avatar2, '') AS top_commentator_avatar2,
     COALESCE(commentators.avatar3, '') AS top_commentator_avatar3

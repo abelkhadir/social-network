@@ -43,7 +43,7 @@ func EnsureSchema(db *sql.DB) error {
 			title TEXT NOT NULL,
 			description TEXT NOT NULL,
 			authorID TEXT NOT NULL,
-			imageURL TEXT,
+			Image TEXT,
 			createDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (authorID) REFERENCES user(id) ON DELETE CASCADE
 		);`,
@@ -163,7 +163,7 @@ func EnsureSchema(db *sql.DB) error {
 			member_id TEXT,
 			title TEXT NOT NULL, 
 			content TEXT NOT NULL,
-			media TEXT, 
+			image TEXT, 
 			comments INTEGER DEFAULT 0,
 			created_at DATETIME NOT NULL,
 			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE,

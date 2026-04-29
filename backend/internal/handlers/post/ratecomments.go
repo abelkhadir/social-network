@@ -1,15 +1,14 @@
 package posthandler
 
 import (
-	"fmt"
 	"net/http"
+	"strings"
+
 	"social/internal/app"
 	"social/pkg/utils"
-	"strings"
 )
 
 func RateCommentHandler(application *app.Application, res http.ResponseWriter, req *http.Request) {
-	fmt.Print("the user like the comment")
 	if req.Method != http.MethodPost {
 		utils.HandleError(res, http.StatusMethodNotAllowed, "Method not allowed")
 		return

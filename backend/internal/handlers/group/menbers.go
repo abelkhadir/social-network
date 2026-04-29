@@ -1,7 +1,6 @@
 package groupshandler
 
 import (
-	"fmt"
 	"net/http"
 
 	"social/internal/app"
@@ -17,9 +16,6 @@ func GetGroupMembersHandler(app *app.Application, w http.ResponseWriter, r *http
 	}
 
 	groupIDStr, errId := utils.GetGroupId(r, "members")
-	// 	fmt.Println("--------------------------------------------")
-	// fmt.Println("now we try to bring the member users in our group", groupIDStr)
-	// fmt.Println("--------------------------------------------")
 
 	if errId != nil {
 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
@@ -30,20 +26,17 @@ func GetGroupMembersHandler(app *app.Application, w http.ResponseWriter, r *http
 
 	// // events, err := h.service.GetGroupMembers(groupIDStr)
 	Members, err := app.GroupPostRepo.GetGroupMembers(groupIDStr)
-	fmt.Println("--------------------------------------------")
-	fmt.Println("now we try to bring the member users in our group", Members)
-	fmt.Println("--------------------------------------------")
 
 	if err.Code != http.StatusOK {
-	// 		fmt.Println("--------------------------------------------")
-	// fmt.Println("errrrror sdfsdafsdfsdfsdgsdgfdsfg", err)
-	// fmt.Println("--------------------------------------------")
+		// 		fmt.Println("--------------------------------------------")
+		// fmt.Println("errrrror sdfsdafsdfsdfsdgsdgfdsfg", err)
+		// fmt.Println("--------------------------------------------")
 		utils.SendJSONResponse(w, err.Code, map[string]any{
 			"error": err.Message,
 		})
 		return
 	}
-	fmt.Println("the memberssssssssssssssssss fuck ",Members)
+
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 		"data": Members,
 	})

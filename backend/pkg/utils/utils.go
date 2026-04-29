@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"unicode"
-
 	"io"
 	"log"
 	"net/http"
@@ -15,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -135,8 +134,8 @@ func UploadImage(req *http.Request) string {
 	}
 
 	uploads := "/uploads" // Use "uploads" without the leading slash
-	imageURL := filepath.Join(uploads, generateUniqueFilename(header.Filename))
-	filePath := filepath.Join(".", imageURL) // Use "." to denote the current directory
+	Image := filepath.Join(uploads, generateUniqueFilename(header.Filename))
+	filePath := filepath.Join(".", Image) // Use "." to denote the current directory
 	// if filePath[0] != '/' {
 	// 	filePath = "" + filePath
 	// }
@@ -152,7 +151,7 @@ func UploadImage(req *http.Request) string {
 		return ""
 	}
 
-	return imageURL
+	return Image
 }
 
 func generateUniqueFilename(filename string) string {
@@ -229,7 +228,8 @@ func FormatDate(DateAndTime string) string {
 		"09": "September",
 		"10": "October",
 		"11": "November",
-		"12": "December"}
+		"12": "December",
+	}
 	month = MonthInt[month]
 	tabTime := strings.Split(Time, ":")
 	hour, minute := tabTime[0], tabTime[1]

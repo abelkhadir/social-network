@@ -51,8 +51,6 @@ func (r *GroupRepository) SaveEvent(c context.Context, event *models.Event) (mod
 }
 
 func (r *GroupRepository) GetGroupEvents(userID, groupID string) ([]*models.Event, models.GroupError) {
-	// fmt.Println("---------------------------------------")
-	// fmt.Println("eveeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeent")
 	query := `
 	SELECT 
 	e.id, 
@@ -77,10 +75,6 @@ func (r *GroupRepository) GetGroupEvents(userID, groupID string) ([]*models.Even
 	ORDER BY e.created_at DESC;
 	`
 
-	// fmt.Println("---------------------------------------")
-	// fmt.Println("---------------------------------------")
-	// fmt.Println(query)
-	// fmt.Println("---------------------------------------")
 	rows, err := r.db.Query(query, userID, groupID)
 	if err != nil {
 		return nil, models.GroupError{
@@ -138,16 +132,6 @@ func (r *GroupRepository) GetGroupEvents(userID, groupID string) ([]*models.Even
 }
 
 func (r *GroupRepository) VoteOnEvent(ctx context.Context, vote models.EventVote) models.GroupError {
-	// 	fmt.Println("---------------------------------------")
-	// 	fmt.Println("---------------------------------------")
-	// 	fmt.Println("---------------------------------------")
-	// fmt.Println("chiiiii daad dkhaaaal ivotee")
-	// fmt.Println("---------------------------------------")
-	// 	fmt.Println("---------------------------------------")
-	// 	fmt.Println("---------------------------------------")
-	// 	fmt.Println("---------------------------------------")
-	// 	fmt.Println("---------------------------------------")
-	// 	fmt.Println("---------------------------------------")
 	var (
 		query string
 		args  []any

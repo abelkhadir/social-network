@@ -55,7 +55,6 @@ func HandleWebSocket(a *app.Application, res http.ResponseWriter, req *http.Requ
 			if ok && userID != "" {
 				UserConnections.Store(conn, userID)
 				SendStatus(userID, true) // Tell everyone else this user is online
-				log.Println("User logged into socket:", userID)
 			}
 
 		case "logout":

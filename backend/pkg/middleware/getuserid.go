@@ -3,7 +3,6 @@ package middleware
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 )
 
@@ -30,7 +29,6 @@ func GetUserIDFromToken(r *http.Request, name string, db *sql.DB) (string, error
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("the id tsfsdfjsdfjsdbgfjsdngfsajkgnsdkjgdsfjh",userID)
 
 	return userID, nil
 }

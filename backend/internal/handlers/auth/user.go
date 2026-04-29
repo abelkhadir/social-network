@@ -18,26 +18,24 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	if !utils.ValidateRequest(req, res, "/sign-up", http.MethodPost) {
 		return
 	}
-	
+
 	var user models.User
 	if err := json.NewDecoder(req.Body).Decode(&user); err != nil {
-		// fmt.Println("fomat user now good")
 		utils.HandleError(res, http.StatusBadRequest, "Invalid JSON format")
 		return
 	}
-	// fmt.Println("the user id is ", user.ID)
 	if err := validateSignUpInput(&user); err != nil {
 		utils.HandleError(res, http.StatusBadRequest, err.Error())
 		return
 	}
-	
+
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		utils.HandleError(res, http.StatusInternalServerError, "Error hashing password")
 		return
 	}
 	user.Password = hashedPassword
-	
+
 	if err := app.UserRepo.CreateUser(&user); err != nil {
 		// Check for SQLite constraint error (duplicate nickname/email)
 		if sqliteErr, ok := err.(interface{ Code() int }); ok && sqliteErr.Code() == 19 {
@@ -47,9 +45,9 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		utils.HandleError(res, http.StatusInternalServerError, "Error creating user")
 		return
 	}
-	
-	err=app.SessionRepo.NewSessionToken(res, user.ID)
-	if err!=nil{
+
+	err = app.SessionRepo.NewSessionToken(res, user.ID)
+	if err != nil {
 		fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	}
 

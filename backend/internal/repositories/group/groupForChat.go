@@ -2,7 +2,6 @@ package groupsrepos
 
 import (
 	"database/sql"
-	"fmt"
 	"strings"
 	"time"
 
@@ -67,7 +66,6 @@ func (r *GroupRepository) GetGroupMessagesRepo(GrpID string) ([]models.GroupMess
 			ORDER BY g.sent_at ASC;
 		
 			`
-	fmt.Println("the query is correct", query)
 	rows, err := r.db.Query(query, GrpID)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err

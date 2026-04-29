@@ -2,17 +2,17 @@ package websockethandler
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
-	"social/internal/app"
-	"social/internal/models"
-	"social/pkg/utils"
 	"strings"
 	"sync"
 	"time"
+
+	"social/internal/app"
+	"social/internal/models"
+	"social/pkg/utils"
 )
 
 var (
@@ -58,8 +58,6 @@ func randomProfileAvatar() string {
 }
 
 func GetUsers(application *app.Application, res http.ResponseWriter, req *http.Request) {
-	fmt.Println("the user bgha userd for chat okay")
-
 	if !utils.ValidateRequest(req, res, "/chat/users", http.MethodGet) {
 		return
 	}

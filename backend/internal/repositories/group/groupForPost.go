@@ -21,7 +21,15 @@ func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.G
 	}
 	defer tx.Rollback()
 
-	fileName, err := utils.HandleImage(img, "uploads/grouupimages")
+	var fullPath string
+	if img != nil {
+		fileName, err := utils.HandleImage(img, "uploads/groupimages")
+		if err != nil {
+			return models.Post{}, models.GroupError{Code: 500, Message: "Image upload failed"}
+		}
+		fullPath = "uploads/groupimages/" + fileName.String // assuming string
+	}
+
 	if err != nil {
 		return models.Post{}, models.GroupError{Code: 500, Message: "Image upload failed"}
 	}
@@ -29,10 +37,8 @@ func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.G
 	postID := uuid.New().String()
 	userID := group.Post.AuthorID
 
-	fmt.Printf("INSERTING: GroupID=%s, MemberID=%s\n ---------------------------------------------", group.GroupId, userID)
-
 	const insertQuery = `
-		INSERT INTO group_posts (id, group_id, member_id, title, content, media, created_at)
+		INSERT INTO group_posts (id, group_id, member_id, title, content, image, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err = tx.Exec(insertQuery,
@@ -41,7 +47,7 @@ func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.G
 		userID,
 		group.Post.Title,
 		group.Post.Description,
-		fileName,
+		fullPath,
 		time.Now(),
 	)
 	if err != nil {
@@ -70,7 +76,7 @@ func (r *GroupRepository) SaveGroupPostRepo(ctx context.Context, group *models.G
 			Firstname: first,
 			Lastname:  last,
 		},
-		MediaLink:   fileName.String,
+		Image:       fullPath,
 		Title:       group.Post.Title,
 		Description: group.Post.Description,
 		CreateDate:  time.Now().Format(time.RFC3339),
@@ -89,17 +95,13 @@ func (r *GroupRepository) SaveGroupePost(ctx context.Context, group *models.Grou
 }
 
 func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid string) ([]models.Post, models.GroupError) {
-	fmt.Println("---------------------------------  🃏🃏🃏🃏🃏")
-	fmt.Println("dkhaalt njiiib posts min database  🃏🃏🃏🃏🃏")
-	 fmt.Println("--------------------------------  🃏🃏🃏🃏🃏")
-
 	GetQuery := `
 	SELECT 
 		p.id,
-		p.member_id,
 		p.title,
+		p.member_id,
 		p.content,
-		p.media,
+		p.image,
 		p.comments,
 		p.created_at,
 		u.firstname,
@@ -110,14 +112,9 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 	JOIN user u ON u.id = p.member_id
 	WHERE p.group_id = ?
 	ORDER BY p.created_at DESC
-	LIMIT ? OFFSET ?
-`
-// khaadni ndir inner join m3a member id
-	// rows, rowsErr := r.db.Query(GetQuery, groupid, reg.Limit, reg.Offset)
+	LIMIT ? OFFSET ?`
+
 	rows, rowsErr := r.db.Query(GetQuery, groupid, reg.Limit, reg.Offset)
-
-	// fmt.Println("check wisdfndskfn 🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏🃏 ",rows)
-
 	if rowsErr != nil {
 		fmt.Println("Database error kbiiir:", rowsErr)
 		if rowsErr == sql.ErrNoRows {
@@ -132,20 +129,18 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 			Message: rowsErr.Error(),
 		}
 	}
-	var (
-		posts []models.Post
-		media sql.NullString
-	)
+	defer rows.Close()
+
+	var posts []models.Post
 
 	for rows.Next() {
 		var post models.Post
 		if err := rows.Scan(
-
 			&post.ID,
 			&post.Title,
 			&post.Author.ID,
 			&post.Description,
-			&media,
+			&post.Image,
 			&post.TotalComments,
 			&post.CreateDate,
 			&post.Author.Firstname,
@@ -153,26 +148,23 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 			&post.Author.Nickname,
 			&post.Author.AvatarURL,
 		); err != nil {
-			fmt.Println("dbbbb errrr 🃏🃏🃏🃏", err)
-			fmt.Println("the imaage", post.MediaLink)
+			fmt.Println(err)
+
 			return []models.Post{}, models.GroupError{
 				Code:    http.StatusInternalServerError,
 				Message: err.Error(),
 			}
 		}
-		if media.Valid {
-			post.MediaLink = "/uploads/grouupimages/"+media.String
-		}
-		// if post.ImageURL != "" {
-		// 	post.ImageURL =  + post.ImageURL
-		// }
 		posts = append(posts, post)
 
 	}
-	fmt.Println("______________________________")
-	fmt.Println("postaaaat lil9aaaa ",posts)
-	fmt.Println("______________________________")
 
+	if err := rows.Err(); err != nil {
+		return []models.Post{}, models.GroupError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+	}
 
 	return posts, models.GroupError{
 		Code:    http.StatusOK,
@@ -182,18 +174,9 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 
 func (r *GroupRepository) AddGroupComment(comments models.Comment, img *models.Image) (*models.Comment, models.GroupError) {
 	query := `
-	INSERT INTO group_comments (group_post_id , member_id, content, media, created_at)
-	VAlUES (?, ?, ?, ?, ?)
+	INSERT INTO group_comments (group_post_id, member_id, content, created_at)
+	VAlUES (?, ?, ?, ?)`
 
-	`
-	fileName, ImageErr := utils.HandleImage(img, "pkg/db/images/comments")
-	if ImageErr != nil {
-		fmt.Println("i know what is the errror ")
-		return nil, models.GroupError{
-			Code:    http.StatusInternalServerError,
-			Message: ImageErr.Error(),
-		}
-	}
 	stmt, err := r.db.Prepare(query)
 	if err != nil {
 		return nil, models.GroupError{
@@ -203,19 +186,17 @@ func (r *GroupRepository) AddGroupComment(comments models.Comment, img *models.I
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(comments.PostID, comments.Author.ID, comments.Text, fileName, time.Now())
+	_, err = stmt.Exec(comments.PostID, comments.Author.ID, comments.Text, time.Now())
 	if err != nil {
 		return nil, models.GroupError{
 			Code:    http.StatusInternalServerError,
 			Message: err.Error(),
 		}
 	}
-	return &models.Comment{
-			MediaLink: fileName.String,
-		}, models.GroupError{
-			Code:    http.StatusOK,
-			Message: "adding comment went smouthly ",
-		}
+	return &models.Comment{}, models.GroupError{
+		Code:    http.StatusOK,
+		Message: "adding comment went smouthly ",
+	}
 }
 
 func (r *GroupRepository) GetGRoupComment(post_id int) ([]models.Comment, models.GroupError) {
@@ -224,14 +205,14 @@ func (r *GroupRepository) GetGRoupComment(post_id int) ([]models.Comment, models
 	c.group_post_id, 
 	c.member_id, 
 	c.content, 
-	c.media, 
+	c.image, 
 	c.created_at,
-	u.first_name,
-	u.last_name,
+	u.firstname,
+	u.lastname,
 	u.nickname,
 	u.avatar
 FROM group_comments c
-JOIN users u ON u.id = c.member_id
+JOIN user u ON u.id = c.member_id
 WHERE c.group_post_id = ?
 ORDER BY c.created_at DESC;
 
@@ -243,19 +224,13 @@ ORDER BY c.created_at DESC;
 			Message: rowsErr.Error(),
 		}
 	}
-	var (
-		comments []models.Comment
-		media    sql.NullString
-	)
+	var comments []models.Comment
 	for rows.Next() {
 		var comment models.Comment
 		if err := rows.Scan(
 			&comment.PostID,
 			&comment.Author.ID,
-
 			&comment.Text,
-			&media,
-
 			&comment.CreateDate,
 			&comment.Author.Firstname,
 			&comment.Author.Lastname,
@@ -266,9 +241,6 @@ ORDER BY c.created_at DESC;
 				Code:    http.StatusInternalServerError,
 				Message: err.Error(),
 			}
-		}
-		if media.Valid {
-			comment.MediaLink = media.String
 		}
 		comments = append(comments, comment)
 	}

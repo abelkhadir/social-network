@@ -21,8 +21,6 @@ func NewGroupRepo(db *sql.DB) *GroupRepository {
 }
 
 func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupError) {
-	fmt.Println("saving group...")
-
 	id := uuid.New().String()
 
 	query := `
@@ -43,7 +41,7 @@ func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupE
 			Code:    http.StatusInternalServerError,
 		}
 	}
-		queryGroupMember := `
+	queryGroupMember := `
 		INSERT INTO group_members(group_id, member_id) VALUES (?, ?)
 	`
 
@@ -57,6 +55,7 @@ func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupE
 
 	return id, nil
 }
+
 // func (r *GroupRepository) SaveGroup(group *models.Group) (int, *models.GroupError) {
 // 	query := `
 // 		INSERT INTO groups(user_id, title, description, created_at) VALUES (?, ?, ?, ?) RETURNING id
@@ -70,8 +69,6 @@ func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupE
 // 			Code:    http.StatusInternalServerError,
 // 		}
 // 	}
-
-
 
 // 	return groupID, nil
 // }
@@ -139,9 +136,10 @@ func (r *GroupRepository) SaveJoinRequest(groupID, senderID string) error {
 	return err
 }
 
-func (r *GroupRepository) GetGroup(groupID, userID int) (models.GroupIfo, *models.GroupError) {
-	errr := r.IsMember(groupID, userID)
-	if errr != nil {
+func (r *GroupRepository) GetGroup(groupID, userID string) (models.GroupIfo, *models.GroupError) {
+	err := r.IsMember(groupID, userID)
+	if err != nil {
+		fmt.Println(err)
 		return models.GroupIfo{}, &models.GroupError{
 			Message: "Invalid URL",
 			Code:    http.StatusNotFound,
@@ -150,30 +148,32 @@ func (r *GroupRepository) GetGroup(groupID, userID int) (models.GroupIfo, *model
 	query := `
 		SELECT 
 			g.id, g.title, g.description, g.created_at,
-			u.id, u.nickname, u.first_name, u.last_name, u.avatar,
+			u.id, u.nickname, u.firstname, u.lastname, u.avatarURL,
 			(
 				SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id
 			) AS total_members
 		FROM groups g
-		JOIN users u ON g.user_id = u.id
+		JOIN user u ON g.user_id = u.id
 		WHERE g.id = ?
 	`
 
 	groupInfo := models.GroupIfo{}
 	var nickname sql.NullString
 	//
-	err := r.db.QueryRow(query, groupID).Scan(
+	err = r.db.QueryRow(query, groupID).Scan(
 		&groupInfo.Group.ID,
 		&groupInfo.Group.Title,
 		&groupInfo.Group.Description,
 		&groupInfo.Group.CreatedAt,
 		&groupInfo.Author.ID,
 		&nickname,
+		&groupInfo.Author.Firstname,
 		&groupInfo.Author.Lastname,
 		&groupInfo.Author.Avatar,
 		&groupInfo.TotalMembers,
 	)
 	if err != nil {
+		fmt.Println(err)
 		if err == sql.ErrNoRows {
 			return models.GroupIfo{}, &models.GroupError{
 				Message: "Invalid URL",
@@ -269,22 +269,25 @@ func (r *GroupRepository) CancelGroupRequest(id int) error {
 	return nil
 }
 
-func (r *GroupRepository) IsMember(GrpID int, sessionID int) error {
-	var id int
+func (r *GroupRepository) IsMember(GrpID string, sessionID string) error {
+	var exists bool
+
 	query := `
 		SELECT EXISTS(
-    		SELECT 1
-    		FROM group_members
-    		WHERE group_id = ? AND member_id = ?
+			SELECT 1
+			FROM group_members
+			WHERE group_id = ? AND member_id = ?
 		);
-
 	`
-	err := r.db.QueryRow(query, GrpID, sessionID).Scan(&id)
+
+	err := r.db.QueryRow(query, GrpID, sessionID).Scan(&exists)
 	if err != nil {
 		return err
 	}
-	if id == 0 {
+
+	if !exists {
 		return errors.New("Want to join? Send a request to the admin!")
 	}
+
 	return nil
 }

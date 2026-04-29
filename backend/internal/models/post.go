@@ -12,7 +12,7 @@ type PostItem struct {
 	Likes            int      `json:"likes"`
 	Dislikes         int      `json:"dislikes"`
 	VoteStatus       *int     `json:"vote_status"`
-	ImageURL         string   `json:"image"`
+	Image            string   `json:"image"`
 }
 
 type CompletePost struct {
@@ -27,19 +27,18 @@ type ComentPaginationRequest struct {
 }
 
 type Post struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	AuthorID    string `json:"authorID"`
-	CreateDate  string `json:"createDate"`
-	Likes       int    `json:"likes"`
-	Dislikes    int    `json:"dislikes"`
-	VoteStatus  *int   `json:"vote_status"`
-	ImageURL    string `json:"image"`
-	AllowedUsres  []int   `json:"omitempty"` // if the post is private
-    Author        User    `json:"author"`
-	MediaLink     string  `json:"media_link,omitempty"`
-	TotalComments int     `json:"total_comments"`
+	ID            string `json:"id"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	AuthorID      string `json:"authorID"`
+	CreateDate    string `json:"createDate"`
+	Likes         int    `json:"likes"`
+	Dislikes      int    `json:"dislikes"`
+	VoteStatus    *int   `json:"vote_status"`
+	Image         string `json:"image"`
+	AllowedUsres  []int  `json:"omitempty"` // if the post is private
+	Author        User   `json:"author"`
+	TotalComments int    `json:"total_comments"`
 }
 
 type PostCreation struct {
@@ -47,7 +46,7 @@ type PostCreation struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	AuthorID    string   `json:"authorID"`
-	ImageURL    string   `json:"image"`
+	Image       string   `json:"image"`
 	Categories  []string `json:"categories"`
 	CreateDate  string   `json:"createDate"`
 }
