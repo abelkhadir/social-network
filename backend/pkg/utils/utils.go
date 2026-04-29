@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"unicode"
-
 	"io"
 	"log"
 	"net/http"
@@ -15,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -116,8 +115,8 @@ func SendJSONResponse(res http.ResponseWriter, statusCode int, data interface{})
 	}
 }
 
-func UploadImage(req *http.Request) string {
-	image, header, err := req.FormFile("image")
+func UploadImage(req *http.Request, field string) string {
+	image, header, err := req.FormFile(field)
 	if err != nil {
 		log.Println("❌ Request doesn't contain image", err)
 		return ""
@@ -229,7 +228,8 @@ func FormatDate(DateAndTime string) string {
 		"09": "September",
 		"10": "October",
 		"11": "November",
-		"12": "December"}
+		"12": "December",
+	}
 	month = MonthInt[month]
 	tabTime := strings.Split(Time, ":")
 	hour, minute := tabTime[0], tabTime[1]

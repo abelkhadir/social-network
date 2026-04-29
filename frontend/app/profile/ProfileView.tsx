@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { fetchApi, resolveApiUrl } from "@/lib/api";
+import { log } from "node:console";
 
 type ProfilePost = {
   id: string;
@@ -64,6 +65,7 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
     try {
       const endpoint = profileId ? `/profile?id=${encodeURIComponent(profileId)}` : "/profile";
       const data = await fetchApi(endpoint);
+      console.log("Profile data:", data);
       const profileData: ProfileResponse = data.profile || data;
       setProfile(profileData);
       setEditNickname(profileData.user?.nickname || "");
@@ -74,9 +76,10 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
       showToast(err.message || "Failed to load profile", "error");
     } finally {
       setLoadingProfile(false);
+      console.log("Profile:",profile);
     }
   };
-
+  
   const handleSave = async () => {
     setSaving(true);
     try {

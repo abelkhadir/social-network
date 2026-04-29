@@ -132,6 +132,30 @@
     box-shadow: 0 0 8px rgba(50, 209, 6, 0.2);
 }
 
+.form-group select {
+    width: 100%;
+    padding: calc(var(--space-sm) - 2px);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background-color: var(--color-input-bg);
+    color: var(--color-text);
+    font-size: var(--font-size-base);
+    transition: box-shadow var(--transition-medium), border-color var(--transition-fast);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--color-text) 50%), linear-gradient(135deg, var(--color-text) 50%, transparent 50%);
+    background-position: calc(100% - 1rem) calc(1em + 2px), calc(100% - .75rem) calc(1em + 2px);
+    background-size: .45em .45em, .45em .45em;
+    background-repeat: no-repeat;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 8px rgba(50, 209, 6, 0.12);
+}
+
 .btn {
     width: 100%;
     padding: 1rem;

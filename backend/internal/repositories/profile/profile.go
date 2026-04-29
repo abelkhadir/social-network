@@ -37,7 +37,6 @@ func (repo *ProfileRepository) GetProfile(viewerID, profileID string) (*models.C
 	if err != nil {
 		return nil, err
 	}
-	user.Avatar = user.AvatarURL
 
 	profile := &models.CommunInfoProfile{
 		User:      user,

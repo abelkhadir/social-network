@@ -9,8 +9,8 @@ type User struct {
 	Gender    string `json:"gender"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
-	AvatarURL string `json:"avatar_url"`
-	Avatar    string `json:"avatar,omitempty"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+	Avatar    Image    `json:"avatar,omitempty"`
 	AboutMe   string `json:"aboutMe"`
 	IsPrivate int    `json:"isPrivate"`
 }
@@ -31,7 +31,7 @@ type AuthUser struct {
 	IsLoggedIn bool   `json:"is_logged_in"`
 	Email      string `json:"email"`
 	AvatarURL  string `json:"avatar_url"`
-	Avatar     string `json:"avatar,omitempty"`
+	Avatar     any    `json:"avatar,omitempty"`
 	AboutMe    string `json:"aboutMe,omitempty"`
 	IsPrivate  bool   `json:"isPrivate"`
 }

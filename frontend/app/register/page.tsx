@@ -18,12 +18,19 @@ export default function RegisterPage() {
     password: "",
     confirmpassword: "",
     gender: "male", 
+    about: "",
+    avatar: null,
   });
   
   const [errors, setErrors] = useState<any>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (e.target.name === "avatar" && e.target instanceof HTMLInputElement && e.target.files) {
+      setFormData({ ...formData, avatar: e.target.files[0] });
+      console.log("Selected file:", e.target.files[0]);
+    } else {
+      setFormData({ ...formData, [e.target.name]: e.target.value });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,6 +51,8 @@ export default function RegisterPage() {
         email: formData.email,
         password: formData.password,
         gender: formData.gender,
+        about: formData.about,
+        avatar: formData.avatar,
       };
 
       await register(newUser);
@@ -85,7 +94,7 @@ export default function RegisterPage() {
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="nickname">Nickname</label>
+                <label htmlFor="nickname">Nickname(optional)</label>
                 <input type="text" id="nickname" name="nickname" value={formData.nickname} onChange={handleChange} placeholder="CoolUser99" />
               </div>
               <div className="form-group">
@@ -108,7 +117,26 @@ export default function RegisterPage() {
                 <label htmlFor="confirm-password">Confirm</label>
                 <input type="password" id="confirm-password" name="confirmpassword" value={formData.confirmpassword} onChange={handleChange} placeholder="******" required />
               </div>
+              
             </div>
+            <div className="form-group">
+              <label htmlFor="gender">Gender</label>
+              <select id="gender" name="gender" value={formData.gender} onChange={handleChange} required>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="youness">youness</option>
+              </select>
+            </div>
+            <div className="form-group">
+             <label htmlFor="about">About(optional)</label>
+             <input type="text" id="about" name="about" value={formData.about} onChange={handleChange} placeholder="Tell us about yourself!" />
+            </div>
+
+             <div className="form-group">
+              <label htmlFor="avatar">Avatar(optional)</label>
+              <input type="file" id="avatar" name="avatar" accept="image/*"  onChange={handleChange} />
+            </div>
+            
 
             <button type="submit" className="btn">Boot Up Your Account!</button>
           </form>

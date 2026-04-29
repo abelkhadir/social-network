@@ -53,10 +53,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const register = async (userData: any) => {
-    const data = await fetchApi("/sign-up", {
-      method: "POST",
-      body: JSON.stringify(userData),
-    });
+    let options: RequestInit = { method: "POST" };
+
+    if (userData && userData.avatar) {
+      const form = new FormData();
+      Object.entries(userData).forEach(([key, value]) => {
+        if (value === null || value === undefined) return;
+        if (key === "avatar") {
+          form.append("avatar", value as File);
+        } else {
+          form.append(key, String(value));
+        }
+      });
+      options.body = form;
+    } else {
+      options.body = JSON.stringify(userData);
+    }
+
+    const data = await fetchApi("/sign-up", options);
     setUser(data.user || data);
     router.push("/");
   };

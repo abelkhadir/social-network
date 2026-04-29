@@ -1,10 +1,18 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export function resolveApiUrl(path: string) {
-  if (!path) return path;
+export function resolveApiUrl(path?: string | URL | null) {
+  if (path == null || path === "") return path as any;
+
+  if (path instanceof URL) return path.toString();
+
+  if (typeof path !== "string") {
+    path = String(path);
+  }
+
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
   }
+
   const normalized = path.startsWith("/") ? path : `/${path}`;
   return `${API_URL}${normalized}`;
 }

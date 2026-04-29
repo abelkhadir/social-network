@@ -4,7 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"html"
+	"log"
 	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+
 	"social/internal/app"
 	websockethandler "social/internal/handlers/websocket"
 	"social/internal/models"
@@ -16,12 +21,43 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	if !utils.ValidateRequest(req, res, "/sign-up", http.MethodPost) {
 		return
 	}
-
 	var user models.User
-	if err := json.NewDecoder(req.Body).Decode(&user); err != nil {
-		utils.HandleError(res, http.StatusBadRequest, "Invalid JSON format")
-		return
+
+	contentType := req.Header.Get("Content-Type")
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		if err := req.ParseMultipartForm(20 * 1024 * 1024); err != nil {
+			utils.HandleError(res, http.StatusBadRequest, "Invalid multipart form")
+			log.Printf("Error parsing multipart form: %v", err)
+			return
+		}
+
+		user.Nickname = req.FormValue("nickname")
+		user.Firstname = req.FormValue("firstname")
+		user.Lastname = req.FormValue("lastname")
+		if ageStr := req.FormValue("age"); ageStr != "" {
+			if age, err := strconv.Atoi(ageStr); err == nil {
+				user.Age = age
+			}
+		}
+		user.Gender = req.FormValue("gender")
+		user.Email = req.FormValue("email")
+		user.Password = req.FormValue("password")
+		user.AboutMe = req.FormValue("about")
+
+		// Handle avatar file upload
+		avatarURL := utils.UploadImage(req, "avatar")
+		if avatarURL != "" {
+			user.AvatarURL = avatarURL
+		}
+
+	} else {
+		if err := json.NewDecoder(req.Body).Decode(&user); err != nil {
+			utils.HandleError(res, http.StatusBadRequest, "Invalid JSON format")
+			log.Printf("Error decoding JSON: %v", err)
+			return
+		}
 	}
+	log.Println("Received sign-up request for:", user.Email, user.Avatar)
 
 	if err := validateSignUpInput(&user); err != nil {
 		utils.HandleError(res, http.StatusBadRequest, err.Error())
@@ -190,11 +226,28 @@ func Me(app *app.Application, res http.ResponseWriter, req *http.Request) {
 }
 
 // Validation helpers
-var ErrMissingRequiredFields = errors.New("missing required fields")
+var (
+	ErrMissingRequiredFields = errors.New("missing required fields")
+	emailRegex               = regexp.MustCompile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")
+	NicknameRegex            = regexp.MustCompile("^[a-zA-Z0-9_-]{3,20}$")
+	nameRegex                = regexp.MustCompile("^[a-zA-Z]+$")
+)
 
 func validateSignUpInput(user *models.User) error {
-	if user.Nickname == "" || user.Email == "" || user.Password == "" {
+	if strings.TrimSpace(user.Email) == "" || strings.TrimSpace(user.Password) == "" || strings.TrimSpace(user.Firstname) == "" || strings.TrimSpace(user.Lastname) == "" {
 		return ErrMissingRequiredFields
+	}
+	if !emailRegex.MatchString(user.Email) {
+		return errors.New("invalid email format")
+	}
+	if !NicknameRegex.MatchString(user.Nickname) {
+		return errors.New("invalid nickname format ")
+	}
+	if !nameRegex.MatchString(user.Firstname) {
+		return errors.New("invalid first name format must contain only letters")
+	}
+	if !nameRegex.MatchString(user.Lastname) {
+		return errors.New("invalid last name format must contain only letters")
 	}
 	user.Nickname = html.EscapeString(user.Nickname)
 	user.Email = html.EscapeString(user.Email)
@@ -203,7 +256,7 @@ func validateSignUpInput(user *models.User) error {
 }
 
 func validateSignInInput(login models.UserSignIn) error {
-	if login.Identifiant == "" || login.Password == "" {
+	if strings.TrimSpace(login.Identifiant) == "" || strings.TrimSpace(login.Password) == "" {
 		return ErrMissingRequiredFields
 	}
 	return nil

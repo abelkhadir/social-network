@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
+
 	"social/internal/models"
 	"social/pkg/utils"
-	"strings"
 
 	"github.com/gofrs/uuid"
 )
@@ -62,7 +63,6 @@ func (ur *UserRepository) GetUserByID(userID string) (*models.User, error) {
 		}
 		return nil, err
 	}
-	user.Avatar = user.AvatarURL
 	return &user, nil
 }
 
@@ -77,7 +77,6 @@ func (ur *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 		}
 		return nil, err
 	}
-	user.Avatar = user.AvatarURL
 	return &user, nil
 }
 
@@ -93,7 +92,6 @@ func (ur *UserRepository) GetUserByNickname(nickname string) (*models.User, erro
 		}
 		return nil, err
 	}
-	user.Avatar = user.AvatarURL
 	return &user, nil
 }
 
@@ -189,12 +187,11 @@ func (ur *UserRepository) SelectAllUsersOfPost(postID string) ([]models.User, er
 		var nickname string
 
 		err = row.Scan(&ID, &AvatarUrl, &nickname)
-
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		var tab = models.User{
+		tab := models.User{
 			ID:        ID,
 			AvatarURL: AvatarUrl,
 			Nickname:  nickname,
@@ -221,7 +218,6 @@ func (ur *UserRepository) IsExistedByIdentifiant(identifiant string) (*models.Us
 		}
 		return nil, false
 	}
-	user.Avatar = user.AvatarURL
 	return &user, true
 }
 
