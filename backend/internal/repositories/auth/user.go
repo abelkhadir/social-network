@@ -11,7 +11,7 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-var DEFAULT_AVATAR = "/uploads/avatar.1.jpeg"
+var DEFAULT_AVATAR = "/uploads/images/9cc84dfa-8fcf-4633-9d31-85b8a96baa75.jpg"
 
 type UserRepository struct {
 	db *sql.DB

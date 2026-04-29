@@ -3,13 +3,16 @@ package sessions
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
-	"social/internal/models"
 	"time"
 
-	"github.com/gofrs/uuid"
+	"social/internal/models"
+
 	"social/internal/repositories/auth"
+
+	"github.com/gofrs/uuid"
 )
 
 type SessionRepository struct {
@@ -34,6 +37,7 @@ func (sb *SessionRepository) NewSessionToken(res http.ResponseWriter, userID str
 	// Delete existing session for this user (1 session per user)
 	_, err := sb.db.Exec("DELETE FROM sessions WHERE user_id = ?", userID)
 	if err != nil {
+		fmt.Println("ffsdfsdjfs",err)
 		return err
 	}
 
@@ -45,9 +49,11 @@ func (sb *SessionRepository) NewSessionToken(res http.ResponseWriter, userID str
 		expireAt,
 	)
 	if err != nil {
+		fmt.Println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+
 		return err
 	}
-
+	// fmt.Println("the ")
 	http.SetCookie(res, &http.Cookie{
 		Name:     "auth_session",
 		Value:    token,
@@ -73,7 +79,6 @@ func (sb *SessionRepository) ValidSession(req *http.Request) bool {
 		"SELECT expire_at FROM sessions WHERE token = ?",
 		cookie.Value,
 	).Scan(&expireAt)
-
 	if err != nil {
 		return false
 	}
@@ -101,7 +106,6 @@ func (sb *SessionRepository) GetUserFromSession(req *http.Request) (*models.User
 		"SELECT user_id, expire_at FROM sessions WHERE token = ?",
 		cookie.Value,
 	).Scan(&userID, &expireAt)
-
 	if err != nil {
 		return nil, errors.New("invalid session")
 	}
