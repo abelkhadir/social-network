@@ -1,0 +1,15 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/add-post/page": "app/add-post/page.js",
+  "/chat/[id]/page": "app/chat/[id]/page.js",
+  "/followers/page": "app/followers/page.js",
+  "/groups/[id]/page": "app/groups/[id]/page.js",
+  "/groups/page": "app/groups/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/post/[id]/page": "app/post/[id]/page.js",
+  "/profile/[id]/page": "app/profile/[id]/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/register/page": "app/register/page.js"
+}

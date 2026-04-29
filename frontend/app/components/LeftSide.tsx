@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
-import { fetchApi } from "../../lib/api";
+import { fetchApi, resolveApiUrl } from "../../lib/api";
 import { fetchJoinedGroups, fetchSuggestedGroups, GroupSummary } from "../../lib/groups";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -154,7 +154,7 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
               return (
                 <Link href={`/chat/${userID}`} key={userID} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--color-input-bg)", borderRadius: "8px", alignItems: "center", border: "1px solid transparent", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "transparent"}>
                   <div style={{ position: "relative" }}>
-                    <img src={u.Avatar || u.avatar_url || defaultAvatar} alt="avatar" style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }} />
+                    <img src={resolveApiUrl(u.avatar_url)} alt="avatar" style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }} />
                     <div style={{ position: "absolute", bottom: 0, right: 0, width: "12px", height: "12px", background: isConnected ? "#2ecc71" : "gray", borderRadius: "50%", border: "2px solid #1e2124" }}></div>
                   </div>
                   <div style={{ flex: 1 }}>
@@ -178,7 +178,22 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
             joinedGroups.length > 0 ? joinedGroups.map((g) => (
               <Link href={`/groups/${g.id}`} key={g.id} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--color-input-bg)", borderRadius: "8px", alignItems: "center", border: "1px solid transparent", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "transparent"}>
                 <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "#1e2124", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.95rem", color: "var(--color-primary)", fontWeight: "bold" }}>
-                  #{g.id}
+
+                   <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ width: "18px", height: "18px" }}
+        >
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <path d="M16 3.128a4 4 0 0 1 0 7.744" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <circle cx="9" cy="7" r="4" />
+        </svg>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: "bold", color: "var(--text-main)" }}>{g.title}</div>

@@ -10,14 +10,14 @@ export default function HomePage() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [currentFilter, setCurrentFilter] = useState("all"); 
+  const [currentFilter, setCurrentFilter] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
       setLoading(false);
-      return; 
+      return;
     }
 
     const loadData = async () => {
@@ -34,7 +34,7 @@ export default function HomePage() {
         setLoading(false);
       }
     };
-    
+
     loadData();
   }, [user]);
 
@@ -61,12 +61,12 @@ export default function HomePage() {
   if (loading) {
     return <div style={{ textAlign: "center", padding: "20px", color: "var(--text-main)" }}>Loading posts...</div>;
   }
-    console.log( filteredPosts.forEach(element => {
-    console.log("the post imaaaage ",element.image)
+  console.log(filteredPosts.forEach(element => {
+    console.log("the post imaaaage ", element.image)
   }))
   return (
     <main className="feed" style={{ maxWidth: "600px", margin: "0 auto" }}>
-      
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "20px" }}>
         <Link href="/profile" style={{ background: "var(--bg-card)", padding: "15px", borderRadius: "12px", border: "1px solid #2f3336", textDecoration: "none", color: "var(--text-main)", textAlign: "center", transition: "0.2s", fontWeight: "bold" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "#2f3336"}>
           <div style={{ fontSize: "1.5rem", marginBottom: "5px" }}>👤</div>
@@ -100,7 +100,7 @@ export default function HomePage() {
           ))}
         </select>
       </div>
-          
+
       <div className="posts-container" style={{ marginTop: "20px" }}>
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post) => (
@@ -115,12 +115,12 @@ export default function HomePage() {
                 </span>
               </div>
 
-        <img 
-          src={post.image ? resolveApiUrl(post.image) : defaultImage} 
-          className="post-image" 
-          alt="Post Image" 
-          style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }} 
-        />
+              <img
+                src={post.image ? resolveApiUrl(post.image) : defaultImage}
+                className="post-image"
+                alt="Post Image"
+                style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }}
+              />
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "15px" }}>
                 {post.listOfCategories && post.listOfCategories.length > 0 ? (
                   post.listOfCategories.map((c: string, idx: number) => (

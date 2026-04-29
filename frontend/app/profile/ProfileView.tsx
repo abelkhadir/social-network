@@ -134,9 +134,8 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
 
   const displayUser = profile.user || user;
   const defaultCover = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop";
-  // const avatarCandidate = displayUser?.avatar || displayUser?.avatar_url || "";
-  const avatarCandidate =defaultCover
-  const avatarSrc ="https://img6.arthub.ai/65266a51-47b8.webp";
+  const avatarSrc = resolveApiUrl(profile.user.avatar_url);
+
   const posts = profile.posts || [];
 
   return (

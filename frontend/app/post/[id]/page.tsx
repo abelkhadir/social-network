@@ -145,6 +145,7 @@ export default function SinglePostPage() {
 
         <img 
           src={p.image ? (p.image.startsWith('http') ? p.image : `http://localhost:8081/${p.image}`) : defaultImage} 
+          //src={resolveApiUrl(p.image)} 
           className="post-image" 
           alt="Post Image" 
           style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }} 
