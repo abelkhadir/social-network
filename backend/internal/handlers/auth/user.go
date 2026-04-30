@@ -2,7 +2,6 @@ package authandler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html"
 	"net/http"
@@ -194,12 +193,9 @@ func Me(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	})
 }
 
-// Validation helpers
-var ErrMissingRequiredFields = errors.New("missing required fields")
-
 func validateSignUpInput(user *models.User) error {
 	if user.Nickname == "" || user.Email == "" || user.Password == "" {
-		return ErrMissingRequiredFields
+		return fmt.Errorf("missing required fields")
 	}
 	user.Nickname = html.EscapeString(user.Nickname)
 	user.Email = html.EscapeString(user.Email)
@@ -209,7 +205,7 @@ func validateSignUpInput(user *models.User) error {
 
 func validateSignInInput(login models.UserSignIn) error {
 	if login.Identifiant == "" || login.Password == "" {
-		return ErrMissingRequiredFields
+		return fmt.Errorf("missing required fields")
 	}
 	return nil
 }

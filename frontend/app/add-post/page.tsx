@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useToast } from "../../context/ToastContext"; 
@@ -8,14 +8,7 @@ import { useToast } from "../../context/ToastContext";
 export default function AddPostPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const [categories, setCategories] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchApi("/categories")
-      .then((data) => setCategories(data.Categories || []))
-      .catch(() => setCategories([{ id: "1", name: 'General' }, { id: "2", name: 'Technology' }]));
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,12 +19,9 @@ export default function AddPostPage() {
 
     const title = formData.get("title");
     const description = formData.get("description");
-    const selectedCats = formData.getAll("categories");
     const image = formData.get("image") as File;
 
     if (!title || !description) return setError("Please fill in the Title and Description.");
-    if (selectedCats.length === 0) return setError("Please select at least one category.");
-    if (!image || image.size === 0) return setError("Please select an image to upload.");
 
     try {
       await fetchApi("/post", {
@@ -59,18 +49,6 @@ export default function AddPostPage() {
         )}
 
         <form onSubmit={handleSubmit} className="create-post-form" encType="multipart/form-data">
-          
-          <div className="form-group">
-            <label style={{ marginBottom: "10px", display: "block" }}>Select Categories:</label>
-            <div className="category-choices" style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-              {categories.map((cat) => (
-                <label key={cat.id} className="category-checkbox" htmlFor={`cat-${cat.id}`}>
-                  <input type="checkbox" name="categories" value={cat.name || cat.Category} id={`cat-${cat.id}`} />
-                  <span>{cat.name || cat.Category}</span>
-                </label>
-              ))}
-            </div>
-          </div>
 
           <div className="form-group">
             <label htmlFor="title">Title</label>
@@ -84,7 +62,7 @@ export default function AddPostPage() {
 
           <div className="form-group">
             <label htmlFor="image">Image</label>
-            <input type="file" name="image" id="image" accept="image/*" required />
+            <input type="file" name="image" id="image" accept="image/*" />
           </div>
 
           <button type="submit" className="btn">🚀 Publish Post</button>

@@ -3,16 +3,15 @@ package models
 import "mime/multipart"
 
 type PostItem struct {
-	ID               string   `json:"id"`
-	Title            string   `json:"title"`
-	AuthorName       string   `json:"authorName"`
-	CreateDate       string   `json:"createDate"`
-	NumberOfComments int      `json:"numberOfComments"`
-	ListOfCategories []string `json:"listOfCategories"`
-	Likes            int      `json:"likes"`
-	Dislikes         int      `json:"dislikes"`
-	VoteStatus       *int     `json:"vote_status"`
-	Image            string   `json:"image"`
+	ID               string `json:"id"`
+	Title            string `json:"title"`
+	AuthorName       string `json:"authorName"`
+	CreateDate       string `json:"createDate"`
+	NumberOfComments int    `json:"numberOfComments"`
+	Likes            int    `json:"likes"`
+	Dislikes         int    `json:"dislikes"`
+	VoteStatus       *int   `json:"vote_status"`
+	Image            string `json:"image"`
 }
 
 type CompletePost struct {
@@ -42,13 +41,12 @@ type Post struct {
 }
 
 type PostCreation struct {
-	ID          string   `json:"id"`
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	AuthorID    string   `json:"authorID"`
-	Image       string   `json:"image"`
-	Categories  []string `json:"categories"`
-	CreateDate  string   `json:"createDate"`
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	AuthorID    string `json:"authorID"`
+	Image       string `json:"image"`
+	CreateDate  string `json:"createDate"`
 }
 type Image struct {
 	ImgHeader  *multipart.FileHeader

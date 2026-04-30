@@ -78,8 +78,8 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                 setIsMobileMenuOpen(false);
               }}
               style={{
-                background: isChatMode ? "var(--color-primary-dark)" : "transparent",
-                color: isChatMode ? "#fff" : "var(--text-main)",
+                background: "transparent",
+                color: isChatMode ? "#fff" : "var(--ink-700)",
                 border: "1px solid var(--color-primary)",
                 padding: "8px 20px",
                 borderRadius: "20px",

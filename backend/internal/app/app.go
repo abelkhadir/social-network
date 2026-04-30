@@ -2,7 +2,6 @@ package app
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -25,8 +24,6 @@ type Application struct {
 	UserRepo         *auth.UserRepository
 	PostRepo         *post.PostRepository
 	CommentRepo      *post.CommentRepository
-	CategoryRepo     *post.CategoryRepository
-	PostCategoryRepo *post.PostCategoryRepository
 	ProfileRepo      *profilerepo.ProfileRepository
 	MessageRepo      *websocket.MessageRepository
 	SessionRepo      *sessions.SessionRepository
@@ -41,7 +38,6 @@ type Application struct {
 func NewApp() *Application {
 	utils.LoadEnv(".env")
 	databaseURL := os.Getenv("DATABASE")
-	fmt.Println("The database url", databaseURL)
 	if databaseURL == "" {
 		log.Fatal("❌ DATABASE environment variable is not set")
 	}
@@ -57,7 +53,7 @@ func NewApp() *Application {
 	if err != nil {
 		log.Fatal("❌ Couldn't open database:", err)
 	}
-	fmt.Println("the db ", db)
+
 	if err := db.Ping(); err != nil {
 		log.Fatal("❌ Database not reachable:", err)
 	}
@@ -76,8 +72,6 @@ func NewApp() *Application {
 	userRepo := auth.NewUserRepository(db)
 	postRepo := post.NewPostRepository(db)
 	commentRepo := post.NewCommentRepository(db)
-	categoryRepo := post.NewCategoryRepository(db)
-	postCategoryRepo := post.NewPostCategoryRepository(db)
 	profileRepo := profilerepo.NewProfileRepository(db)
 	messageRepo := websocket.NewMessageRepository(db)
 	sessionRepo := sessions.NewSessionRepository(db, userRepo)
@@ -89,8 +83,6 @@ func NewApp() *Application {
 		UserRepo:         userRepo,
 		PostRepo:         postRepo,
 		CommentRepo:      commentRepo,
-		CategoryRepo:     categoryRepo,
-		PostCategoryRepo: postCategoryRepo,
 		ProfileRepo:      profileRepo,
 		MessageRepo:      messageRepo,
 		SessionRepo:      sessionRepo,
@@ -99,7 +91,6 @@ func NewApp() *Application {
 		GroupMessage:     groupMsgRepo,
 	}
 
-	log.Println("✅ Application initialized successfully")
 	return app
 }
 

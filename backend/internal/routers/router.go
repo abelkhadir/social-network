@@ -71,11 +71,6 @@ func SetupRoutes(a *app.Application) {
 		posthandler.GetAllPosts(a, res, req)
 	}))
 
-	// Categories
-	http.Handle("/categories", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		posthandler.GetaAllCategory(a, res, req)
-	})))
-
 	// Comment Handlers
 	http.Handle("/comment/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		posthandler.CreateComment(a, res, req)

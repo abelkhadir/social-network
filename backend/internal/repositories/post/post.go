@@ -110,7 +110,6 @@ func (pr *PostRepository) GetUserOwnPosts(userId, nickName string) ([]models.Pos
 			AuthorName:       nickName,
 			CreateDate:       utils.FormatDateDB(lastModificationDate),
 			NumberOfComments: numberComments[i],
-			ListOfCategories: []string{},
 		}
 		tabPostItem = append(tabPostItem, postItem)
 
@@ -119,7 +118,6 @@ func (pr *PostRepository) GetUserOwnPosts(userId, nickName string) ([]models.Pos
 	return tabPostItem, nil
 }
 
-// Get all posts as PostItems with author name and category names
 func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error) {
 	var postItems []*models.PostItem
 	request := `
@@ -128,7 +126,6 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 			u.nickname AS authorName,
 			p.createDate AS lastEditionDate,
 			COUNT(DISTINCT cm.id) AS numberOfComments,
-			COALESCE(GROUP_CONCAT(c.name, ', '), '') AS listOfCategories,
 			COALESCE(p.Image, ''),
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes,
@@ -136,8 +133,6 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 		FROM post p
 		JOIN user u ON p.authorID = u.id
 		LEFT JOIN "comment" cm ON p.id = cm.postID
-		LEFT JOIN post_category pc ON p.id = pc.post_id
-		LEFT JOIN category c ON pc.category_id = c.id
 		LEFT JOIN post_vote pv ON pv.post_id = p.id AND pv.user_id = ?
 		GROUP BY p.id
 		ORDER BY p.createDate DESC
@@ -150,7 +145,6 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 
 	for rows.Next() {
 		var post models.PostItem
-		ListOfCategories := ""
 		var voteStatus sql.NullInt64
 		err := rows.Scan(
 			&post.ID,
@@ -158,7 +152,6 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 			&post.AuthorName,
 			&post.CreateDate,
 			&post.NumberOfComments,
-			&ListOfCategories,
 			&post.Image,
 			&post.Likes,
 			&post.Dislikes,
@@ -169,11 +162,6 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 		}
 
 		post.CreateDate = utils.FormatDateDB(post.CreateDate)
-		if ListOfCategories == "" {
-			post.ListOfCategories = []string{}
-		} else {
-			post.ListOfCategories = strings.Split(ListOfCategories, ", ")
-		}
 		if voteStatus.Valid {
 			v := int(voteStatus.Int64)
 			post.VoteStatus = &v
@@ -193,7 +181,6 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 	return postItems, nil
 }
 
-// Get all posts as PostItems with author name and category names
 func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error) {
 	request := `
 		SELECT 
@@ -201,13 +188,10 @@ func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error
 			u.nickname AS authorName,
 			p.createDate AS lastEditionDate,
 			COUNT(DISTINCT cm.id) AS numberOfComments,
-			COALESCE(GROUP_CONCAT(c.name, ', '), '') AS listOfCategories,
 			COALESCE(p.Image, '')
 		FROM post p
 		JOIN user u ON p.authorID = u.id
 		LEFT JOIN "comment" cm ON p.id = cm.postID
-		LEFT JOIN post_category pc ON p.id = pc.post_id
-		LEFT JOIN category c ON pc.category_id = c.id
 		WHERE p.id = ?
 		GROUP BY p.id
 		ORDER BY p.createDate DESC
@@ -215,14 +199,12 @@ func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error
 	row := pr.db.QueryRow(request, postID)
 
 	var post models.PostItem
-	ListOfCategories := ""
 	err := row.Scan(
 		&post.ID,
 		&post.Title,
 		&post.AuthorName,
 		&post.CreateDate,
 		&post.NumberOfComments,
-		&ListOfCategories,
 		&post.Image,
 	)
 	if err != nil {
@@ -230,11 +212,6 @@ func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error
 	}
 
 	post.CreateDate = utils.FormatDateDB(post.CreateDate)
-	if ListOfCategories == "" {
-		post.ListOfCategories = []string{}
-	} else {
-		post.ListOfCategories = strings.Split(ListOfCategories, ", ")
-	}
 	if post.Image != "" {
 		post.Image = "/uploads/images/" + post.Image
 	}

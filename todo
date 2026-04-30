@@ -1,5 +1,4 @@
 
- #todo
 #  Social Network - ToDo List
 
 ##  Codebase Refactoring & Setup
@@ -43,7 +42,6 @@
 
 ##  Posts & Comments Functionality
 ### Posts
-- [x] Create posts with categories
 - [x] Create posts with image uploads (Multipart form data)
 - [ ] **Privacy Levels:** Allow users to choose if post is Public, Almost Private, or Private.
 
@@ -56,7 +54,6 @@
 
 ## 🔍 Post Listing & Filtering
 - [x] List all posts (Feed)
-- [x] Filter posts by category
 - [x] Filter posts by Author (My Posts)
 - [x] Filter posts by Liked posts
 
@@ -110,4 +107,3 @@
 - [ ] Create `docker-compose.yml` to link them together
 
 ---
-

@@ -151,7 +151,7 @@ export default function SinglePostPage() {
           style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }} 
         />
 
-        {/* POST LIKES & TAGS */}
+        {/* POST LIKES */}
         <div className="post-actions" style={{ display: "flex", gap: "15px", alignItems: "center", borderTop: "1px solid #2f3336", paddingTop: "15px", flexWrap: "wrap" }}>
           <button onClick={handleLikePost} style={{ background: "transparent", color: "var(--text-main)", border: "1px solid #3a3f44", padding: "8px 15px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold" }}>
             👍 {p.likes || 0} Like
@@ -159,14 +159,6 @@ export default function SinglePostPage() {
           <button onClick={handleDislikePost} style={{ background: "transparent", color: "var(--text-main)", border: "1px solid #3a3f44", padding: "8px 15px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold" }}>
             👎 {p.dislikes || 0} Dislike
           </button>
-          
-          <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-            {p.categories ? p.categories.map((cat: string, idx: number) => (
-              <span key={idx} className="tag" style={{ background: "rgba(255, 123, 0, 0.1)", color: "var(--color-primary)", padding: "5px 12px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: "bold" }}>#{cat}</span>
-            )) : (
-              <span className="tag" style={{ background: "#2f3336", color: "var(--text-muted)", padding: "5px 12px", borderRadius: "20px", fontSize: "0.8rem" }}>#Uncategorized</span>
-            )}
-          </div>
         </div>
       </div>
 

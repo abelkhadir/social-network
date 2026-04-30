@@ -17,21 +17,6 @@ INSERT INTO sessions(token, user_id, expire_at) VALUES
 ('token_ghi789', '3', '2026-03-04 00:00:00');
 
 -- ========================
--- CATEGORIES
--- ========================
-INSERT INTO category(id, name) VALUES
-('1', 'Painting'),
-('2', 'Sculpture'),
-('3', 'Photography'),
-('4', 'Digital Art'),
-('5', 'Drawing'),
-('6', 'Mixed Media'),
-('7', 'Printmaking'),
-('8', 'Ceramics'),
-('9', 'Sport'),
-('10', 'Performance Art');
-
--- ========================
 -- POSTS
 -- ========================
 INSERT INTO post(id, title, description, authorID, Image, createDate) VALUES
@@ -65,28 +50,6 @@ INSERT INTO post_vote(user_id, post_id, vote) VALUES
 ('3', '82', 1),
 ('4', '2', 1),
 ('5', '2',1);
-
-INSERT INTO post_category(category_id, post_id) VALUES
-('1','1'),  -- Post 1 is in category 1 (Painting)
-('1','2'),  -- Post 2 is also in Painting
-('2','11'), -- Post 11 is in Sculpture
-('2','12'), -- Post 12 is in Sculpture
-('3','21'), -- Post 21 is Photography
-('3','22'), -- Post 22 is Photography
-('4','31'), -- Post 31 is Digital Art
-('4','32'), -- Post 32 is Digital Art
-('5','41'), -- Post 41 is Drawing
-('5','42'), -- Post 42 is Drawing
-('6','51'), -- Post 51 is Mixed Media
-('6','52'), -- Post 52 is Mixed Media
-('7','61'), -- Post 61 is Printmaking
-('7','62'), -- Post 62 is Printmaking
-('8','71'), -- Post 71 is Ceramics
-('8','72'), -- Post 72 is Ceramics
-('10','81'), -- Post 81 is Performance Art
-('10','82'), -- Post 82 is Performance Art
-('10','91'), -- Post 91 is Performance Art
-('10','92'); -- Post 92 is Performance Art
 
 
 INSERT INTO comment(id, text, authorID, postID, createDate)

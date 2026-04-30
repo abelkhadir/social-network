@@ -48,19 +48,6 @@ func EnsureSchema(db *sql.DB) error {
 			FOREIGN KEY (authorID) REFERENCES user(id) ON DELETE CASCADE
 		);`,
 
-		`CREATE TABLE IF NOT EXISTS category (
-			id TEXT PRIMARY KEY,
-			name TEXT UNIQUE NOT NULL
-		);`,
-
-		`CREATE TABLE IF NOT EXISTS post_category (
-			category_id TEXT NOT NULL,
-			post_id TEXT NOT NULL,
-			FOREIGN KEY(category_id) REFERENCES category(id) ON DELETE CASCADE,
-			FOREIGN KEY(post_id) REFERENCES post(id) ON DELETE CASCADE,
-			UNIQUE(category_id, post_id)
-		);`,
-
 		`CREATE TABLE IF NOT EXISTS comment (
 			id TEXT PRIMARY KEY,
 			text TEXT NOT NULL,
