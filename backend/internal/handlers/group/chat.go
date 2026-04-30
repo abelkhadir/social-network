@@ -1,7 +1,6 @@
 package groupshandler
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -31,7 +30,6 @@ import (
 // }
 
 func GetGroupMessages(app *app.Application, w http.ResponseWriter, r *http.Request) {
-
 	if r.Method != http.MethodGet {
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
 			"error": "Method not allowed",
@@ -48,7 +46,6 @@ func GetGroupMessages(app *app.Application, w http.ResponseWriter, r *http.Reque
 
 	// messages, err := h.service.GetGroupMessagesService(groupid)
 	messages, err := app.GroupPostRepo.GetGroupMessagesRepo(groupid)
-
 	if err != nil {
 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
 			"message": "Error, please try again.",
@@ -62,9 +59,6 @@ func GetGroupMessages(app *app.Application, w http.ResponseWriter, r *http.Reque
 }
 
 func SendChatMessage(application *app.Application, res http.ResponseWriter, req *http.Request) {
-	fmt.Println("-------------------------------------")
-	fmt.Println("hee   want to sent messages in grouuup")
-	fmt.Println("-------------------------------------")
 	if !utils.ValidateRequest(req, res, "/chat/group/new", http.MethodPost) {
 		return
 	}
@@ -115,4 +109,3 @@ func SendChatMessage(application *app.Application, res http.ResponseWriter, req 
 	// 	"data":    saved,
 	// })
 }
-

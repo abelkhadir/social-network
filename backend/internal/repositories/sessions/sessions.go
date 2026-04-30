@@ -3,7 +3,6 @@ package sessions
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -37,7 +36,6 @@ func (sb *SessionRepository) NewSessionToken(res http.ResponseWriter, userID str
 	// Delete existing session for this user (1 session per user)
 	_, err := sb.db.Exec("DELETE FROM sessions WHERE user_id = ?", userID)
 	if err != nil {
-		fmt.Println("ffsdfsdjfs",err)
 		return err
 	}
 
@@ -49,11 +47,8 @@ func (sb *SessionRepository) NewSessionToken(res http.ResponseWriter, userID str
 		expireAt,
 	)
 	if err != nil {
-		fmt.Println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
-
 		return err
 	}
-	// fmt.Println("the ")
 	http.SetCookie(res, &http.Cookie{
 		Name:     "auth_session",
 		Value:    token,

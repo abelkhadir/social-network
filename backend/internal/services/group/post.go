@@ -31,7 +31,6 @@ package services
 // 			Message: "error while validating the image",
 // 		}
 // 	}
-// 	fmt.Println("the post will go to saved into the database")
 // 	return s.repo.SaveGroupPostRepo(ctx, group, img)
 // }
 

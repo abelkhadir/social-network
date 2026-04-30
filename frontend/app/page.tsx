@@ -44,17 +44,13 @@ export default function HomePage() {
 
   const formatDateTime = (value: string) => {
     if (!value) return "";
-    return new Date(value).toDateString();
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toDateString();
   };
-
-  const defaultImage = "https://es.gizmodo.com/app/uploads/2024/12/Diseno-sin-titulo-52-14-1024x683.jpg";
 
   if (loading) {
     return <div style={{ textAlign: "center", padding: "20px", color: "var(--text-main)" }}>Loading posts...</div>;
   }
-  console.log(filteredPosts.forEach(element => {
-    console.log("the post imaaaage ", element.image)
-  }))
   return (
     <main className="feed" style={{ maxWidth: "600px", margin: "0 auto" }}>
 
@@ -75,17 +71,19 @@ export default function HomePage() {
                 </span>
               </div>
 
-              <img
-                src={post.image ? resolveApiUrl(post.image) : defaultImage}
-                className="post-image"
-                alt="Post Image"
-                style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }}
-              />
+              {post.image && (
+                <img
+                  src={resolveApiUrl(post.image)}
+                  className="post-image"
+                  alt="Post Image"
+                  style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }}
+                />
+              )}
 
               <div className="post-actions" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #2f3336", paddingTop: "15px" }}>
                 <div style={{ display: "flex", gap: "15px" }}>
-                  <span style={{ color: "var(--text-main)", fontWeight: "bold", display: "flex", alignItems: "center", gap: "5px" }}>❤️ <span style={{ color: "var(--text-muted)" }}>{post.likes}</span></span>
-                  <span style={{ color: "var(--text-main)", fontWeight: "bold", display: "flex", alignItems: "center", gap: "5px" }}>💬 <span style={{ color: "var(--text-muted)" }}>{post.numberOfComments || 0}</span></span>
+                  <span style={{ color: "var(--text-main)", fontWeight: "bold", display: "flex", alignItems: "center", gap: "5px" }}><img src="/icons/like.svg" alt="Like" width={18} height={18} style={{ display: "block" }} /> <span style={{ color: "var(--text-muted)" }}>{post.likes}</span></span>
+                  <span style={{ color: "var(--text-main)", fontWeight: "bold", display: "flex", alignItems: "center", gap: "5px" }}><img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} /> <span style={{ color: "var(--text-muted)" }}>{post.numberOfComments || 0}</span></span>
                 </div>
                 <Link href={`/post/${post.id}`} style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: "bold", display: "flex", alignItems: "center", gap: "5px" }}>
                   View Discussion ➔

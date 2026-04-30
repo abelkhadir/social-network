@@ -47,7 +47,7 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 
 	err = app.SessionRepo.NewSessionToken(res, user.ID)
 	if err != nil {
-		fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+		fmt.Println("Error making session token")
 	}
 
 	notification := models.Notification{

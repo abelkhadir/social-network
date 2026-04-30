@@ -117,16 +117,15 @@ export default function ChatPage() {
 
   if (!talker) return <h2 style={{ color: "white", textAlign: "center", marginTop: "20px" }}>User not found</h2>;
 
-  const defaultAvatar = "https://img6.arthub.ai/65266a51-47b8.webp";
-  const talkerName = talker.Nickname || talker.nickname || talker.Username || "User";
-  const talkerAvatar = talker.Avatar || talker.avatar_url || defaultAvatar;
+  const talkerName = talker.nickname;
+  const talkerAvatar = talker.avatar_url;
   const talkerOnline = talker.IsConnected ?? talker.is_connected ?? false;
 
   return (
     <div className="chat-container" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", background: "var(--bg-card)", borderRadius: "var(--radius-lg)", boxShadow: "0 4px 12px rgba(0,0,0,0.2)", overflow: "hidden" }}>
       
       {/* Header */}
-      <div className="chat-header" style={{ display: "flex", alignItems: "center", gap: "15px", padding: "15px 20px", background: "#1a1d20", borderBottom: "1px solid #2f3336" }}>
+      <div className="chat-header" style={{ display: "flex", alignItems: "center", gap: "15px", padding: "15px 20px", background: "#FBF8F3", borderBottom: "1px solid #2f3336" }}>
         <img src={talkerAvatar} alt="avatar" style={{ width: "45px", height: "45px", borderRadius: "50%", objectFit: "cover" }} />
         <div>
           <h3 style={{ margin: 0, color: "var(--text-main)" }}>{talkerName}</h3>
@@ -142,7 +141,7 @@ export default function ChatPage() {
           messages.map((msg, idx) => {
             const senderID = msg.senderID || msg.SenderID;
             const isMe = senderID === myId;
-            const timeString = new Date(msg.CreateDate || msg.createDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const timeString = new Date( msg.createDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return (
               <div key={idx} style={{ maxWidth: "70%", padding: "10px 15px", borderRadius: "15px", marginBottom: "10px", display: "flex", flexDirection: "column", alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "var(--color-primary-dark)" : "#343a40", color: isMe ? "white" : "var(--text-main)", borderBottomRightRadius: isMe ? "4px" : "15px", borderBottomLeftRadius: isMe ? "15px" : "4px" }}>
@@ -177,10 +176,10 @@ export default function ChatPage() {
             required 
             value={text}
             onChange={handleInput}
-            style={{ flexGrow: 1, padding: "12px 15px", borderRadius: "25px", border: "none", background: "var(--color-input-bg)", color: "var(--text-main)", fontSize: "1rem", outline: "none" }}
+            style={{ flexGrow: 1, padding: "12px 15px", borderRadius: "25px", border: "none", background: "var(--color-input-bg)", color: "#fff", fontSize: "1rem", outline: "none" }}
           />
           <button type="submit" style={{ background: "var(--color-primary-blue)", color: "#000", border: "none", borderRadius: "50%", width: "45px", height: "45px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "white" }}>
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>

@@ -2,7 +2,6 @@ package groupshandler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"social/internal/app"
@@ -102,7 +101,6 @@ func GetGroupPosts(app *app.Application, w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	fmt.Println("aaaaaaaaar", posts)
 	utils.SendJSONResponse(w, postsErr.Code, posts)
 }
 

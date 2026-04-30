@@ -51,7 +51,6 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
   }, [isNotifMenuOpen, refresh]);
 
   const logo = "/img/social-network.jpeg";
-  const defaultAvatar = "https://img6.arthub.ai/65266a51-47b8.webp";
 
   return (
     <header>
@@ -72,25 +71,16 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
             <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
             <Link href="/add-post" onClick={() => setIsMobileMenuOpen(false)}>Create Post</Link>
 
+
             <button
+              type="button"
+              className="header-nav-button"
               onClick={() => {
                 if (toggleChat) toggleChat();
                 setIsMobileMenuOpen(false);
               }}
-              style={{
-                background: "transparent",
-                color: isChatMode ? "#fff" : "var(--ink-700)",
-                border: "1px solid var(--color-primary)",
-                padding: "8px 20px",
-                borderRadius: "20px",
-                cursor: "pointer",
-                fontWeight: "bold",
-                transition: "all 0.3s",
-                display: "flex",
-                alignItems: "center"
-              }}
             >
-              💬 Messages
+              Messages
             </button>
 
             <div className="notif-dropdown-container" ref={notifDropdownRef} style={{ position: "relative", display: "flex", alignItems: "center", marginLeft: "10px" }}>
@@ -106,7 +96,7 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                 onMouseOver={(e) => e.currentTarget.style.background = "#2a2e33"}
                 onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
               >
-                🔔
+                <img src="/icons/notifications-white.svg" alt="Notifications" width={22} height={22} style={{ display: "block" }} />
                 {unreadCount > 0 && (
                   <span style={{
                     position: "absolute", top: "0", right: "0", background: "#e63946", color: "white",

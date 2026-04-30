@@ -161,7 +161,8 @@ header {
     color: var(--color-primary);
 }
 
-.header-buttons a {
+.header-buttons a,
+.header-buttons .header-nav-button {
     color: var(--ink-300);
     text-decoration: none;
     margin-left: 1rem;
@@ -171,9 +172,13 @@ header {
     border: 1px solid #3a3f44;
     transition: all 0.3s ease;
     font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
 }
 
-.header-buttons a:hover {
+.header-buttons a:hover,
+.header-buttons .header-nav-button:hover {
     background: var(--color-primary);
     border-color: var(--color-primary);
     color: #000;
@@ -537,7 +542,8 @@ header {
     gap: 15px;
 }
 
-.header-buttons a {
+.header-buttons a,
+.header-buttons .header-nav-button {
     color: var(--ink-300);
     text-decoration: none;
     padding: 0.6rem 1.2rem;
@@ -546,9 +552,13 @@ header {
     border: 1px solid #3a3f44;
     transition: all 0.3s ease;
     font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
 }
 
-.header-buttons a:hover {
+.header-buttons a:hover,
+.header-buttons .header-nav-button:hover {
     background: var(--color-primary);
     border-color: var(--color-primary);
     color: #000;

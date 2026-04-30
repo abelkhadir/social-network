@@ -229,7 +229,7 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
                     />
                   )}
                   <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                    <span>❤️ {post.likes} Likes | 💬 {post.comments} Comments</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "12px" }}><span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><img src="/icons/like.svg" alt="Likes" width={18} height={18} style={{ display: "block" }} /> {post.likes} Likes</span><span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} /> {post.comments} Comments</span></span>
                     <span>{post.date}</span>
                   </div>
                 </div>

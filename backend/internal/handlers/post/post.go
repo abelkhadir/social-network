@@ -3,7 +3,6 @@ package posthandler
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"html"
 	"io"
 	"net/http"
@@ -131,7 +130,6 @@ func CreatePost(application *app.Application, res http.ResponseWriter, req *http
 }
 
 func GetPost(application *app.Application, res http.ResponseWriter, req *http.Request) {
-	fmt.Println("the user want post details ", req.URL.Path)
 	if strings.HasSuffix(req.URL.Path, "/like") || strings.HasSuffix(req.URL.Path, "/dislike") {
 		RatePostHandler(application, res, req)
 		return
@@ -141,10 +139,8 @@ func GetPost(application *app.Application, res http.ResponseWriter, req *http.Re
 			path := req.URL.Path
 			pathPart := strings.Split(path, "/")
 			postid := pathPart[2]
-			// fmt.Println("the post id",postid)
 			exict, err := application.GroupPostRepo.PostExistsInGroup(postid)
 			if exict {
-				fmt.Println("the post exist ", postid)
 				post, err := application.GroupPostRepo.GetPostdetails(postid)
 				if err != nil {
 					utils.HandleError(res, http.StatusInternalServerError, err.Error())
@@ -158,7 +154,6 @@ func GetPost(application *app.Application, res http.ResponseWriter, req *http.Re
 				utils.HandleError(res, http.StatusInternalServerError, err.Error())
 				return
 			}
-			// fmt.Println("rah jab posts ")
 			comments, err := application.CommentRepo.GetCommentsOfPost(post.ID)
 			if err != nil {
 				utils.HandleError(res, http.StatusInternalServerError, err.Error())
@@ -168,7 +163,6 @@ func GetPost(application *app.Application, res http.ResponseWriter, req *http.Re
 			post.Comments = comments
 
 			utils.SendJSONResponse(res, http.StatusOK, map[string]any{"message": "post retrieved successfully", "post": post})
-			fmt.Println("daba eaja3 response hada how post", post)
 		} else {
 			utils.HandleError(res, http.StatusUnauthorized, "No active session")
 		}

@@ -173,15 +173,7 @@ export default function SingleGroupPage() {
       </div>
     );
   }
-  // console.log( posts.forEach(element => {
-  //   // console.log("the imaaage",element.mediaLink)
-  // }))
-  const mockEvents = [
-    { id: "e1", title: "Golang Q&A Session", desc: "Let's discuss channels and goroutines.", date: "Tomorrow at 20:00", going: 12, notGoing: 3, myChoice: null },
-    { id: "e2", name: "Hackathon Preparation", desc: "Team building for the upcoming hackathon.", date: "Next Saturday", going: 25, notGoing: 1, myChoice: "going" }
-  ];
 
-  const defualteimage = "https://www.techexplorist.com/wp-content/uploads/2019/12/happiness.jpg"
   return (
     <div style={{ maxWidth: "840px", margin: "0 auto", paddingBottom: "40px" }}>
       {/* Group Info Header */}
@@ -224,7 +216,7 @@ export default function SingleGroupPage() {
 
           {posts.length > 0 ? (
             posts.map((post) => {
-              const imageSrc = post.mediaLink || "";
+              const imageSrc = post.image || "sqfsqfd";
 
               return (
                 <div
@@ -318,7 +310,7 @@ export default function SingleGroupPage() {
                         gap: "5px",
                       }}
                     >
-                      ❤️{" "}
+                      <img src="/icons/like.svg" alt="Like" width={18} height={18} style={{ display: "block" }} />
                       <span style={{ color: "var(--text-muted)" }}>
                         {post.likes ?? 0}
                       </span>
@@ -333,7 +325,7 @@ export default function SingleGroupPage() {
                         gap: "5px",
                       }}
                     >
-                      💬{" "}
+                      <img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} />
                       <span style={{ color: "var(--text-muted)" }}>
                         {post.numberOfComments ?? 0}
                       </span>

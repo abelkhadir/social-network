@@ -53,7 +53,10 @@ export default function FollowersPage() {
       
       <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
         <div>
-          <h1 style={{ color: "var(--color-primary)", margin: 0 }}>👥 Connect & Follow</h1>
+          <h1 style={{ color: "var(--color-primary)", margin: 0, display: "flex", alignItems: "center", gap: "10px" }}>
+            <img src="/icons/groups.svg" alt="" width={28} height={28} style={{ display: "block" }} />
+            <span>Connect & Follow</span>
+          </h1>
           <p style={{ color: "var(--text-muted)", marginTop: "5px" }}>Find friends to chat with and see their private posts.</p>
         </div>
         <input

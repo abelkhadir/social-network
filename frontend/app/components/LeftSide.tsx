@@ -8,7 +8,7 @@ import { fetchJoinedGroups, fetchSuggestedGroups, GroupSummary } from "../../lib
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
+export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: boolean; toggleChat?: () => void }) {
   const { user } = useAuth();
   const pathname = usePathname();
   const [users, setUsers] = useState<any[]>([]);
@@ -94,10 +94,10 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
               Groups
             </Link>
             <div style={{ flexBasis: "100%", height: "0" }} />
-            <Link href="/chat" style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1,textDecoration: "none" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
+            <button type="button" onClick={() => toggleChat?.()} style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1, textDecoration: "none", background: "transparent" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
               <img src="/icons/chats.svg" alt="Chats" width={18} height={18} style={{ display: "block" }} />
               Chats
-            </Link>
+            </button>
             <div style={{ flexBasis: "100%", height: "0" }} />
             <span style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1,textDecoration: "none" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
               <img src="/icons/notifications.svg" alt="Notifications" width={18} height={18} style={{ display: "block" }} />
@@ -114,23 +114,47 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {suggestedGroups.slice(0, 4).map((g) => (
-              <div key={g.id} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-
-                <div style={{ flex: 1 }}>
-                  <Link href={`/groups/${g.id}`} style={{ color: "var(--text-main)", fontWeight: "bold", textDecoration: "none", fontSize: "0.9rem", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.color = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.color = "var(--text-main)"}>
+              <Link
+                key={g.id}
+                href={`/groups/${g.id}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  padding: "12px 14px",
+                  background: "var(--bg-surface)",
+                  border: "1px solid var(--border-default)",
+                  borderRadius: "12px",
+                  textDecoration: "none",
+                  transition: "0.2s",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = "var(--color-primary)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = "var(--border-default)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: "var(--text-main)", fontWeight: "bold", fontSize: "0.9rem", marginBottom: "4px" }}>
                     {g.title}
-                  </Link>
+                  </div>
                   <div style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
                     {g.description || "Open the group to learn more"}
                   </div>
                 </div>
-              </div>
+                <img src="/icons/arrow-right.svg" alt="" width={18} height={18} style={{ display: "block", color: "var(--color-primary)", flexShrink: 0 }} />
+              </Link>
             ))}
             {suggestedGroups.length === 0 && (
               <div style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>No suggested groups right now.</div>
             )}
-            <Link href="/groups" style={{ color: "var(--color-primary)", fontSize: "0.85rem", textDecoration: "none", marginTop: "10px", display: "block", fontWeight: "bold" }}>
-              Show more groups ➔
+            <Link href="/groups" style={{ color: "var(--color-primary)", fontSize: "0.85rem", textDecoration: "none", marginTop: "10px", display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: "bold" }}>
+              Show more groups
+              <img src="/icons/arrow-right.svg" alt="" width={16} height={16} style={{ display: "block" }} />
             </Link>
           </div>
         </div>
@@ -143,14 +167,9 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
 
   return (
     <aside className="sidebar-left">
-      <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-        <button onClick={() => setActiveTab("users")} style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer", transition: "0.3s", background: activeTab === "users" ? "var(--color-primary)" : "var(--color-input-bg)", color: activeTab === "users" ? "#000" : "var(--text-muted)" }}>
-          👤 Users
-        </button>
-        <button onClick={() => setActiveTab("groups")} style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer", transition: "0.3s", background: activeTab === "groups" ? "var(--color-primary)" : "var(--color-input-bg)", color: activeTab === "groups" ? "#000" : "var(--text-muted)" }}>
-          🛡️ Groups
-        </button>
-      </div>
+      <h2 style={{ color: "var(--text-main)", fontSize: "1.1rem", marginBottom: "12px" }}>
+        Chats
+      </h2>
 
       {loading ? (
         <p style={{ color: "var(--text-muted)", textAlign: "center", marginTop: "20px" }}>Loading...</p>
@@ -165,7 +184,7 @@ export default function LeftSide({ isChatMode }: { isChatMode?: boolean }) {
               const lastMessage = lastMessages[userID];
 
               return (
-                <Link href={`/chat/${userID}`} key={userID} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--color-input-bg)", borderRadius: "8px", alignItems: "center", border: "1px solid transparent", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "transparent"}>
+                <Link href={`/chat/${userID}`} key={userID} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--bg-card)", borderRadius: "8px", alignItems: "center", border: "1px solid var(--border-default)", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "var(--border-default)"}>
                   <div style={{ position: "relative" }}>
                     <img src={resolveApiUrl(u.avatar_url)} alt="avatar" style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }} />
                     <div style={{ position: "absolute", bottom: 0, right: 0, width: "12px", height: "12px", background: isConnected ? "#2ecc71" : "gray", borderRadius: "50%", border: "2px solid #1e2124" }}></div>

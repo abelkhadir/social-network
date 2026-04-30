@@ -213,7 +213,7 @@ func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error
 
 	post.CreateDate = utils.FormatDateDB(post.CreateDate)
 	if post.Image != "" {
-		post.Image = "/uploads/images/" + post.Image
+		post.Image = post.Image
 	}
 
 	return post, nil

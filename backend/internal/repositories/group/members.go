@@ -62,9 +62,6 @@ func (r *GroupRepository) GetGroupMembers(groupID string) (*models.GroupMembers,
 		}
 		members.Members = append(members.Members, member)
 	}
-	// fmt.Println("--------------------------------------------")
-	// fmt.Println("------------thaat is memebrs from db ", members)
-	// fmt.Println("--------------------------------------------")
 	return members, models.GroupError{
 		Code:    http.StatusOK,
 		Message: "succefully fetchd members",

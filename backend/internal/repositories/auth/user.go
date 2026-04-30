@@ -12,7 +12,7 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-var DEFAULT_AVATAR = "/uploads/images/9cc84dfa-8fcf-4633-9d31-85b8a96baa75.jpg"
+var DEFAULT_AVATAR = "/uploads/images/default-avatar.jpg"
 
 type UserRepository struct {
 	db *sql.DB
@@ -214,7 +214,6 @@ func (ur *UserRepository) IsExistedByIdentifiant(identifiant string) (*models.Us
 	// fmt.Print("the row where user ",row)
 	err := row.Scan(&user.ID, &user.Nickname, &user.Firstname, &user.Lastname, &user.Age, &user.Gender, &user.Email, &user.AvatarURL, &user.AboutMe, &user.IsPrivate, &user.Password)
 	if err != nil {
-		log.Println("❌ ", err)
 		if err == sql.ErrNoRows {
 			return nil, false
 		}
@@ -230,7 +229,6 @@ func (ur *UserRepository) IsExistedByID(ID string) (*models.User, bool) {
 	row := ur.db.QueryRow("SELECT id FROM user WHERE id = ?", ID)
 	err := row.Scan(&user.ID)
 	if err != nil {
-		log.Println("❌ ", err)
 		if err == sql.ErrNoRows {
 			return nil, false
 		}

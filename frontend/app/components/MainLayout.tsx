@@ -5,7 +5,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Header from "./Header";
 import LeftSide from "./LeftSide";
-import { RightSideTop, RightSideBottom } from "./RightSide";
+import { RightSideBottom } from "./RightSide";
 
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +23,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <Header toggleChat={() => setIsChatMode(!isChatMode)} isChatMode={isChatMode} />
 
       <div className="main-content">
-        <LeftSide isChatMode={isChatMode} />
+        <LeftSide isChatMode={isChatMode} toggleChat={() => setIsChatMode(!isChatMode)} />
 
         <main className="nervna-router">
           {children}
@@ -31,7 +31,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
         {/* RIGHT SIDE WRAPPER */}
         <div className="right-side">
-          <RightSideTop />
           <RightSideBottom />
         </div>
       </div>

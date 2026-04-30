@@ -1,13 +1,8 @@
 package static
 
 import (
-	"fmt"
 	"net/http"
 )
-
-func test(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("resqq")
-}
 
 func staticfiles() {
 	// Static file serving

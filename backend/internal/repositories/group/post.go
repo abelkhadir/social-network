@@ -59,9 +59,5 @@ func (pr *GroupRepository) GetPostdetails(postID string) (*models.CompletePost, 
 		return nil, err
 	}
 
-	if post.Image != "" {
-		post.Image = "/uploads/images/" + post.Image
-	}
-
 	return &post, nil
 }

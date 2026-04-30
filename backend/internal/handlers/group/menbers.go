@@ -28,9 +28,6 @@ func GetGroupMembersHandler(app *app.Application, w http.ResponseWriter, r *http
 	Members, err := app.GroupPostRepo.GetGroupMembers(groupIDStr)
 
 	if err.Code != http.StatusOK {
-		// 		fmt.Println("--------------------------------------------")
-		// fmt.Println("errrrror sdfsdafsdfsdfsdgsdgfdsfg", err)
-		// fmt.Println("--------------------------------------------")
 		utils.SendJSONResponse(w, err.Code, map[string]any{
 			"error": err.Message,
 		})

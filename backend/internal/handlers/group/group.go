@@ -41,8 +41,6 @@ func CreateGroupHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok {
-		fmt.Println("userID not found in context")
-		// fmt.Printf("CTX KEY TYPE HANDLER: %T\n",userID)
 		utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{
 			"error": "Unauthorized",
 		})

@@ -3,7 +3,6 @@ package groupshandler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -23,7 +22,6 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 
 	var event models.Event
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		fmt.Println("tha event", event)
 		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
 			"error": err.Error(),
 		})
@@ -40,12 +38,16 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 	event.UserID = userID
 
 	if event.EventDate.Before(time.Now()) {
-		fmt.Println("invalid date: event is before the target timestamp")
+		utils.SendJSONResponse(w, 400, map[string]any{
+			"error": "event is before the current date",
+		})
 		return
 	}
 
-	if event.EventDate.After(time.Now().AddDate(0, 2, 0)) {
-		fmt.Println("invalid date: event is before the target timestamp")
+	if event.EventDate.After(time.Now().AddDate(5, 0, 0)) {
+		utils.SendJSONResponse(w, 400, map[string]any{
+			"error": "event can only be up to 5 years",
+		})
 		return
 	}
 	newevent, err := app.GroupPostRepo.SaveEvent(r.Context(), &event)
