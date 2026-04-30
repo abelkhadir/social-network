@@ -11,19 +11,6 @@ import (
 	"social/pkg/utils"
 )
 
-// import (
-// 	"encoding/json"
-// 	"fmt"
-// 	"net/http"
-// 	"strconv"
-// 	"time"
-
-// 	"social/internal/app"
-// 	"social/internal/models"
-
-// 	"social/pkg/utils"
-// )
-
 const maxUpload = 10 << 20
 
 func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) {

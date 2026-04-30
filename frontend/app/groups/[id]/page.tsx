@@ -21,7 +21,6 @@ import {
   GroupPost,
   voteOnGroupEvent,
 } from "@/lib/groups";
-import { group } from "node:console";
 
 const fallbackAvatar = "https://img6.arthub.ai/65266a51-47b8.webp";
 
@@ -165,8 +164,6 @@ export default function SingleGroupPage() {
 
   if (loading) return <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading group...</div>;
 
-  console.log("sssssssssssssssssssssssssss", posts)
-
   if (!groupInfo) {
     return (
       <div style={{ maxWidth: "760px", margin: "0 auto", background: "var(--bg-card)", padding: "30px", borderRadius: "16px", border: "1px solid #2f3336", textAlign: "center" }}>
@@ -176,7 +173,15 @@ export default function SingleGroupPage() {
       </div>
     );
   }
+  // console.log( posts.forEach(element => {
+  //   // console.log("the imaaage",element.mediaLink)
+  // }))
+  const mockEvents = [
+    { id: "e1", title: "Golang Q&A Session", desc: "Let's discuss channels and goroutines.", date: "Tomorrow at 20:00", going: 12, notGoing: 3, myChoice: null },
+    { id: "e2", name: "Hackathon Preparation", desc: "Team building for the upcoming hackathon.", date: "Next Saturday", going: 25, notGoing: 1, myChoice: "going" }
+  ];
 
+  const defualteimage = "https://www.techexplorist.com/wp-content/uploads/2019/12/happiness.jpg"
   return (
     <div style={{ maxWidth: "840px", margin: "0 auto", paddingBottom: "40px" }}>
       {/* Group Info Header */}
@@ -218,17 +223,140 @@ export default function SingleGroupPage() {
           </form>
 
           {posts.length > 0 ? (
-            posts.map((post) => (
-              <div key={post.id} style={{ background: "var(--bg-card)", padding: "18px", borderRadius: "12px", border: "1px solid #2f3336" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", marginBottom: "12px", alignItems: "center" }}>
-                  <div><strong style={{ color: "var(--text-main)", display: "block" }}>{displayName(post.author)}</strong><span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>{timeAgo(post.createDate)}</span></div>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>{post.totalComments} comments</span>
+            posts.map((post) => {
+              const imageSrc = post.mediaLink || "";
+
+              return (
+                <div
+                  key={post.id}
+                  style={{
+                    background: "var(--bg-card)",
+                    padding: "18px",
+                    borderRadius: "12px",
+                    border: "1px solid #2f3336",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      marginBottom: "12px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <strong
+                        style={{
+                          color: "var(--text-main)",
+                          display: "block",
+                        }}
+                      >
+                        {displayName(post.author)}
+                      </strong>
+                      <span
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: "0.82rem",
+                        }}
+                      >
+                        {timeAgo(post.createDate)}
+                      </span>
+                    </div>
+
+                    <span
+                      style={{
+                        color: "var(--text-muted)",
+                        fontSize: "0.82rem",
+                      }}
+                    >
+                      {(post.numberOfComments ?? post.totalComments ?? 0)} comments
+                    </span>
+                  </div>
+
+                  <h3
+                    style={{
+                      margin: "0 0 10px 0",
+                      color: "var(--color-primary)",
+                    }}
+                  >
+                    {post.title || "Untitled post"}
+                  </h3>
+
+                  <p
+                    style={{
+                      color: "#dee2e6",
+                      margin: "0 0 12px 0",
+                      whiteSpace: "pre-wrap",
+                      lineHeight: "1.6",
+                    }}
+                  >
+                    {post.description}
+                  </p>
+
+                  {imageSrc && (
+                    <img
+                      src={resolveApiUrl(imageSrc)}
+                      alt="post media"
+                      style={{
+                        width: "100%",
+                        maxHeight: "420px",
+                        objectFit: "cover",
+                        borderRadius: "12px",
+                        marginTop: "8px",
+                      }}
+                    />
+                  )}
+
+                  <div style={{ display: "flex", gap: "15px", marginTop: "10px" }}>
+                    <span
+                      style={{
+                        color: "var(--text-main)",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      ❤️{" "}
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {post.likes ?? 0}
+                      </span>
+                    </span>
+
+                    <span
+                      style={{
+                        color: "var(--text-main)",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      💬{" "}
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {post.numberOfComments ?? 0}
+                      </span>
+                    </span>
+                  </div>
+
+                  <Link
+                    href={`/post/${post.id}`}
+                    style={{
+                      color: "var(--color-primary)",
+                      textDecoration: "none",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      marginTop: "10px",
+                    }}
+                  >
+                    View Discussion ➔
+                  </Link>
                 </div>
-                <h3 style={{ margin: "0 0 10px 0", color: "var(--color-primary)" }}>{post.title || "Untitled post"}</h3>
-                <p style={{ color: "#dee2e6", margin: "0 0 12px 0", whiteSpace: "pre-wrap", lineHeight: "1.6" }}>{post.description}</p>
-                {(post.image) && <img src={resolveApiUrl(post.image)} style={{ width: "100%", maxHeight: "420px", objectFit: "cover", borderRadius: "12px", marginTop: "8px" }} />}
-              </div>
-            ))
+              );
+            })
           ) : (
             <div style={{ background: "var(--bg-card)", padding: "28px", borderRadius: "12px", border: "1px solid #2f3336", color: "var(--text-muted)", textAlign: "center" }}>No group posts yet.</div>
           )}
