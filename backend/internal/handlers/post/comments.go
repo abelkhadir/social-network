@@ -61,9 +61,7 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 					EntityType: "post",
 					Content:    userInSession.Nickname + " commented on your post.",
 				}
-				if err := application.NotificationRepo.Create(&notification); err == nil {
-					websockethandler.SendNotification(notification)
-				}
+				_ = websockethandler.PushNotification(application, &notification, true)
 			}
 			// comment, err := models.CommentRepo.GetCommentByID(commentInfo.ID)
 			// if err != nil {

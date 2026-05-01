@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useChatNotifications } from "@/context/ChatNotificationContext";
 import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { resolveApiUrl } from "@/lib/api";
@@ -46,6 +47,7 @@ export default function SingleGroupPage() {
   const params = useParams();
   const { showToast } = useToast();
   const { user: currentUser } = useAuth();
+  const { unreadByGroup, markGroupRead } = useChatNotifications();
 
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -96,6 +98,12 @@ export default function SingleGroupPage() {
   useEffect(() => {
     loadGroupPage();
   }, [id]);
+
+  useEffect(() => {
+    if (!id || activeTab !== "chat") return;
+    if (!unreadByGroup[id]) return;
+    void markGroupRead(id);
+  }, [activeTab, id, markGroupRead, unreadByGroup]);
 
   //handlers
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -199,6 +207,11 @@ export default function SingleGroupPage() {
             style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", textTransform: "capitalize", color: activeTab === tab ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === tab ? "3px solid var(--color-primary)" : "3px solid transparent" }}
           >
             {tab}
+            {tab === "chat" && id && (unreadByGroup[id] || 0) > 0 && activeTab !== "chat" && (
+              <span style={{ marginLeft: "8px", background: "#e63946", color: "white", borderRadius: "999px", minWidth: "18px", height: "18px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px", fontSize: "0.7rem", fontWeight: "bold", verticalAlign: "middle" }}>
+                {unreadByGroup[id]}
+              </span>
+            )}
           </button>
         ))}
       </div>

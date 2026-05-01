@@ -10,6 +10,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useChatNotifications } from "@/context/ChatNotificationContext";
 import { useToast } from "@/context/ToastContext";
 import {
   createGroup,
@@ -21,6 +22,7 @@ import {
 
 export default function GroupsPage() {
   const { showToast } = useToast();
+  const { unreadByGroup, totalGroupUnread } = useChatNotifications();
   const [activeTab, setActiveTab] = useState<"discover" | "my-groups">("discover");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [joinedGroups, setJoinedGroups] = useState<GroupSummary[]>([]);
@@ -164,6 +166,11 @@ export default function GroupsPage() {
           style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "my-groups" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "my-groups" ? "3px solid var(--color-primary)" : "3px solid transparent" }}
         >
           My groups
+          {totalGroupUnread > 0 && (
+            <span style={{ marginLeft: "8px", background: "#e63946", color: "white", borderRadius: "999px", minWidth: "18px", height: "18px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px", fontSize: "0.7rem", fontWeight: "bold", verticalAlign: "middle" }}>
+              {totalGroupUnread}
+            </span>
+          )}
         </button>
       </div>
 
@@ -174,7 +181,14 @@ export default function GroupsPage() {
           {visibleGroups.map((group) => (
             <div key={group.id} style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "12px", border: "1px solid #2f3336", display: "flex", flexDirection: "column", gap: "12px" }}>
               <div>
-                <h3 style={{ color: "var(--text-main)", margin: "0 0 10px 0" }}>{group.title}</h3>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "10px" }}>
+                  <h3 style={{ color: "var(--text-main)", margin: 0 }}>{group.title}</h3>
+                  {activeTab === "my-groups" && (unreadByGroup[group.id] || 0) > 0 && (
+                    <span style={{ background: "#e63946", color: "white", borderRadius: "999px", minWidth: "22px", height: "22px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 7px", fontSize: "0.75rem", fontWeight: "bold", flexShrink: 0 }}>
+                      {unreadByGroup[group.id]}
+                    </span>
+                  )}
+                </div>
                 <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", margin: 0, lineHeight: "1.6" }}>
                   {group.description || "No description yet."}
                 </p>

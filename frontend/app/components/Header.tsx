@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
@@ -15,6 +16,7 @@ interface HeaderProps {
 
 export default function Header({ toggleChat, isChatMode }: HeaderProps) {
   const { user, logout } = useAuth();
+  const { totalUnread: unreadChatCount } = useChatNotifications();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -79,8 +81,30 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                 if (toggleChat) toggleChat();
                 setIsMobileMenuOpen(false);
               }}
+              style={{ position: "relative" }}
             >
               Messages
+              {unreadChatCount > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: "-8px",
+                  right: "-10px",
+                  background: "#e63946",
+                  color: "white",
+                  fontSize: "0.7rem",
+                  fontWeight: "bold",
+                  borderRadius: "999px",
+                  minWidth: "20px",
+                  height: "20px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0 6px",
+                  border: "2px solid var(--bg-header-start)",
+                }}>
+                  {unreadChatCount}
+                </span>
+              )}
             </button>
 
             <div className="notif-dropdown-container" ref={notifDropdownRef} style={{ position: "relative", display: "flex", alignItems: "center", marginLeft: "10px" }}>

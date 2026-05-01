@@ -55,9 +55,7 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		Type:    "welcome",
 		Content: "Welcome to social! Your account is ready.",
 	}
-	if err := app.NotificationRepo.Create(&notification); err == nil {
-		websockethandler.SendNotification(notification)
-	}
+	_ = websockethandler.PushNotification(app, &notification, false)
 
 	authUser := models.AuthUser{
 		ID:        user.ID,
@@ -114,9 +112,7 @@ func SignIn(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		Type:    "login",
 		Content: "You logged in successfully.",
 	}
-	if err := app.NotificationRepo.Create(&loginNotification); err == nil {
-		websockethandler.SendNotification(loginNotification)
-	}
+	_ = websockethandler.PushNotification(app, &loginNotification, false)
 
 	authUser := models.AuthUser{
 		ID:         user.ID,

@@ -79,8 +79,20 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/notifications", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		notificationshandler.ListNotifications(a, res, req)
 	})))
+	http.Handle("/notifications/chat", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		notificationshandler.ListChatNotifications(a, res, req)
+	})))
 	http.Handle("/notifications/read", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		notificationshandler.MarkNotificationsRead(a, res, req)
+	})))
+	http.Handle("/notifications/chat/read", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		notificationshandler.MarkChatNotificationsRead(a, res, req)
+	})))
+	http.Handle("/notifications/groups", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		notificationshandler.ListGroupNotifications(a, res, req)
+	})))
+	http.Handle("/notifications/groups/read", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		notificationshandler.MarkGroupNotificationsRead(a, res, req)
 	})))
 
 	// Chat Handlers

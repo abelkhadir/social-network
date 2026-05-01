@@ -25,6 +25,38 @@ const SocketContext = createContext<SocketContextType>({
   playReceiveSound: () => { },
 });
 
+function pickString(...values: any[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function normalizeSocketMessage(payload: any) {
+  const message = payload?.message ?? payload;
+  if (!message) return null;
+
+  return {
+    ...message,
+    type: payload?.type ?? "",
+    id: pickString(message.id, message.ID),
+    senderID: pickString(message.senderID, message.SenderID, message.sender_id),
+    receiverID: pickString(message.receiverID, message.ReceiverID, message.receiver_id),
+    groupId: pickString(message.groupId, message.GroupID, message.group_id),
+    text: pickString(message.text, message.Text, message.message, message.content),
+    createDate: pickString(message.createDate, message.CreateDate, message.sent_at, message.SentAt),
+    senderNickname: pickString(
+      message.senderNickname,
+      message.SenderNickname,
+      message.fullname,
+      message.FullName
+    ),
+    avatarURL: pickString(message.avatarURL, message.AvatarURL, message.avatar),
+  };
+}
+
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -48,7 +80,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     const wsUrl = apiUrl.replace("http", "ws") + "/ws";
 
     let active = true;
-    const ws = new WebSocket("ws://localhost:8080/ws");
+    const ws = new WebSocket(wsUrl);
     setSocket(ws);
 
     ws.onopen = () => {
@@ -60,16 +92,16 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       if (!active) return;
       try {
         const data = JSON.parse(event.data);
-        console.log("there is no skdfnsdlknb", data.message)
         if (data.type === "message" || data.type === "group_message") {
-          if (!data.message) {
-            console.warn("Missing message field:", data);
+          const msg = normalizeSocketMessage(data);
+          if (!msg || !msg.text) {
+            console.warn("Missing message payload:", data);
             return;
           }
-          const msg = data.message;
-          console.log("the messageeeeeeeee", msg)
-          setLatestMessage(msg)
-          if (msg.senderID !== user.id) {
+
+          const myId = user.id || user.ID;
+          setLatestMessage(msg);
+          if (msg.senderID && msg.senderID !== myId) {
             playReceiveSound();
           } else {
             playSendSound();

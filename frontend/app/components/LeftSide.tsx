@@ -2,24 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useSocket } from "../../context/SocketContext";
 import { fetchApi, resolveApiUrl } from "../../lib/api";
 import { fetchJoinedGroups, fetchSuggestedGroups, GroupSummary } from "../../lib/groups";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: boolean; toggleChat?: () => void }) {
   const { user } = useAuth();
-  const pathname = usePathname();
   const [users, setUsers] = useState<any[]>([]);
   const [joinedGroups, setJoinedGroups] = useState<GroupSummary[]>([]);
   const [suggestedGroups, setSuggestedGroups] = useState<GroupSummary[]>([]);
-  const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
   const [lastMessages, setLastMessages] = useState<{ [key: string]: { text: string; time: string } }>({});
   const [loading, setLoading] = useState(true);
   const { latestMessage } = useSocket();
+  const { unreadByUser, totalUnread, totalGroupUnread, markThreadRead } = useChatNotifications();
 
-  const [activeTab, setActiveTab] = useState<"users" | "groups">("users");
+  const [activeTab] = useState<"users" | "groups">("users");
 
   useEffect(() => {
     if (user) {
@@ -39,37 +38,25 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
   }, [user]);
 
   useEffect(() => {
-    if (pathname.startsWith("/chat/")) {
-      const chatId = pathname.split("/")[2];
-      if (chatId) {
-        setUnreadCounts((prev) => ({ ...prev, [chatId]: 0 }));
-      }
-    }
-  }, [pathname]);
-
-  useEffect(() => {
     if (!latestMessage || !user) return;
+    if (latestMessage.groupId) return;
 
     const myId = user.id || user.ID;
-    const sendename = user.nickname
     const senderID = latestMessage.senderID || latestMessage.SenderID;
     const receiverID = latestMessage.receiverID || latestMessage.ReceiverID;
+    const messageText = latestMessage.text || latestMessage.Text || "";
 
     const otherUserID = senderID === myId ? receiverID : senderID;
     if (!otherUserID) return;
 
     setLastMessages((prev) => ({
       ...prev,
-      [otherUserID]: { text: sendename, },
+      [otherUserID]: {
+        text: senderID === myId ? `You: ${messageText}` : messageText,
+        time: latestMessage.createDate || latestMessage.CreateDate || "",
+      },
     }));
-
-    if (senderID && senderID !== myId) {
-      const currentChatId = pathname.startsWith("/chat/") ? pathname.split("/")[2] : "";
-      if (currentChatId !== senderID) {
-        setUnreadCounts((prev) => ({ ...prev, [senderID]: (prev[senderID] || 0) + 1 }));
-      }
-    }
-  }, [latestMessage, pathname, user]);
+  }, [latestMessage, user]);
 
   if (!user) return null;
 
@@ -92,11 +79,21 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
             <Link href="/groups" style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1,textDecoration: "none" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
               <img src="/icons/groups.svg" alt="Groups" width={18} height={18} style={{ display: "block" }} />
               Groups
+              {totalGroupUnread > 0 && (
+                <span style={{ background: "#e63946", color: "white", borderRadius: "999px", minWidth: "18px", height: "18px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px", fontSize: "0.7rem", fontWeight: "bold" }}>
+                  {totalGroupUnread}
+                </span>
+              )}
             </Link>
             <div style={{ flexBasis: "100%", height: "0" }} />
             <button type="button" onClick={() => toggleChat?.()} style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1, textDecoration: "none", background: "transparent" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
               <img src="/icons/chats.svg" alt="Chats" width={18} height={18} style={{ display: "block" }} />
               Chats
+              {totalUnread > 0 && (
+                <span style={{ background: "#e63946", color: "white", borderRadius: "999px", minWidth: "18px", height: "18px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px", fontSize: "0.7rem", fontWeight: "bold" }}>
+                  {totalUnread}
+                </span>
+              )}
             </button>
             <div style={{ flexBasis: "100%", height: "0" }} />
             <span style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1,textDecoration: "none" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
@@ -163,8 +160,6 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
     );
   }
 
-  const defaultAvatar = "/src/assests/user_avatar.webp";
-
   return (
     <aside className="sidebar-left">
       <h2 style={{ color: "var(--text-main)", fontSize: "1.1rem", marginBottom: "12px" }}>
@@ -180,11 +175,11 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
             users.length > 0 ? users.map((u) => {
               const userID = u.ID || u.id;
               const isConnected = u.IsConnected ?? u.is_connected ?? false;
-              const count = unreadCounts[userID] || 0;
+              const count = unreadByUser[userID] || 0;
               const lastMessage = lastMessages[userID];
 
               return (
-                <Link href={`/chat/${userID}`} key={userID} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--bg-card)", borderRadius: "8px", alignItems: "center", border: "1px solid var(--border-default)", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "var(--border-default)"}>
+                <Link href={`/chat/${userID}`} key={userID} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--bg-card)", borderRadius: "8px", alignItems: "center", border: "1px solid var(--border-default)", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "var(--border-default)"} onClick={() => void markThreadRead(userID)}>
                   <div style={{ position: "relative" }}>
                     <img src={resolveApiUrl(u.avatar_url)} alt="avatar" style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }} />
                     <div style={{ position: "absolute", bottom: 0, right: 0, width: "12px", height: "12px", background: isConnected ? "#2ecc71" : "gray", borderRadius: "50%", border: "2px solid #1e2124" }}></div>

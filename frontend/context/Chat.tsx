@@ -11,7 +11,7 @@ interface GroupChatProps {
 
 export default function GroupChat({ groupId }: GroupChatProps) {
   const { user } = useAuth();
-  const { socket, latestMessage, playSendSound, playReceiveSound } = useSocket();
+  const { socket, latestMessage } = useSocket();
 
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
@@ -30,12 +30,15 @@ export default function GroupChat({ groupId }: GroupChatProps) {
     if (!latestMessage) return;
     const msgGroupId = latestMessage.groupId || latestMessage.GroupID || latestMessage.group_id;
     if (String(msgGroupId) === String(groupId)) {
-      setMessages((prev) => [...prev, latestMessage]);
-      if ((latestMessage.senderID || latestMessage.SenderID) !== myId) {
-        playReceiveSound();
-      }
+      const messageID = latestMessage.id || latestMessage.ID;
+      setMessages((prev) => {
+        if (messageID && prev.some((msg) => (msg.id || msg.ID) === messageID)) {
+          return prev;
+        }
+        return [...prev, latestMessage];
+      });
     }
-  }, [latestMessage, groupId, myId]);
+  }, [latestMessage, groupId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -56,7 +59,6 @@ export default function GroupChat({ groupId }: GroupChatProps) {
         },
       })
     );
-    playSendSound();
     setText("");
   };
 
@@ -72,16 +74,18 @@ export default function GroupChat({ groupId }: GroupChatProps) {
         {messages.map((msg, i) => {
           const senderId = msg.senderID || msg.SenderID || msg.sender_id;
           const isMe = senderId === myId;
-          const rawDate = msg.createDate || msg.CreateDate;
+          const rawDate = msg.createDate || msg.CreateDate || msg.sent_at || msg.SentAt;
           const timeString = rawDate
             ? new Date(rawDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
             : "";
+          const senderName =
+            msg.senderNickname || msg.SenderNickname || msg.fullname || msg.FullName || "User";
 
           return (
             <div key={i} style={{ alignSelf: isMe ? "flex-end" : "flex-start", maxWidth: "80%" }}>
               {!isMe && (
                 <small style={{ color: "var(--color-primary)", display: "block", marginBottom: "2px" }}>
-                  {msg.senderNickname || msg.SenderNickname || "User"}
+                  {senderName}
                 </small>
               )}
               <div

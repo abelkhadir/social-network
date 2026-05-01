@@ -197,6 +197,18 @@ func SendChatMessage(application *app.Application, res http.ResponseWriter, req 
 
 	SendMessage(*saved)
 
+	if payload.ReceiverID != currentUser.ID {
+		notification := models.Notification{
+			UserID:     payload.ReceiverID,
+			ActorID:    currentUser.ID,
+			Type:       "message",
+			EntityID:   saved.ID,
+			EntityType: "chat",
+			Content:    currentUser.Nickname + " sent you a message",
+		}
+		_ = PushNotification(application, &notification, true)
+	}
+
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{
 		"message": "message sent successfully",
 		"data":    saved,

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
+	"time"
 
 	"social/internal/app"
 	"social/internal/models"
@@ -77,6 +79,12 @@ func HandleWebSocket(a *app.Application, res http.ResponseWriter, req *http.Requ
 				continue
 			}
 
+			msg.GroupID = strings.TrimSpace(msg.GroupID)
+			msg.Message = strings.TrimSpace(msg.Message)
+			if msg.GroupID == "" || msg.Message == "" {
+				continue
+			}
+
 			if _, err := a.GroupPostRepo.SaveMessagesGrpRepo(msg.GroupID, senderID, msg.Message); err != nil {
 				log.Println("Error saving group message:", err)
 				continue
@@ -88,6 +96,23 @@ func HandleWebSocket(a *app.Application, res http.ResponseWriter, req *http.Requ
 				continue
 			}
 
+			senderNickname := senderID
+			senderAvatar := ""
+			if sender, err := a.UserRepo.GetUserByID(senderID); err != nil {
+				log.Println("Error loading group message sender:", err)
+			} else if sender != nil {
+				if sender.Nickname != "" {
+					senderNickname = sender.Nickname
+				}
+				senderAvatar = sender.AvatarURL
+			}
+
+			groupTitle := strings.TrimSpace(grpInfo.Title)
+			if groupTitle == "" {
+				groupTitle = "your group"
+			}
+
+			sentAt := time.Now().UTC().Format(time.RFC3339)
 			memberSet := make(map[string]bool, len(grpInfo.Members))
 			for _, id := range grpInfo.Members {
 				memberSet[id] = true
@@ -96,9 +121,12 @@ func HandleWebSocket(a *app.Application, res http.ResponseWriter, req *http.Requ
 			payload, _ := json.Marshal(map[string]any{
 				"type": "group_message",
 				"message": map[string]any{
-					"group_id":  msg.GroupID,
-					"sender_id": senderID,
-					"message":   msg.Message,
+					"group_id":       msg.GroupID,
+					"sender_id":      senderID,
+					"senderNickname": senderNickname,
+					"avatarURL":      senderAvatar,
+					"message":        msg.Message,
+					"sent_at":        sentAt,
 				},
 			})
 
@@ -108,6 +136,25 @@ func HandleWebSocket(a *app.Application, res http.ResponseWriter, req *http.Requ
 				}
 				return true
 			})
+
+			for _, memberID := range grpInfo.Members {
+				memberID = strings.TrimSpace(memberID)
+				if memberID == "" || memberID == senderID {
+					continue
+				}
+
+				notification := models.Notification{
+					UserID:     memberID,
+					ActorID:    senderID,
+					Type:       "group_message",
+					EntityID:   msg.GroupID,
+					EntityType: "group",
+					Content:    senderNickname + " sent a message in " + groupTitle,
+				}
+				if err := PushNotification(a, &notification, true); err != nil {
+					log.Println("Error creating group message notification:", err)
+				}
+			}
 		case "typing":
 			from, _ := data.Data["from"].(string)
 			to, _ := data.Data["to"].(string)

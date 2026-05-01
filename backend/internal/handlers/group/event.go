@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"social/internal/app"
+	websockethandler "social/internal/handlers/websocket"
 	"social/internal/models"
 	"social/pkg/middleware"
 	"social/pkg/utils"
@@ -56,6 +58,35 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 			"error": err.Message,
 		})
 		return
+	}
+
+	creatorName := userID
+	if creator, userErr := app.UserRepo.GetUserByID(userID); userErr == nil && creator != nil && creator.Nickname != "" {
+		creatorName = creator.Nickname
+	}
+
+	groupTitle := "your group"
+	groupInfo, groupErr := app.GroupMessage.GetInfoGroupeRepo(event.GroupId, 0)
+	if groupErr == nil && groupInfo != nil {
+		if strings.TrimSpace(groupInfo.Title) != "" {
+			groupTitle = strings.TrimSpace(groupInfo.Title)
+		}
+		for _, memberID := range groupInfo.Members {
+			memberID = strings.TrimSpace(memberID)
+			if memberID == "" || memberID == userID {
+				continue
+			}
+
+			notification := models.Notification{
+				UserID:     memberID,
+				ActorID:    userID,
+				Type:       "group_event",
+				EntityID:   newevent.ID,
+				EntityType: "group_event",
+				Content:    creatorName + " created a new event in " + groupTitle,
+			}
+			_ = websockethandler.PushNotification(app, &notification, true)
+		}
 	}
 
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{

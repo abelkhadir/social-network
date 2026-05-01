@@ -11,3 +11,13 @@ type Notification struct {
 	IsRead     bool   `json:"is_read"`
 	CreatedAt  string `json:"created_at"`
 }
+
+type ChatUnreadCounter struct {
+	ActorID     string `json:"actor_id"`
+	UnreadCount int    `json:"unread_count"`
+}
+
+type GroupUnreadCounter struct {
+	GroupID     string `json:"group_id"`
+	UnreadCount int    `json:"unread_count"`
+}

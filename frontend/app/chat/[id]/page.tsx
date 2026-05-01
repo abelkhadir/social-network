@@ -10,7 +10,7 @@ import { fetchApi } from "@/lib/api";
 export default function ChatPage() {
   const { id: receiverId } = useParams();
   const { user } = useAuth();
-  const { latestMessage, typingStatus, userStatus, sendTyping, playSendSound } = useSocket();
+  const { latestMessage, typingStatus, userStatus, sendTyping } = useSocket();
   
   const [messages, setMessages] = useState<any[]>([]);
   const [talker, setTalker] = useState<any>(null);
@@ -45,11 +45,19 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (latestMessage) {
+      if (latestMessage.groupId) return;
+
       const senderID = latestMessage.senderID || latestMessage.SenderID;
       const recID = latestMessage.receiverID || latestMessage.ReceiverID;
+      const messageID = latestMessage.id || latestMessage.ID;
 
       if (senderID === receiverId || recID === receiverId) {
-        setMessages((prev) => [...prev, latestMessage]);
+        setMessages((prev) => {
+          if (messageID && prev.some((msg) => (msg.id || msg.ID) === messageID)) {
+            return prev;
+          }
+          return [...prev, latestMessage];
+        });
       }
     }
   }, [latestMessage, receiverId]);
@@ -80,7 +88,6 @@ export default function ChatPage() {
         body: JSON.stringify({ receiverID: receiverId, text }),
       });
       setText("");
-      playSendSound();
       
       sendTyping(myId, receiverId as string, false);
       didSendTyping.current = false;

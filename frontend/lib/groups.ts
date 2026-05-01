@@ -52,6 +52,8 @@ export interface GroupPost {
   description: string;
   createDate: string;
   totalComments: number;
+  numberOfComments?: number;
+  likes?: number;
   image: string;
   author: GroupAuthor;
 }
@@ -179,6 +181,8 @@ function normalizePost(raw: any): GroupPost {
     description: toString(pick(raw, ["description", "Description", "content"], "")),
     createDate: toString(pick(raw, ["createDate", "created_at", "createdAt"], "")),
     totalComments: toNumber(pick(raw, ["total_comments", "totalComments", "comments"], 0)),
+    numberOfComments: toNumber(pick(raw, ["numberOfComments", "number_of_comments", "total_comments", "totalComments", "comments"], 0)),
+    likes: toNumber(pick(raw, ["likes", "Likes", "total_likes"], 0)),
     image: toString(pick(raw, ["image", "Image", "image_url", "ImageURL"], "")),
     author: normalizeAuthor(pick(raw, ["author", "Author"], raw.author || raw.Author || raw)),
   };
