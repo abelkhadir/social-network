@@ -16,6 +16,9 @@ export default function FollowersPage() {
     { id: "u3", name: "Younsse Amazzal", username: "@younsse", bio: "Fullstack Engineer", isPrivate: false, relationship: "mutual" },
     { id: "u4", name: "Karim Code", username: "@karim", bio: "I love bugs.", isPrivate: false, relationship: "follower" }
   ]);
+
+  // const followferch = async (action) => { await fetchApi("http://localhost:8080/user/followers/", {body:{action:action}});}
+
 const folowers =null
 async function follower() {
   try {
@@ -93,10 +96,14 @@ useEffect(() => {
         <button onClick={() => setActiveTab("discover")} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "discover" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "discover" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
           🌍 Discover Users
         </button>
-        <button onClick={() => setActiveTab("followers")} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "followers" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "followers" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
+        <button onClick={() => {setActiveTab("followers")
+          // followfetch("followers")
+        }} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "followers" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "followers" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
           ⬇️ Followers
         </button>
-        <button onClick={() => setActiveTab("following")} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "following" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "following" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
+        <button onClick={() => {setActiveTab("following")
+          // followfetch("following")
+        }} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "following" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "following" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
           ⬆️ Following
         </button>
       </div>
