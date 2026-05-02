@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -9,8 +10,15 @@ import (
 	"social/pkg/utils"
 )
 
+type FollowRequest struct{
+	Action string `json:"action"`
+	UserId string `json:"UserId"`
+}
+
 func GetUserFollowers(app *app.Application, res http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
+	fmt.Println("siiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
+	fmt.Println("happen")
+	if req.Method != http.MethodPost {
 		utils.SendJSONResponse(res, http.StatusMethodNotAllowed, map[string]any{
 			"error": "Method not allowed",
 		})
@@ -28,8 +36,10 @@ func GetUserFollowers(app *app.Application, res http.ResponseWriter, req *http.R
 		})
 		return
 	}
-
-	folowers, err := app.ProfileRepo.GetUserFollowersrepo(userID)
+	var info FollowRequest
+	json.NewDecoder(req.Body).Decode(&info)
+	info.UserId = userID
+	folowers, err := app.ProfileRepo.GetUserFollowersrepo(info.Action,info.UserId)
 	fmt.Println("--------------------------------------------")
 	fmt.Println("the followers from data base", folowers)
 	fmt.Println("--------------------------------------------")

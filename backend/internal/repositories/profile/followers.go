@@ -8,8 +8,12 @@ import (
 	"social/internal/models"
 )
 
-func (r *ProfileRepository) GetUserFollowersrepo(userID string) (*models.Followers, models.FollowerError) {
-	query := `
+func (r *ProfileRepository) GetUserFollowersrepo(action string , userID string) (*models.Followers, models.FollowerError) {
+	var query string
+	fmt.Println("action---------------------------------------------------",action)
+	switch action{
+	case "followers": 
+		query = `
 	SELECT 
     u.id,
     u.firstname,
@@ -21,6 +25,20 @@ func (r *ProfileRepository) GetUserFollowersrepo(userID string) (*models.Followe
 	WHERE f.following_id = ?
 	AND f.status = 'DSD';
 	`
+	case "following":
+		query = `
+	SELECT 
+    u.id,
+    u.firstname,
+    u.lastname,
+    u.nickname,
+    u.avatarURL
+	FROM followers f
+	JOIN user u ON u.id = f.following_id
+	WHERE f.followers_id = ?
+	AND f.status = 'DSD';`
+	}
+	
 	rows, err := r.db.Query(query, userID)	
 	if err != nil {
 		return nil, models.FollowerError{

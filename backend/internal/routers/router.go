@@ -96,10 +96,15 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.SendChatMessage(a, res, req)
 	})))
-	http.Handle("/user/folowers", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	http.Handle("/api/followers",  http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		// websockethandler.GetUsers(a, res, req)
+		profile.GetUserFollowers(a,res,req)
+	}))
+		http.Handle("/followFetch/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		// websockethandler.GetUsers(a, res, req)
 		profile.GetUserFollowers(a,res,req)
 	})))
+	
 	// vote the event
 	http.Handle("/user/followers/",
 		rateLimiter.Wrap("api",
