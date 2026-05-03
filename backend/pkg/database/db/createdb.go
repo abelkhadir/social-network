@@ -3,8 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"strings"
 )
 
 func EnsureSchema(db *sql.DB) error {
@@ -287,43 +285,4 @@ func ensureColumns(db *sql.DB, table string, columns map[string]string) error {
 	}
 
 	return nil
-}
-
-func SeedData(db *sql.DB) error {
-	if db == nil {
-		return fmt.Errorf("nil database handle")
-	}
-
-	seedPath := resolveSeedPath()
-	if seedPath == "" {
-		return fmt.Errorf("insert.sql not found (expected ./backend/sql/insert.sql or ./sql/insert.sql)")
-	}
-
-	content, err := os.ReadFile(seedPath)
-	if err != nil {
-		return fmt.Errorf("read seed file: %w", err)
-	}
-
-	if strings.TrimSpace(string(content)) == "" {
-		return nil
-	}
-
-	if _, err := db.Exec(string(content)); err != nil {
-		return fmt.Errorf("execute seed data: %w", err)
-	}
-
-	return nil
-}
-
-func resolveSeedPath() string {
-	candidates := []string{
-		"./backend/sql/insert.sql",
-		"./sql/insert.sql",
-	}
-	for _, path := range candidates {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-	return ""
 }

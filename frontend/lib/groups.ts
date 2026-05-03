@@ -46,6 +46,14 @@ export interface GroupMember {
   avatar: string;
 }
 
+export interface PendingMembers {
+  id: string;
+  nickname: string;
+  firstname: string;
+  lastname: string;
+  avatar: string;
+}
+
 export interface GroupPost {
   id: string;
   title: string;
@@ -293,10 +301,25 @@ export async function voteOnGroupEvent(groupId: string | number, eventId: string
   );
 }
 
+export async function fetchGroupPending(groupId: string | number) {
+
+  const response = await requestWithFallback<any>([
+    `/groups/pending/${groupId}`,
+  ]);
+  
+  const members = Array.isArray(response?.data?.members)
+  ? response.data.members
+  : Array.isArray(response?.members)
+  ? response.members
+  : [];
+  
+  console.log(members)
+  return members.map(normalizeMember);
+}
+
 export async function fetchGroupMembers(groupId: string | number) {
   const response = await requestWithFallback<any>([
     `/groups/joined//members/${groupId}`,
-    // `/groups/joined/${groupId}/members`,
   ]);
 
   const members = Array.isArray(response?.data?.members)
@@ -304,7 +327,6 @@ export async function fetchGroupMembers(groupId: string | number) {
     : Array.isArray(response?.members)
       ? response.members
       : [];
-  console.log("the members of groupppp ", members)
   return members.map(normalizeMember);
 }
 
@@ -326,6 +348,13 @@ export async function fetchGroupPosts(groupId: string | number) {
 
   const posts = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   return posts.map(normalizePost);
+}
+
+export async function respondGroupRequest(groupId: string | number, userId: string, type: "accept" | "reject") {
+  return requestWithFallback<any>(["/groups/request/decision"], {
+    method: "POST",
+    body: JSON.stringify({ group_id: toString(groupId), user_id: userId, type }),
+  });
 }
 
 export async function createGroupPost(groupId: string | number, formData: FormData) {

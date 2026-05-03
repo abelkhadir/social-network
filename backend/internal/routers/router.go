@@ -110,18 +110,6 @@ func SetupRoutes(a *app.Application) {
 
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
 
-	// http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-	// 	// websockethandler.SendChatMessage(a, res, req)
-	// 	groupshandler.GroupHandler(res,req)
-	// })))
-	// groups
-	// http.Handle("/groups/create", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-	// 	websockethandler.SendChatMessage(a, res, req)
-	// })))
-	// http.HandleFunc("/api/groups/create",func (w http.ResponseWriter,r *http.Request)  {
-	// 	fmt.Print("the use want to create group")
-	// })
-	// create grouuup
 	http.Handle("/groups/create",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
@@ -143,6 +131,15 @@ func SetupRoutes(a *app.Application) {
 	// send a join request
 	http.Handle("/groups/request", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.JoinGroupRequestHandler(a, w, r)
+	}))))
+
+	http.Handle("/groups/pending/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetGroupPendingMembers(a, w, r)
+	}))))
+
+	// send a join request
+	http.Handle("/groups/request/decision", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.AcceptMemberGroup(a, w, r)
 	}))))
 
 	http.Handle("/groups/joined/post/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

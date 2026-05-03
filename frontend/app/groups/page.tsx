@@ -84,7 +84,7 @@ export default function GroupsPage() {
   };
 
   const handleJoinRequest = async (group: GroupSummary) => {
-    if (!group.userId) {
+    if (!group) {
       showToast("This group cannot receive requests yet", "error");
       return;
     }
@@ -192,10 +192,6 @@ export default function GroupsPage() {
                 <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", margin: 0, lineHeight: "1.6" }}>
                   {group.description || "No description yet."}
                 </p>
-              </div>
-
-              <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                Group #{group.id}
               </div>
 
               {activeTab === "my-groups" ? (

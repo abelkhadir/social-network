@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useChatNotifications } from "@/context/ChatNotificationContext";
 import { useToast } from "@/context/ToastContext";
-import { useAuth } from "@/context/AuthContext";
 import { resolveApiUrl } from "@/lib/api";
 import GroupChat from "@/context/Chat";
 import { timeAgo } from "@/lib/time";
@@ -15,15 +14,20 @@ import {
   fetchGroupDetails,
   fetchGroupEvents,
   fetchGroupMembers,
+  fetchGroupPending,
   fetchGroupPosts,
   GroupDetails,
   GroupEvent,
   GroupMember,
   GroupPost,
+  PendingMembers,
+  respondGroupRequest,
   voteOnGroupEvent,
 } from "@/lib/groups";
+import { useAuth } from "@/context/AuthContext";
 
 const fallbackAvatar = "https://img6.arthub.ai/65266a51-47b8.webp";
+type GroupTab = "feed" | "events" | "members" | "pending" | "chat";
 
 function formatEventDate(value: string) {
   if (!value) return "Date pending";
@@ -46,22 +50,23 @@ function displayName(user: GroupMember | GroupDetails["author"]) {
 export default function SingleGroupPage() {
   const params = useParams();
   const { showToast } = useToast();
-  const { user: currentUser } = useAuth();
   const { unreadByGroup, markGroupRead } = useChatNotifications();
+  const { user } = useAuth();
 
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  // Added "chat" to the union type
-  const [activeTab, setActiveTab] = useState<"feed" | "events" | "members" | "chat">("feed");
+  const [activeTab, setActiveTab] = useState<GroupTab>("feed");
   const [groupInfo, setGroupInfo] = useState<GroupDetails | null>(null);
   const [events, setEvents] = useState<GroupEvent[]>([]);
   const [members, setMembers] = useState<GroupMember[]>([]);
+  const [pending, setPending] = useState<PendingMembers[]>([]);
   const [posts, setPosts] = useState<GroupPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
   const [posting, setPosting] = useState(false);
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [votingId, setVotingId] = useState<string | null>(null);
+  const [actioningId, setActioningId] = useState<string | null>(null);
   const [postForm, setPostForm] = useState({
     title: "",
     content: "",
@@ -72,6 +77,16 @@ export default function SingleGroupPage() {
     description: "",
     eventDate: "",
   });
+  const currentUserId = user?.id || user?.ID;
+  const isOwner = !!groupInfo && currentUserId === groupInfo.author.id;
+
+  const tabs: GroupTab[] = [
+    "feed",
+    "events",
+    "members",
+    ...(isOwner ? ["pending" as GroupTab] : []),
+    "chat",
+  ];
 
   const loadGroupPage = async () => {
     if (!id) return;
@@ -104,6 +119,11 @@ export default function SingleGroupPage() {
     if (!unreadByGroup[id]) return;
     void markGroupRead(id);
   }, [activeTab, id, markGroupRead, unreadByGroup]);
+
+  useEffect(() => {
+    if (!id || activeTab !== "pending" || !isOwner) return;
+    fetchGroupPending(id).then(setPending).catch(() => setPending([]));
+  }, [activeTab, id, isOwner]);
 
   //handlers
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -170,6 +190,34 @@ export default function SingleGroupPage() {
     }
   };
 
+  const handleAccept = async (userId: string) => {
+    if (!id) return;
+    try {
+      setActioningId(userId);
+      await respondGroupRequest(id, userId, "accept");
+      setPending((prev) => prev.filter((m) => m.id !== userId));
+      showToast("Member accepted", "success");
+    } catch (error: any) {
+      showToast(error.message || "Failed to accept request", "error");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleReject = async (userId: string) => {
+    if (!id) return;
+    try {
+      setActioningId(userId);
+      await respondGroupRequest(id, userId, "reject");
+      setPending((prev) => prev.filter((m) => m.id !== userId));
+      showToast("Request rejected", "success");
+    } catch (error: any) {
+      showToast(error.message || "Failed to reject request", "error");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
   if (loading) return <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading group...</div>;
 
   if (!groupInfo) {
@@ -200,10 +248,10 @@ export default function SingleGroupPage() {
 
       {/* Tabs */}
       <div style={{ display: "flex", borderBottom: "1px solid #2f3336", marginBottom: "20px" }}>
-        {["feed", "events", "members", "chat"].map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab as any)}
+            onClick={() => setActiveTab(tab)}
             style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", textTransform: "capitalize", color: activeTab === tab ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === tab ? "3px solid var(--color-primary)" : "3px solid transparent" }}
           >
             {tab}
@@ -461,6 +509,44 @@ export default function SingleGroupPage() {
             </div>
           ) : (
             <div style={{ color: "var(--text-muted)", textAlign: "center" }}>No members found.</div>
+          )}
+        </div>
+      )}
+
+
+      {/* pending TAB */}
+      {activeTab === "pending" && isOwner && (
+        <div style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "12px", border: "1px solid #2f3336" }}>
+          {pending.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {pending.map((member) => (
+                <div key={member.id} style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--color-input-bg)", padding: "12px", borderRadius: "10px" }}>
+                  <img src={member.avatar ? resolveApiUrl(member.avatar) : fallbackAvatar} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: "var(--text-main)", fontWeight: "bold" }}>{displayName(member)}</div>
+                    <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{member.firstname || "Member"}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                    <button
+                      disabled={actioningId === member.id}
+                      onClick={() => handleAccept(member.id)}
+                      style={{ padding: "6px 14px", borderRadius: "20px", border: "none", background: "#2ecc71", color: "#000", fontWeight: "bold", cursor: actioningId === member.id ? "not-allowed" : "pointer", opacity: actioningId === member.id ? 0.6 : 1 }}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      disabled={actioningId === member.id}
+                      onClick={() => handleReject(member.id)}
+                      style={{ padding: "6px 14px", borderRadius: "20px", border: "none", background: "#e63946", color: "#fff", fontWeight: "bold", cursor: actioningId === member.id ? "not-allowed" : "pointer", opacity: actioningId === member.id ? 0.6 : 1 }}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: "var(--text-muted)", textAlign: "center" }}>No pending members found.</div>
           )}
         </div>
       )}

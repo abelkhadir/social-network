@@ -56,23 +56,6 @@ func (r *GroupRepository) SaveGroup(group *models.Group) (string, *models.GroupE
 	return id, nil
 }
 
-// func (r *GroupRepository) SaveGroup(group *models.Group) (int, *models.GroupError) {
-// 	query := `
-// 		INSERT INTO groups(user_id, title, description, created_at) VALUES (?, ?, ?, ?) RETURNING id
-// 	`
-
-// 	var groupID int
-// 	err := r.db.QueryRow(query, group.UserID, group.Title, group.Description, time.Now()).Scan(&groupID)
-// 	if err != nil {
-// 		return -1, &models.GroupError{
-// 			Message: err.Error(),
-// 			Code:    http.StatusInternalServerError,
-// 		}
-// 	}
-
-// 	return groupID, nil
-// }
-
 func (r *GroupRepository) GetJoinedGroups(userID string) ([]*models.Group, error) {
 	query := `
 		SELECT g.id, g.user_id, g.title, g.description, g.created_at
@@ -136,10 +119,74 @@ func (r *GroupRepository) SaveJoinRequest(groupID, senderID string) error {
 	return err
 }
 
-func (r *GroupRepository) GetGroup(groupID, userID string) (models.GroupIfo, *models.GroupError) {
-	err := r.IsMember(groupID, userID)
+func (r *GroupRepository) GetGroupAdmin(groupID string) (string, error) {
+	var userID string
+
+	err := r.db.QueryRow(
+		`SELECT user_id FROM groups WHERE id = ?`,
+		groupID,
+	).Scan(&userID)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
+	}
+
+	return userID, nil
+}
+
+// save user to groups_members
+func (r *GroupRepository) SaveMemberToGroup(groupID, userID string) error {
+	_, err := r.db.Exec(
+		`INSERT INTO group_members (group_id, member_id) VALUES (?, ?)`,
+		groupID, userID,
+	)
+	return err
+}
+
+// remove user form request
+func (r *GroupRepository) CancelGroupRequest(groupId, userID string) error {
+	query := `
+		DELETE FROM group_requests 
+		WHERE group_id = ? AND sender_id = ?;
+	`
+
+	_, err := r.db.Exec(query, groupId, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *GroupRepository) GetPendingMembers(groupID string) ([]string, error) {
+	rows, err := r.db.Query(
+		`SELECT sender_id FROM group_requests WHERE group_id = ?`,
+		groupID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var userIDs []string
+
+	for rows.Next() {
+		var userID string
+		if err := rows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		userIDs = append(userIDs, userID)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return userIDs, nil
+}
+
+func (r *GroupRepository) GetGroup(groupID, userID string) (models.GroupIfo, *models.GroupError) {
+	_, err := r.IsMember(groupID, userID)
+	if err != nil {
 		return models.GroupIfo{}, &models.GroupError{
 			Message: "Invalid URL",
 			Code:    http.StatusNotFound,
@@ -256,20 +303,7 @@ func (r *GroupRepository) GetGroupNotifs(requestedID int) ([]*models.GroupReques
 	return groupNotifs, nil
 }
 
-func (r *GroupRepository) CancelGroupRequest(id int) error {
-	query := `
-		DELETE FROM group_requests WHERE id = ?; 
-	`
-
-	_, err := r.db.Exec(query, id)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *GroupRepository) IsMember(GrpID string, sessionID string) error {
+func (r *GroupRepository) IsMember(GrpID string, sessionID string) (bool, error) {
 	var exists bool
 
 	query := `
@@ -282,12 +316,12 @@ func (r *GroupRepository) IsMember(GrpID string, sessionID string) error {
 
 	err := r.db.QueryRow(query, GrpID, sessionID).Scan(&exists)
 	if err != nil {
-		return err
+		return exists, err
 	}
 
 	if !exists {
-		return errors.New("Want to join? Send a request to the admin!")
+		return exists, errors.New("Want to join? Send a request to the admin!")
 	}
 
-	return nil
+	return exists, nil
 }

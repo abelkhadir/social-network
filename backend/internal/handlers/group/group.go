@@ -113,19 +113,134 @@ func JoinGroupRequestHandler(app *app.Application, w http.ResponseWriter, r *htt
 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{"error": "Method not allowed"})
 		return
 	}
+
 	userID := r.Context().Value(middleware.UserIDKey).(string)
 	var body struct {
 		GroupID string `json:"group_id"`
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.GroupID == "" {
 		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{"error": "group_id required"})
 		return
 	}
+
+	exists, err := app.GroupPostRepo.IsMember(body.GroupID, userID)
+	if err != nil || exists {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": "Already member"})
+		return
+	}
+
 	if err := app.GroupPostRepo.SaveJoinRequest(body.GroupID, userID); err != nil {
 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 		return
 	}
+
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{"message": "Join request sent"})
+}
+
+func GetGroupPendingMembers(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{"error": "Method not allowed"})
+		return
+	}
+
+	var err error
+	var groupId string
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+
+	groupId, err = utils.GetGroupIdA(r, "")
+
+	if err != nil || groupId == "" {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{"error": "group_id required"})
+		return
+	}
+
+	// Get admin from group id
+	var adminId string
+
+	if adminId, err = app.GroupPostRepo.GetGroupAdmin(groupId); err != nil {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+
+	if userID != adminId {
+		utils.HandleError(w, 403, "Unauthorized")
+		return
+	}
+
+	var userIds []string
+	if userIds, err = app.GroupPostRepo.GetPendingMembers(groupId); err != nil {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+
+	pending := []*models.User{}
+
+	for _, v := range userIds {
+		user, err := app.UserRepo.GetUserByID(v)
+		if err != nil {
+			fmt.Println("Error fetching userid", err)
+			continue
+		}
+
+		pending = append(pending, user)
+	}
+
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{"members": pending})
+}
+
+func AcceptMemberGroup(app *app.Application, w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{"error": "Method not allowed"})
+		return
+	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	var body struct {
+		GroupID      string `json:"group_id"`
+		UserID       string `json:"user_id"`
+		DecisionType string `json:"type"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.UserID == "" || body.GroupID == "" || body.DecisionType == "" {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{"error": "group_id and user_id and DecisionType required"})
+		return
+	}
+
+	// Get admin from group id
+	var adminId string
+	var err error
+	if adminId, err = app.GroupPostRepo.GetGroupAdmin(body.GroupID); err != nil {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+
+	if userID != adminId {
+		utils.HandleError(w, 403, "Unauthorized")
+		return
+	}
+
+	if body.DecisionType == "accept" {
+		// save user to groups_members
+		if err = app.GroupPostRepo.SaveMemberToGroup(body.GroupID, body.UserID); err != nil {
+			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+	}
+
+	if body.DecisionType == "reject" {
+		// remove user form request
+		if err = app.GroupPostRepo.CancelGroupRequest(body.GroupID, body.UserID); err != nil {
+			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
+	}
+
+	// send notification
+	fmt.Println("Sending notif to ", adminId, "for userid", userID)
+
+	// add unsend request
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{"message": "Desision made"})
 }
 
 func GetGroupInfo(app *app.Application, w http.ResponseWriter, r *http.Request) {
@@ -138,7 +253,6 @@ func GetGroupInfo(app *app.Application, w http.ResponseWriter, r *http.Request) 
 
 	if !ok {
 		fmt.Println("userID not found in context")
-		// fmt.Printf("CTX KEY TYPE HANDLER: %T\n",userID)
 		utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{
 			"error": "Unauthorized",
 		})
@@ -156,139 +270,3 @@ func GetGroupInfo(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		"data": info,
 	})
 }
-
-// func (h *GroupHandler) GetSuggestedGroupsHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodGet {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
-
-// 	userID := r.Context().Value("userID").(int)
-
-// 	groups, err := h.service.GetSuggestedGroups(userID)
-// 	if err != nil {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": err.Error(),
-// 		})
-// 		return
-// 	}
-
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"data": groups,
-// 	})
-// }
-
-// func (h *GroupHandler) GetGroupHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodGet {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
-
-// 	GroupID, err := utils.GetGroupId(r, "events")
-// 	if err != nil {
-// 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
-// 			"error": "Invalid Url",
-// 		})
-// 		return
-// 	}
-// 	userId := r.Context().Value("userID").(int)
-
-// 	groupinfo, errr := h.service.GetGroup(GroupID, userId)
-
-// 	if errr != nil {
-// 		utils.SendJSONResponse(w, errr.Code, map[string]any{
-// 			"error": errr.Message,
-// 		})
-// 		return
-// 	}
-
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"data": groupinfo,
-// 	})
-// }
-
-// func (h *GroupHandler) JoinGroupRequestHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
-
-// 	var groupRequest *models.GroupRequest
-// 	if err := json.NewDecoder(r.Body).Decode(&groupRequest); err != nil {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": err.Error(),
-// 		})
-// 	}
-
-// 	groupRequest.SenderID = r.Context().Value("userID").(int)
-
-// 	reqID, err := h.service.SaveJoinGroupRequest(groupRequest)
-// 	if err != nil {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": err.Error(),
-// 		})
-// 		return
-// 	}
-
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"message":    "Request sended succesfully!",
-// 		"request_id": reqID,
-// 	})
-// }
-
-// func (h *GroupHandler) CancelGroupRequestHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
-
-// 	var groupRequest *models.GroupRequest
-// 	if err := json.NewDecoder(r.Body).Decode(&groupRequest); err != nil {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": err.Error(),
-// 		})
-// 	}
-
-// 	err := h.service.CancelGroupRequest(groupRequest.ID)
-// 	if err != nil {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": err.Error(),
-// 		})
-// 		return
-// 	}
-
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"message": "Request Cancled succesfully!",
-// 	})
-// }
-
-// func (h *GroupHandler) GetGroupNotifsHandler(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodGet {
-// 		utils.SendJSONResponse(w, http.StatusMethodNotAllowed, map[string]any{
-// 			"error": "Method not allowed",
-// 		})
-// 		return
-// 	}
-
-// 	requestedID := r.Context().Value("userID").(int)
-
-// 	groupNotifs, err := h.service.GetGroupNotifs(requestedID)
-// 	if err != nil {
-// 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{
-// 			"error": err.Error(),
-// 		})
-// 		return
-// 	}
-
-// 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-// 		"data": groupNotifs,
-// 	})
-// }

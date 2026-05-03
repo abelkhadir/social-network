@@ -102,60 +102,6 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
             </span>
           </div>
         </div>
-
-        <hr style={{ border: "none", borderTop: "1px solid #2f3336", margin: "20px 0" }} />
-
-        <div>
-          <h2 style={{ color: "var(--text-main)", fontSize: "1.1rem", marginBottom: "15px", display: "flex", alignItems: "center", gap: "8px" }}>
-            Suggested groups
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {suggestedGroups.slice(0, 4).map((g) => (
-              <Link
-                key={g.id}
-                href={`/groups/${g.id}`}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "12px",
-                  padding: "12px 14px",
-                  background: "var(--bg-surface)",
-                  border: "1px solid var(--border-default)",
-                  borderRadius: "12px",
-                  textDecoration: "none",
-                  transition: "0.2s",
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.borderColor = "var(--color-primary)";
-                  e.currentTarget.style.transform = "translateY(-1px)";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.borderColor = "var(--border-default)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: "var(--text-main)", fontWeight: "bold", fontSize: "0.9rem", marginBottom: "4px" }}>
-                    {g.title}
-                  </div>
-                  <div style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
-                    {g.description || "Open the group to learn more"}
-                  </div>
-                </div>
-                <img src="/icons/arrow-right.svg" alt="" width={18} height={18} style={{ display: "block", color: "var(--color-primary)", flexShrink: 0 }} />
-              </Link>
-            ))}
-            {suggestedGroups.length === 0 && (
-              <div style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>No suggested groups right now.</div>
-            )}
-            <Link href="/groups" style={{ color: "var(--color-primary)", fontSize: "0.85rem", textDecoration: "none", marginTop: "10px", display: "inline-flex", alignItems: "center", gap: "8px", fontWeight: "bold" }}>
-              Show more groups
-              <img src="/icons/arrow-right.svg" alt="" width={16} height={16} style={{ display: "block" }} />
-            </Link>
-          </div>
-        </div>
-
       </aside>
     );
   }

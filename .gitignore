@@ -1,4 +1,2 @@
-.env
-.env.local
 frontend/.next/dev
 frontend/node_modules
