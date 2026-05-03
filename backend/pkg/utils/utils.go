@@ -99,7 +99,6 @@ func ValidateRequest(req *http.Request, res http.ResponseWriter, url, method str
 
 // HandleError writes an error response in JSON format with the given status code and message.
 func HandleError(res http.ResponseWriter, statusCode int, message string) {
-	log.Println("❌ " + message)
 	errorResponse := map[string]string{"errors": message}
 	SendJSONResponse(res, statusCode, errorResponse)
 }
@@ -134,8 +133,8 @@ func UploadImage(req *http.Request, field string) string {
 	}
 
 	uploads := "/uploads" // Use "uploads" without the leading slash
-	imageURL := filepath.Join(uploads, generateUniqueFilename(header.Filename))
-	filePath := filepath.Join(".", imageURL) // Use "." to denote the current directory
+	Image := filepath.Join(uploads, generateUniqueFilename(header.Filename))
+	filePath := filepath.Join(".", Image) // Use "." to denote the current directory
 	// if filePath[0] != '/' {
 	// 	filePath = "" + filePath
 	// }
@@ -151,7 +150,7 @@ func UploadImage(req *http.Request, field string) string {
 		return ""
 	}
 
-	return imageURL
+	return Image
 }
 
 func generateUniqueFilename(filename string) string {

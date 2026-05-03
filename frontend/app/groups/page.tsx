@@ -1,7 +1,16 @@
 "use client";
+//to see your groups 
+// Backend
+//    ↓
+// fetchJoinedGroups()
+//    ↓
+// joinedGroups state
+//    ↓
+// My Groups tab
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useChatNotifications } from "@/context/ChatNotificationContext";
 import { useToast } from "@/context/ToastContext";
 import {
   createGroup,
@@ -13,13 +22,14 @@ import {
 
 export default function GroupsPage() {
   const { showToast } = useToast();
+  const { unreadByGroup, totalGroupUnread } = useChatNotifications();
   const [activeTab, setActiveTab] = useState<"discover" | "my-groups">("discover");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [joinedGroups, setJoinedGroups] = useState<GroupSummary[]>([]);
   const [suggestedGroups, setSuggestedGroups] = useState<GroupSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [joiningId, setJoiningId] = useState<number | null>(null);
+  const [joiningId, setJoiningId] = useState<String | null>(null);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -28,12 +38,16 @@ export default function GroupsPage() {
   const loadGroups = async () => {
     try {
       setLoading(true);
+      // const respinsegroup=await fetchJoinedGroups()
+      // console.log("that is the respose of the group joined ",respinsegroup)
       const [joined, suggested] = await Promise.all([
         fetchJoinedGroups(),
         fetchSuggestedGroups(),
       ]);
+      // console.log("GROUPS:", visibleGroups);
       setJoinedGroups(joined);
       setSuggestedGroups(suggested);
+
     } catch (error: any) {
       showToast(error.message || "Failed to load groups", "error");
     } finally {
@@ -42,10 +56,12 @@ export default function GroupsPage() {
   };
 
   useEffect(() => {
+    console.log("visibleGroups:", visibleGroups);
     loadGroups();
   }, []);
 
   const handleCreateGroup = async (e: React.FormEvent) => {
+    console.log("we try now to create group")
     e.preventDefault();
     if (!form.title.trim() || !form.description.trim()) {
       showToast("Group title and description are required", "error");
@@ -55,7 +71,6 @@ export default function GroupsPage() {
     try {
       setSubmitting(true);
       const newGroup = await createGroup(form);
-      console.log("we will create the group",form)
       setJoinedGroups((prev) => [newGroup, ...prev]);
       setForm({ title: "", description: "" });
       setShowCreateForm(false);
@@ -69,14 +84,15 @@ export default function GroupsPage() {
   };
 
   const handleJoinRequest = async (group: GroupSummary) => {
-    if (!group.userId) {
+    if (!group) {
       showToast("This group cannot receive requests yet", "error");
       return;
     }
 
     try {
       setJoiningId(group.id);
-      await createJoinRequest(group.id, group.userId);
+      const datafromback = await createJoinRequest(group.id, group.userId);
+      console.log("that what heppen on the backend", datafromback)
       setSuggestedGroups((prev) =>
         prev.map((item) =>
           item.id === group.id ? { ...item, requestId: 1 } : item
@@ -150,6 +166,11 @@ export default function GroupsPage() {
           style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "my-groups" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "my-groups" ? "3px solid var(--color-primary)" : "3px solid transparent" }}
         >
           My groups
+          {totalGroupUnread > 0 && (
+            <span style={{ marginLeft: "8px", background: "#e63946", color: "white", borderRadius: "999px", minWidth: "18px", height: "18px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px", fontSize: "0.7rem", fontWeight: "bold", verticalAlign: "middle" }}>
+              {totalGroupUnread}
+            </span>
+          )}
         </button>
       </div>
 
@@ -160,14 +181,17 @@ export default function GroupsPage() {
           {visibleGroups.map((group) => (
             <div key={group.id} style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "12px", border: "1px solid #2f3336", display: "flex", flexDirection: "column", gap: "12px" }}>
               <div>
-                <h3 style={{ color: "var(--text-main)", margin: "0 0 10px 0" }}>{group.title}</h3>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "10px" }}>
+                  <h3 style={{ color: "var(--text-main)", margin: 0 }}>{group.title}</h3>
+                  {activeTab === "my-groups" && (unreadByGroup[group.id] || 0) > 0 && (
+                    <span style={{ background: "#e63946", color: "white", borderRadius: "999px", minWidth: "22px", height: "22px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 7px", fontSize: "0.75rem", fontWeight: "bold", flexShrink: 0 }}>
+                      {unreadByGroup[group.id]}
+                    </span>
+                  )}
+                </div>
                 <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", margin: 0, lineHeight: "1.6" }}>
                   {group.description || "No description yet."}
                 </p>
-              </div>
-
-              <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                Group #{group.id}
               </div>
 
               {activeTab === "my-groups" ? (

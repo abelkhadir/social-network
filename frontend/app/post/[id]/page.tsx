@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { fetchApi } from "../../../lib/api";
+import { fetchApi, resolveApiUrl } from "../../../lib/api";
 import { useToast } from "../../../context/ToastContext";
 
 export default function SinglePostPage() {
@@ -122,7 +122,6 @@ export default function SinglePostPage() {
   }
 
   const defaultAvatar = "https://img6.arthub.ai/65266a51-47b8.webp";
-  const defaultImage = "https://es.gizmodo.com/app/uploads/2024/12/Diseno-sin-titulo-52-14-1024x683.jpg";
   const p = postData;
 
   return (
@@ -143,35 +142,29 @@ export default function SinglePostPage() {
           {p.content || p.message}
         </div>
 
-        <img 
-          src={p.image ? (p.image.startsWith('http') ? p.image : `http://localhost:8081/${p.image}`) : defaultImage} 
-          className="post-image" 
-          alt="Post Image" 
-          style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }} 
-        />
+        {p.image && (
+          <img
+            src={resolveApiUrl(p.image)}
+            className="post-image"
+            alt="Post Image"
+            style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }}
+          />
+        )}
 
-        {/* POST LIKES & TAGS */}
+        {/* POST LIKES */}
         <div className="post-actions" style={{ display: "flex", gap: "15px", alignItems: "center", borderTop: "1px solid #2f3336", paddingTop: "15px", flexWrap: "wrap" }}>
           <button onClick={handleLikePost} style={{ background: "transparent", color: "var(--text-main)", border: "1px solid #3a3f44", padding: "8px 15px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold" }}>
-            👍 {p.likes || 0} Like
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/like.svg" alt="Like" width={18} height={18} style={{ display: "block" }} /> {p.likes || 0} Like</span>
           </button>
           <button onClick={handleDislikePost} style={{ background: "transparent", color: "var(--text-main)", border: "1px solid #3a3f44", padding: "8px 15px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold" }}>
-            👎 {p.dislikes || 0} Dislike
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/dislike.svg" alt="Dislike" width={18} height={18} style={{ display: "block" }} /> {p.dislikes || 0} Dislike</span>
           </button>
-          
-          <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
-            {p.categories ? p.categories.map((cat: string, idx: number) => (
-              <span key={idx} className="tag" style={{ background: "rgba(255, 123, 0, 0.1)", color: "var(--color-primary)", padding: "5px 12px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: "bold" }}>#{cat}</span>
-            )) : (
-              <span className="tag" style={{ background: "#2f3336", color: "var(--text-muted)", padding: "5px 12px", borderRadius: "20px", fontSize: "0.8rem" }}>#Uncategorized</span>
-            )}
-          </div>
         </div>
       </div>
 
       {/*  COMMENTS SECTION */}
       <div className="comments-section" style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "16px", border: "1px solid #2f3336", marginTop: "20px" }}>
-        <h3 style={{ color: "var(--text-main)", marginBottom: "20px", fontSize: "1.3rem" }}>💬 Comments ({comments.length})</h3>
+        <h3 style={{ color: "var(--text-main)", marginBottom: "20px", fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} /> Comments ({comments.length})</h3>
 
         {/* Comment Form */}
         <form onSubmit={handleAddComment} className="comment-form" style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "30px" }}>
@@ -212,20 +205,20 @@ export default function SinglePostPage() {
                     onClick={() => handleLikeComment(c.id)} 
                     style={{ background: "transparent", color: "var(--text-muted)", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
                   >
-                    👍 {c.likes || 0} Like
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/like.svg" alt="Like" width={18} height={18} style={{ display: "block" }} /> {c.likes || 0} Like</span>
                   </button>
                   <button 
                     onClick={() => handleDislikeComment(c.id)} 
                     style={{ background: "transparent", color: "var(--text-muted)", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
                   >
-                    👎 {c.dislikes || 0} Dislike
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/dislike.svg" alt="Dislike" width={18} height={18} style={{ display: "block" }} /> {c.dislikes || 0} Dislike</span>
                   </button>
                 </div>
 
               </div>
             </div>
           )) : (
-            <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "2rem 0" }}>No comments yet. Be the first! 💬</p>
+            <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "2rem 0" }}><span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>No comments yet. Be the first! <img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} /></span></p>
           )}
         </div>
 

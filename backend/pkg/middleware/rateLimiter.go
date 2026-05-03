@@ -25,22 +25,24 @@ func NewRateLimiter(window time.Duration) *RateLimiter {
 	}
 }
 
-func (rl *RateLimiter) Wrap(limitType string, next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (rl *RateLimiter) Wrap(limitType string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		remoteIP, _, _ := net.SplitHostPort(r.RemoteAddr)
 
 		rl.Mutex.Lock()
 		defer rl.Mutex.Unlock()
 
-		// Clear expired request records
 		now := time.Now()
+
 		oldRequests := rl.Requests[remoteIP]
 		validRequests := make([]time.Time, 0, len(oldRequests))
+
 		for _, t := range oldRequests {
 			if now.Sub(t) <= rl.WindowDuration {
 				validRequests = append(validRequests, t)
 			}
 		}
+
 		rl.Requests[remoteIP] = validRequests
 
 		limit := rl.Limits[limitType]
@@ -50,6 +52,7 @@ func (rl *RateLimiter) Wrap(limitType string, next http.HandlerFunc) http.Handle
 		}
 
 		rl.Requests[remoteIP] = append(rl.Requests[remoteIP], now)
-		next(w, r)
-	}
+
+		next.ServeHTTP(w, r)
+	})
 }

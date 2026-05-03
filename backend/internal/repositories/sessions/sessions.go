@@ -5,11 +5,13 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"social/internal/models"
 	"time"
 
-	"github.com/gofrs/uuid"
+	"social/internal/models"
+
 	"social/internal/repositories/auth"
+
+	"github.com/gofrs/uuid"
 )
 
 type SessionRepository struct {
@@ -47,7 +49,6 @@ func (sb *SessionRepository) NewSessionToken(res http.ResponseWriter, userID str
 	if err != nil {
 		return err
 	}
-
 	http.SetCookie(res, &http.Cookie{
 		Name:     "auth_session",
 		Value:    token,
@@ -73,7 +74,6 @@ func (sb *SessionRepository) ValidSession(req *http.Request) bool {
 		"SELECT expire_at FROM sessions WHERE token = ?",
 		cookie.Value,
 	).Scan(&expireAt)
-
 	if err != nil {
 		return false
 	}
@@ -101,7 +101,6 @@ func (sb *SessionRepository) GetUserFromSession(req *http.Request) (*models.User
 		"SELECT user_id, expire_at FROM sessions WHERE token = ?",
 		cookie.Value,
 	).Scan(&userID, &expireAt)
-
 	if err != nil {
 		return nil, errors.New("invalid session")
 	}

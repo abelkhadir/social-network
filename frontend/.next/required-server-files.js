@@ -104,7 +104,7 @@ self.__SERVER_FILES_MANIFEST={
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/home/yamazzal/Desktop/social-network/frontend",
+    "outputFileTracingRoot": "/home/abelkhadir/social-network/frontend",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -305,11 +305,11 @@ self.__SERVER_FILES_MANIFEST={
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.js",
     "turbopack": {
-      "root": "/home/yamazzal/Desktop/social-network/frontend"
+      "root": "/home/abelkhadir/social-network/frontend"
     },
     "distDirRoot": ".next"
   },
-  "appDir": "/home/yamazzal/Desktop/social-network/frontend",
+  "appDir": "/home/abelkhadir/social-network/frontend",
   "relativeAppDir": "",
   "files": [
     ".next/routes-manifest.json",

@@ -1,4 +1,4 @@
-package repositories
+package groupsrepos
 
 import (
 	"database/sql"
@@ -8,7 +8,17 @@ import (
 	"social/internal/models"
 )
 
-func (r *GroupRepository) GetInfoGroupeRepo(GrpID string, sessionID int) (*models.Group, error) {
+type MessageRepository struct {
+	db *sql.DB
+}
+
+func NewMessageRepository(db *sql.DB) *MessageRepository {
+	return &MessageRepository{
+		db: db,
+	}
+}
+
+func (r *MessageRepository) GetInfoGroupeRepo(GrpID string, sessionID int) (*models.Group, error) {
 	query := `SELECT 
 				g.id, 
 				g.title, 
@@ -46,14 +56,15 @@ func (r *GroupRepository) GetGroupMessagesRepo(GrpID string) ([]models.GroupMess
 				g.group_id, 
 				g.content,
 				g.sent_at,
-				u.avatar, 
-				u.first_name || ' ' || u.last_name AS fullName
+				u.avatarURL, 
+				u.firstname || ' ' || u.lastname AS fullName
 				
 			FROM 
-				group_messages g
-			INNER JOIN users u ON u.id = g.sender_id
+			group_messages g
+			INNER JOIN user u ON u.id = g.sender_id
 			WHERE g.group_id = ?
 			ORDER BY g.sent_at ASC;
+		
 			`
 	rows, err := r.db.Query(query, GrpID)
 	if err != nil && err != sql.ErrNoRows {
@@ -69,4 +80,16 @@ func (r *GroupRepository) GetGroupMessagesRepo(GrpID string) ([]models.GroupMess
 		messges = append(messges, messge)
 	}
 	return messges, nil
+}
+
+func (mr *GroupRepository) SaveMessagesGrpRepo(groupID, senderID, message string) (string, error) {
+	query := `INSERT INTO group_messages(sender_id, group_id, content) VALUES (?, ?, ?) RETURNING id`
+	var idMsg string
+
+	err := mr.db.QueryRow(query, senderID, groupID, message).Scan(&idMsg)
+	if err != nil {
+		return "", err
+	}
+
+	return idMsg, nil
 }

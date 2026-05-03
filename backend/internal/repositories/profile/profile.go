@@ -2,6 +2,7 @@ package profile
 
 import (
 	"database/sql"
+
 	"social/internal/models"
 	"social/pkg/utils"
 )
@@ -78,7 +79,7 @@ func (repo *ProfileRepository) UpdateProfile(userID, nickname, aboutMe, avatarUR
 
 func (repo *ProfileRepository) listProfilePosts(userID string) ([]models.ProfilePost, error) {
 	rows, err := repo.db.Query(`
-		SELECT p.id, p.title, p.description, p.createDate, COALESCE(p.imageURL, ''),
+		SELECT p.id, p.title, p.description, p.createDate, COALESCE(p.Image, ''),
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
 			(SELECT COUNT(*) FROM comment WHERE postID = p.id) AS comments
 		FROM post p

@@ -3,9 +3,10 @@ package post
 import (
 	"database/sql"
 	"log"
+	"strings"
+
 	"social/internal/models"
 	"social/pkg/utils"
-	"strings"
 
 	"github.com/gofrs/uuid"
 )
@@ -27,8 +28,8 @@ func (pr *PostRepository) CreatePost(post *models.PostCreation) error {
 		log.Printf("❌ Failed to generate UUID: %v", err)
 	}
 	post.ID = ID.String()
-	_, err = pr.db.Exec("INSERT INTO post (id, title, description, authorID, imageURL) VALUES (?, ?, ?, ?, ?)",
-		post.ID, post.Title, post.Description, post.AuthorID, post.ImageURL)
+	_, err = pr.db.Exec("INSERT INTO post (id, title, description, authorID, Image) VALUES (?, ?, ?, ?, ?)",
+		post.ID, post.Title, post.Description, post.AuthorID, post.Image)
 	return err
 }
 
@@ -42,7 +43,7 @@ func (pr *PostRepository) GetPostByID(postID string) (*models.CompletePost, erro
     p.description,
     p.authorID,
     p.createDate,
-    COALESCE(p.imageURL, ''),
+    COALESCE(p.Image, ''),
     (SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
     (SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes
 FROM post p
@@ -53,7 +54,7 @@ WHERE p.id = ?`, postID)
 		&post.Description,
 		&post.AuthorID,
 		&post.CreateDate,
-		&post.ImageURL,
+		&post.Image,
 		&post.Likes,
 		&post.Dislikes,
 	)
@@ -63,8 +64,8 @@ WHERE p.id = ?`, postID)
 		}
 		return nil, err
 	}
-	if post.ImageURL != "" {
-		post.ImageURL = "/uploads/images/" + post.ImageURL
+	if post.Image != "" {
+		post.Image = "/uploads/images/" + post.Image
 	}
 	return &post, nil
 }
@@ -109,7 +110,6 @@ func (pr *PostRepository) GetUserOwnPosts(userId, nickName string) ([]models.Pos
 			AuthorName:       nickName,
 			CreateDate:       utils.FormatDateDB(lastModificationDate),
 			NumberOfComments: numberComments[i],
-			ListOfCategories: []string{},
 		}
 		tabPostItem = append(tabPostItem, postItem)
 
@@ -118,7 +118,6 @@ func (pr *PostRepository) GetUserOwnPosts(userId, nickName string) ([]models.Pos
 	return tabPostItem, nil
 }
 
-// Get all posts as PostItems with author name and category names
 func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error) {
 	var postItems []*models.PostItem
 	request := `
@@ -127,16 +126,13 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 			u.nickname AS authorName,
 			p.createDate AS lastEditionDate,
 			COUNT(DISTINCT cm.id) AS numberOfComments,
-			COALESCE(GROUP_CONCAT(c.name, ', '), '') AS listOfCategories,
-			COALESCE(p.imageURL, ''),
+			COALESCE(p.Image, ''),
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes,
 			pv.vote AS vote_status
 		FROM post p
 		JOIN user u ON p.authorID = u.id
 		LEFT JOIN "comment" cm ON p.id = cm.postID
-		LEFT JOIN post_category pc ON p.id = pc.post_id
-		LEFT JOIN category c ON pc.category_id = c.id
 		LEFT JOIN post_vote pv ON pv.post_id = p.id AND pv.user_id = ?
 		GROUP BY p.id
 		ORDER BY p.createDate DESC
@@ -149,7 +145,6 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 
 	for rows.Next() {
 		var post models.PostItem
-		ListOfCategories := ""
 		var voteStatus sql.NullInt64
 		err := rows.Scan(
 			&post.ID,
@@ -157,8 +152,7 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 			&post.AuthorName,
 			&post.CreateDate,
 			&post.NumberOfComments,
-			&ListOfCategories,
-			&post.ImageURL,
+			&post.Image,
 			&post.Likes,
 			&post.Dislikes,
 			&voteStatus,
@@ -168,19 +162,14 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 		}
 
 		post.CreateDate = utils.FormatDateDB(post.CreateDate)
-		if ListOfCategories == "" {
-			post.ListOfCategories = []string{}
-		} else {
-			post.ListOfCategories = strings.Split(ListOfCategories, ", ")
-		}
 		if voteStatus.Valid {
 			v := int(voteStatus.Int64)
 			post.VoteStatus = &v
 		} else {
 			post.VoteStatus = nil
 		}
-		if post.ImageURL != "" {
-			post.ImageURL = "/uploads/images/" + post.ImageURL
+		if post.Image != "" {
+			post.Image = "/uploads/images/" + post.Image
 		}
 		postItems = append(postItems, &post)
 	}
@@ -192,7 +181,6 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 	return postItems, nil
 }
 
-// Get all posts as PostItems with author name and category names
 func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error) {
 	request := `
 		SELECT 
@@ -200,13 +188,10 @@ func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error
 			u.nickname AS authorName,
 			p.createDate AS lastEditionDate,
 			COUNT(DISTINCT cm.id) AS numberOfComments,
-			COALESCE(GROUP_CONCAT(c.name, ', '), '') AS listOfCategories,
-			COALESCE(p.imageURL, '')
+			COALESCE(p.Image, '')
 		FROM post p
 		JOIN user u ON p.authorID = u.id
 		LEFT JOIN "comment" cm ON p.id = cm.postID
-		LEFT JOIN post_category pc ON p.id = pc.post_id
-		LEFT JOIN category c ON pc.category_id = c.id
 		WHERE p.id = ?
 		GROUP BY p.id
 		ORDER BY p.createDate DESC
@@ -214,28 +199,21 @@ func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error
 	row := pr.db.QueryRow(request, postID)
 
 	var post models.PostItem
-	ListOfCategories := ""
 	err := row.Scan(
 		&post.ID,
 		&post.Title,
 		&post.AuthorName,
 		&post.CreateDate,
 		&post.NumberOfComments,
-		&ListOfCategories,
-		&post.ImageURL,
+		&post.Image,
 	)
 	if err != nil {
 		return post, err
 	}
 
 	post.CreateDate = utils.FormatDateDB(post.CreateDate)
-	if ListOfCategories == "" {
-		post.ListOfCategories = []string{}
-	} else {
-		post.ListOfCategories = strings.Split(ListOfCategories, ", ")
-	}
-	if post.ImageURL != "" {
-		post.ImageURL = "/uploads/images/" + post.ImageURL
+	if post.Image != "" {
+		post.Image = post.Image
 	}
 
 	return post, nil

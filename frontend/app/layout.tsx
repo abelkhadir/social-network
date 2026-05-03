@@ -8,7 +8,8 @@ import type { Metadata } from "next";
 import { AuthProvider } from "../context/AuthContext";
 import { SocketProvider } from "../context/SocketContext";
 import { NotificationProvider } from "../context/NotificationContext";
-import { ToastProvider } from "../context/ToastContext"; 
+import { ChatNotificationProvider } from "../context/ChatNotificationContext";
+import { ToastProvider } from "../context/ToastContext";
 import MainLayout from "./components/MainLayout";
 
 
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthProvider>
             <SocketProvider>
               <NotificationProvider>
-                <MainLayout>{children}</MainLayout>
+                <ChatNotificationProvider>
+                  <MainLayout>{children}</MainLayout>
+                </ChatNotificationProvider>
               </NotificationProvider>
             </SocketProvider>
           </AuthProvider>

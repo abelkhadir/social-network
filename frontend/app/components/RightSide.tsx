@@ -1,30 +1,40 @@
-// components/RightSide.tsx
-"use client";
+import Link from "next/link";
 
-import { useAuth } from "@/context/AuthContext";
-
-export default function RightSide() {
-  const { user } = useAuth();
-
+export function RightSideBottom() {
   return (
     <aside className="sidebar-right">
-      <h2>About social</h2>
-      <p>
-        Join the social Community! Connect with like-minded tech enthusiasts, participate in engaging discussions, and chat in real-time with other members. 🎤 Share your ideas, 🗨️ get instant feedback, and 📰 stay updated with the latest posts and comments. Be part of a vibrant tech network and never miss out on important conversations!
-      </p>
-
-      {user && (
-        <>
-          <h2>User Info</h2>
-          <p style={{ textTransform: "capitalize" }}>
-            {user.firstname} {user.lastname} <br />
-            {user.nickname && <span style={{ color: "gray" }}>@{user.nickname}</span>} <br />
-            <span style={{ fontSize: "0.8rem", color: "var(--color-primary-blue)" }}>
-              social Member
-            </span>
-          </p>
-        </>
-      )}
+      <h2 style={{ marginBottom: "14px" }}>Network</h2>
+      <Link
+        href="/followers"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
+          background: "var(--bg-surface)",
+          padding: "16px",
+          borderRadius: "12px",
+          border: "1px solid var(--border-default)",
+          textDecoration: "none",
+          color: "var(--text-main)",
+          textAlign: "center",
+          transition: "0.2s",
+          fontWeight: "bold",
+          boxShadow: "0 2px 8px rgba(26, 24, 20, 0.06)",
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.borderColor = "var(--color-primary)";
+          e.currentTarget.style.transform = "translateY(-1px)";
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.borderColor = "var(--border-default)";
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
+      >
+        <img src="/icons/groups.svg" alt="" width={24} height={24} style={{ display: "block" }} />
+        <div>See followers</div>
+      </Link>
     </aside>
   );
 }

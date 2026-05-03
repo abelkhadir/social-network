@@ -3,22 +3,20 @@ package posthandler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html"
+	"net/http"
+	"strings"
+
 	"social/internal/app"
 	websockethandler "social/internal/handlers/websocket"
 	"social/internal/models"
 	"social/pkg/utils"
-	"strings"
-
 	// "errors"
-	"net/http"
 )
 
 var MAX_COMMENT_LENGTH = 50
 
 func CreateComment(application *app.Application, res http.ResponseWriter, req *http.Request) {
-	fmt.Println("the user want send comments")
 	if strings.HasSuffix(req.URL.Path, "/like") || strings.HasSuffix(req.URL.Path, "/dislike") {
 		RateCommentHandler(application, res, req)
 		return
@@ -63,9 +61,7 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 					EntityType: "post",
 					Content:    userInSession.Nickname + " commented on your post.",
 				}
-				if err := application.NotificationRepo.Create(&notification); err == nil {
-					websockethandler.SendNotification(notification)
-				}
+				_ = websockethandler.PushNotification(application, &notification, true)
 			}
 			// comment, err := models.CommentRepo.GetCommentByID(commentInfo.ID)
 			// if err != nil {

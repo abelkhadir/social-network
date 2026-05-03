@@ -2,17 +2,17 @@ package websockethandler
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
-	"social/internal/app"
-	"social/internal/models"
-	"social/pkg/utils"
 	"strings"
 	"sync"
 	"time"
+
+	"social/internal/app"
+	"social/internal/models"
+	"social/pkg/utils"
 )
 
 var (
@@ -58,8 +58,6 @@ func randomProfileAvatar() string {
 }
 
 func GetUsers(application *app.Application, res http.ResponseWriter, req *http.Request) {
-	fmt.Println("the user bgha userd for chat okay")
-
 	if !utils.ValidateRequest(req, res, "/chat/users", http.MethodGet) {
 		return
 	}
@@ -198,6 +196,18 @@ func SendChatMessage(application *app.Application, res http.ResponseWriter, req 
 	}
 
 	SendMessage(*saved)
+
+	if payload.ReceiverID != currentUser.ID {
+		notification := models.Notification{
+			UserID:     payload.ReceiverID,
+			ActorID:    currentUser.ID,
+			Type:       "message",
+			EntityID:   saved.ID,
+			EntityType: "chat",
+			Content:    currentUser.Nickname + " sent you a message",
+		}
+		_ = PushNotification(application, &notification, true)
+	}
 
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{
 		"message": "message sent successfully",

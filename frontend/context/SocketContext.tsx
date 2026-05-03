@@ -20,10 +20,42 @@ const SocketContext = createContext<SocketContextType>({
   latestNotification: null,
   typingStatus: null,
   userStatus: null,
-  sendTyping: () => {},
-  playSendSound: () => {},
-  playReceiveSound: () => {},
+  sendTyping: () => { },
+  playSendSound: () => { },
+  playReceiveSound: () => { },
 });
+
+function pickString(...values: any[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function normalizeSocketMessage(payload: any) {
+  const message = payload?.message ?? payload;
+  if (!message) return null;
+
+  return {
+    ...message,
+    type: payload?.type ?? "",
+    id: pickString(message.id, message.ID),
+    senderID: pickString(message.senderID, message.SenderID, message.sender_id),
+    receiverID: pickString(message.receiverID, message.ReceiverID, message.receiver_id),
+    groupId: pickString(message.groupId, message.GroupID, message.group_id),
+    text: pickString(message.text, message.Text, message.message, message.content),
+    createDate: pickString(message.createDate, message.CreateDate, message.sent_at, message.SentAt),
+    senderNickname: pickString(
+      message.senderNickname,
+      message.SenderNickname,
+      message.fullname,
+      message.FullName
+    ),
+    avatarURL: pickString(message.avatarURL, message.AvatarURL, message.avatar),
+  };
+}
 
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -42,15 +74,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      if (socket) socket.close();
-      return;
-    }
+    if (!user) return;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
     const wsUrl = apiUrl.replace("http", "ws") + "/ws";
-    
+
+    let active = true;
     const ws = new WebSocket(wsUrl);
+    setSocket(ws);
 
     ws.onopen = () => {
       const userID = user.id || user.ID;
@@ -58,16 +89,22 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     ws.onmessage = (event) => {
+      if (!active) return;
       try {
         const data = JSON.parse(event.data);
-        
-        if (data.type === "message") {
-          setLatestMessage(data.message);
+        if (data.type === "message" || data.type === "group_message") {
+          const msg = normalizeSocketMessage(data);
+          if (!msg || !msg.text) {
+            console.warn("Missing message payload:", data);
+            return;
+          }
+
           const myId = user.id || user.ID;
-          const senderID = data.message?.senderID || data.message?.SenderID;
-          
-          if (senderID && myId && senderID !== myId) {
+          setLatestMessage(msg);
+          if (msg.senderID && msg.senderID !== myId) {
             playReceiveSound();
+          } else {
+            playSendSound();
           }
         } else if (data.type === "notification") {
           setLatestNotification(data.notification);
@@ -81,11 +118,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    ws.onclose = () => setSocket(null);
-    setSocket(ws);
+    ws.onclose = () => {
+      if (active) setSocket(null);
+    };
 
     return () => {
-      ws.close();
+      active = false;
+      setSocket(null);
+      if (ws.readyState === WebSocket.CONNECTING) {
+        // wait for connection then immediately close — avoids the "closed before established" browser error
+        ws.onopen = () => ws.close();
+      } else if (ws.readyState === WebSocket.OPEN) {
+        const userID = user?.id || user?.ID;
+        ws.send(JSON.stringify({ type: "logout", data: { userID } }));
+        ws.close();
+      }
     };
   }, [user]);
 
@@ -98,14 +145,14 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const playSendSound = () => {
     if (sendAudioRef.current) {
       sendAudioRef.current.currentTime = 0;
-      sendAudioRef.current.play().catch(() => {});
+      sendAudioRef.current.play().catch(() => { });
     }
   };
 
   const playReceiveSound = () => {
     if (receiveAudioRef.current) {
       receiveAudioRef.current.currentTime = 0;
-      receiveAudioRef.current.play().catch(() => {});
+      receiveAudioRef.current.play().catch(() => { });
     }
   };
 

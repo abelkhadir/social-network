@@ -4,22 +4,24 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"social/internal/models"
+	"strings"
 	"sync"
+	"time"
+
+	"social/internal/app"
+	"social/internal/models"
 
 	"github.com/gorilla/websocket"
 )
 
 var (
 	upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
+		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 	UserConnections = &sync.Map{}
 )
 
-func HandleWebSocket(res http.ResponseWriter, req *http.Request) {
+func HandleWebSocket(a *app.Application, res http.ResponseWriter, req *http.Request) {
 	conn, err := upgrader.Upgrade(res, req, nil)
 	if err != nil {
 		log.Println("Error upgrading connection:", err)
@@ -55,7 +57,6 @@ func HandleWebSocket(res http.ResponseWriter, req *http.Request) {
 			if ok && userID != "" {
 				UserConnections.Store(conn, userID)
 				SendStatus(userID, true) // Tell everyone else this user is online
-				log.Println("User logged into socket:", userID)
 			}
 
 		case "logout":
@@ -64,7 +65,96 @@ func HandleWebSocket(res http.ResponseWriter, req *http.Request) {
 				UserConnections.Store(conn, "")
 				SendStatus(userID, false)
 			}
+		case "group_message":
+			senderVal, _ := UserConnections.Load(conn)
+			senderID, _ := senderVal.(string)
+			if senderID == "" {
+				continue
+			}
 
+			msgBytes, _ := json.Marshal(data.Data)
+			var msg models.GroupMessages
+			if err = json.Unmarshal(msgBytes, &msg); err != nil {
+				log.Println("Error unmarshaling group message:", err)
+				continue
+			}
+
+			msg.GroupID = strings.TrimSpace(msg.GroupID)
+			msg.Message = strings.TrimSpace(msg.Message)
+			if msg.GroupID == "" || msg.Message == "" {
+				continue
+			}
+
+			if _, err := a.GroupPostRepo.SaveMessagesGrpRepo(msg.GroupID, senderID, msg.Message); err != nil {
+				log.Println("Error saving group message:", err)
+				continue
+			}
+
+			grpInfo, err := a.GroupMessage.GetInfoGroupeRepo(msg.GroupID, 0)
+			if err != nil {
+				log.Println("Error getting group members:", err)
+				continue
+			}
+
+			senderNickname := senderID
+			senderAvatar := ""
+			if sender, err := a.UserRepo.GetUserByID(senderID); err != nil {
+				log.Println("Error loading group message sender:", err)
+			} else if sender != nil {
+				if sender.Nickname != "" {
+					senderNickname = sender.Nickname
+				}
+				senderAvatar = sender.AvatarURL
+			}
+
+			groupTitle := strings.TrimSpace(grpInfo.Title)
+			if groupTitle == "" {
+				groupTitle = "your group"
+			}
+
+			sentAt := time.Now().UTC().Format(time.RFC3339)
+			memberSet := make(map[string]bool, len(grpInfo.Members))
+			for _, id := range grpInfo.Members {
+				memberSet[id] = true
+			}
+
+			payload, _ := json.Marshal(map[string]any{
+				"type": "group_message",
+				"message": map[string]any{
+					"group_id":       msg.GroupID,
+					"sender_id":      senderID,
+					"senderNickname": senderNickname,
+					"avatarURL":      senderAvatar,
+					"message":        msg.Message,
+					"sent_at":        sentAt,
+				},
+			})
+
+			UserConnections.Range(func(key, value any) bool {
+				if memberSet[value.(string)] {
+					key.(*websocket.Conn).WriteMessage(websocket.TextMessage, payload)
+				}
+				return true
+			})
+
+			for _, memberID := range grpInfo.Members {
+				memberID = strings.TrimSpace(memberID)
+				if memberID == "" || memberID == senderID {
+					continue
+				}
+
+				notification := models.Notification{
+					UserID:     memberID,
+					ActorID:    senderID,
+					Type:       "group_message",
+					EntityID:   msg.GroupID,
+					EntityType: "group",
+					Content:    senderNickname + " sent a message in " + groupTitle,
+				}
+				if err := PushNotification(a, &notification, true); err != nil {
+					log.Println("Error creating group message notification:", err)
+				}
+			}
 		case "typing":
 			from, _ := data.Data["from"].(string)
 			to, _ := data.Data["to"].(string)

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+
 	"social/internal/app"
 	"social/internal/routers"
 	"social/pkg/middleware"
@@ -22,9 +23,9 @@ func main() {
 	go myApp.SessionRepo.DeleteExpiredSessions()
 
 	routers.SetupRoutes(myApp)
-		root := middleware.CORSMiddleware(frontendOrigin)(http.DefaultServeMux)
+	root := middleware.CORSMiddleware(frontendOrigin)(http.DefaultServeMux)
 
-	log.Printf("Server running on port %s\n", port)
+	log.Printf("✅ Server running on port %s\n", port)
 	if err := http.ListenAndServe(":"+port, root); err != nil {
 		log.Fatal(err)
 	}

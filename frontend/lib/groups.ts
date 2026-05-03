@@ -3,8 +3,8 @@
 import { API_URL } from "@/lib/api";
 
 export interface GroupSummary {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   title: string;
   description: string;
   createdAt: string;
@@ -26,8 +26,8 @@ export interface GroupDetails {
 }
 
 export interface GroupEvent {
-  id: number;
-  groupId: number;
+  id: string;
+  groupId: string;
   title: string;
   description: string;
   eventDate: string;
@@ -46,13 +46,22 @@ export interface GroupMember {
   avatar: string;
 }
 
+export interface PendingMembers {
+  id: string;
+  nickname: string;
+  firstname: string;
+  lastname: string;
+  avatar: string;
+}
+
 export interface GroupPost {
   id: string;
   title: string;
   description: string;
   createDate: string;
   totalComments: number;
-  mediaLink: string;
+  numberOfComments?: number;
+  likes?: number;
   image: string;
   author: GroupAuthor;
 }
@@ -143,11 +152,10 @@ function normalizeAuthor(raw: any): GroupAuthor {
     avatar: toString(pick(raw, ["avatar", "Avatar", "avatar_url", "AvatarURL"], "")),
   };
 }
-
 function normalizeGroup(raw: any): GroupSummary {
   return {
-    id: toNumber(pick(raw, ["id", "ID"], 0)),
-    userId: toNumber(pick(raw, ["user_id", "userId", "UserID"], 0)),
+    id: toString(pick(raw, ["id", "ID"], "")),
+    userId: toString(pick(raw, ["user_id", "userId", "UserID"], "")),
     title: toString(pick(raw, ["title", "Title"], "")),
     description: toString(pick(raw, ["description", "Description"], "")),
     createdAt: toString(pick(raw, ["created_at", "createdAt", "CreateDate"], "")),
@@ -157,8 +165,8 @@ function normalizeGroup(raw: any): GroupSummary {
 
 function normalizeEvent(raw: any): GroupEvent {
   return {
-    id: toNumber(pick(raw, ["id", "ID"], 0)),
-    groupId: toNumber(pick(raw, ["group_id", "groupId", "GroupId"], 0)),
+    id: toString(pick(raw, ["id", "ID"], 0)),
+    groupId: toString(pick(raw, ["group_id", "groupId", "GroupId"], 0)),
     title: toString(pick(raw, ["title", "Title"], "")),
     description: toString(pick(raw, ["description", "Description", "descreption"], "")),
     eventDate: toString(pick(raw, ["event_date", "eventDate", "EventDate"], "")),
@@ -181,17 +189,19 @@ function normalizePost(raw: any): GroupPost {
     description: toString(pick(raw, ["description", "Description", "content"], "")),
     createDate: toString(pick(raw, ["createDate", "created_at", "createdAt"], "")),
     totalComments: toNumber(pick(raw, ["total_comments", "totalComments", "comments"], 0)),
-    mediaLink: toString(pick(raw, ["media_link", "mediaLink", "MediaLink"], "")),
-    image: toString(pick(raw, ["image", "ImageURL"], "")),
+    numberOfComments: toNumber(pick(raw, ["numberOfComments", "number_of_comments", "total_comments", "totalComments", "comments"], 0)),
+    likes: toNumber(pick(raw, ["likes", "Likes", "total_likes"], 0)),
+    image: toString(pick(raw, ["image", "Image", "image_url", "ImageURL"], "")),
     author: normalizeAuthor(pick(raw, ["author", "Author"], raw.author || raw.Author || raw)),
   };
 }
 
 export async function fetchJoinedGroups() {
   const response = await requestWithFallback<any>([
-    "/api/v1/groups/joined",
+    "/groups/joined",
     "/groups/joined",
   ]);
+  console.log("the joined group response  ", response)
 
   const groups = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   return groups.map(normalizeGroup);
@@ -199,7 +209,6 @@ export async function fetchJoinedGroups() {
 
 export async function fetchSuggestedGroups() {
   const response = await requestWithFallback<any>([
-    "/api/v1/groups/suggested",
     "/groups/suggested",
   ]);
 
@@ -209,38 +218,32 @@ export async function fetchSuggestedGroups() {
 
 export async function createGroup(payload: { title: string; description: string }) {
   const response = await requestWithFallback<any>(
-    ["/api/groups/create", "/groups"],
+    ["/groups/create", "/groups"],
     {
       method: "POST",
       body: JSON.stringify(payload),
     }
   );
-  console.log("that is the response from our backend ",response)
-  if(response==null){
+  console.log("that is the response from our backend ", response)
+  if (response == null) {
     return
   }
   return normalizeGroup(response?.data || response);
 }
 
-export async function createJoinRequest(groupId: number, ownerId: number) {
+export async function createJoinRequest(groupId: string, _ownerId: string) {
   return requestWithFallback<any>(
-    ["/api/v1/groups/request", "/api/v1/groups/requests", "/groups/request"],
+    ["/groups/request"],
     {
       method: "POST",
-      body: JSON.stringify({
-        group_id: groupId,
-        requested_id: [ownerId],
-        type: "demande",
-      }),
+      body: JSON.stringify({ group_id: groupId }),
     }
   );
 }
 
 export async function fetchGroupDetails(groupId: string | number) {
   const response = await requestWithFallback<any>([
-    `/api/v1/groups/joined/${groupId}`,
-    `/groups/joined/${groupId}`,
-    `/api/v1/groups/${groupId}`,
+    `/groups/info/${groupId}`,
   ]);
 
   const raw = response?.data || response;
@@ -253,10 +256,10 @@ export async function fetchGroupDetails(groupId: string | number) {
 
 export async function fetchGroupEvents(groupId: string | number) {
   const response = await requestWithFallback<any>([
-    `/api/v1/groups/joined/${groupId}/events`,
-    `/groups/joined/${groupId}/events`,
+    `/groups/joined/events/${groupId}`,
+    // `/groups/joined/${groupId}/events`,
   ]);
-
+  console.log("the event and it's time", response)
   const events = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   return events.map(normalizeEvent);
 }
@@ -267,13 +270,12 @@ export async function createGroupEvent(
 ) {
   return requestWithFallback<any>(
     [
-      `/api/v1/groups/joined/${groupId}/events`,
-      `/groups/joined/${groupId}/events`,
+      `/groups/joined/event/${groupId}/`,
     ],
     {
       method: "POST",
       body: JSON.stringify({
-        group_id: toNumber(groupId),
+        group_id: toString(groupId),
         title: payload.title,
         description: payload.description,
         event_date: payload.event_date,
@@ -282,12 +284,12 @@ export async function createGroupEvent(
   );
 }
 
-export async function voteOnGroupEvent(groupId: string | number, eventId: number, vote: string) {
+export async function voteOnGroupEvent(groupId: string | number, eventId: string, vote: string) {
   return requestWithFallback<any>(
     [
-      `/api/v1/groups/joined/${groupId}/events/vote`,
-      `/api/v1/groups/events/vote`,
-      `/groups/joined/${groupId}/events/vote`,
+      `/groups/events/vote/${groupId}`,
+      // `/api/v1/groups/events/vote`,
+      // `/groups/joined/${groupId}/events/vote`,
     ],
     {
       method: "POST",
@@ -299,10 +301,25 @@ export async function voteOnGroupEvent(groupId: string | number, eventId: number
   );
 }
 
+export async function fetchGroupPending(groupId: string | number) {
+
+  const response = await requestWithFallback<any>([
+    `/groups/pending/${groupId}`,
+  ]);
+  
+  const members = Array.isArray(response?.data?.members)
+  ? response.data.members
+  : Array.isArray(response?.members)
+  ? response.members
+  : [];
+  
+  console.log(members)
+  return members.map(normalizeMember);
+}
+
 export async function fetchGroupMembers(groupId: string | number) {
   const response = await requestWithFallback<any>([
-    `/api/v1/groups/joined/${groupId}/members`,
-    `/groups/joined/${groupId}/members`,
+    `/groups/joined//members/${groupId}`,
   ]);
 
   const members = Array.isArray(response?.data?.members)
@@ -310,16 +327,13 @@ export async function fetchGroupMembers(groupId: string | number) {
     : Array.isArray(response?.members)
       ? response.members
       : [];
-
   return members.map(normalizeMember);
 }
 
 export async function fetchGroupPosts(groupId: string | number) {
   const response = await requestWithFallback<any>(
     [
-      `/api/v1/groups/joined/${groupId}/post`,
-      `/api/v1/groups/joined/${groupId}/posts`,
-      `/groups/joined/${groupId}/post`,
+      `/groups/posts/${groupId}`,
     ],
     {
       method: "POST",
@@ -330,16 +344,23 @@ export async function fetchGroupPosts(groupId: string | number) {
     }
   );
 
+  console.log("aaaaaaaaaaa", response)
+
   const posts = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   return posts.map(normalizePost);
+}
+
+export async function respondGroupRequest(groupId: string | number, userId: string, type: "accept" | "reject") {
+  return requestWithFallback<any>(["/groups/request/decision"], {
+    method: "POST",
+    body: JSON.stringify({ group_id: toString(groupId), user_id: userId, type }),
+  });
 }
 
 export async function createGroupPost(groupId: string | number, formData: FormData) {
   return requestWithFallback<any>(
     [
-      `/api/v1/groups/joined/${groupId}/post`,
-      `/api/v1/groups/joined/${groupId}/posts`,
-      `/groups/joined/${groupId}/post`,
+      `/groups/joined/post/${groupId}`,
     ],
     {
       method: "POST",
@@ -347,3 +368,20 @@ export async function createGroupPost(groupId: string | number, formData: FormDa
     }
   );
 }
+
+//the flow of request:
+// Frontend (createGroup)
+//         ↓
+// POST /groups/create
+//         ↓
+// Handler (CreateGroupHandler)
+//         ↓
+// Repository (SaveGroup)
+//         ↓
+// Database
+//         ↓
+// Response (JSON)
+//         ↓
+// normalizeGroup
+//         ↓
+// UI update

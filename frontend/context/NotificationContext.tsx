@@ -1,7 +1,14 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { fetchApi } from "@/lib/api";
+import {
+  NOTIFICATION_FETCH_LIMIT,
+  NOTIFICATION_FETCH_THROTTLE_MS,
+  filterBellNotifications,
+  prependBellNotification,
+  shouldShowBellNotification,
+} from "@/lib/notifications";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "./SocketContext";
 
@@ -40,28 +47,45 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   const { latestNotification } = useSocket();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const lastFetchedAtRef = useRef(0);
+  const pendingRefreshRef = useRef<Promise<void> | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) {
       setNotifications([]);
+      lastFetchedAtRef.current = 0;
       return;
     }
-    setLoading(true);
-    try {
-      const data = await fetchApi("/notifications");
-      const list = (data.notifications || []).filter(
-        (n: NotificationItem) => n.type !== "message"
-      );
-      setNotifications(list);
-    } catch (err) {
-      console.error("Failed to load notifications", err);
-    } finally {
-      setLoading(false);
+
+    if (pendingRefreshRef.current) {
+      return pendingRefreshRef.current;
     }
+
+    const now = Date.now();
+    if (now - lastFetchedAtRef.current < NOTIFICATION_FETCH_THROTTLE_MS) {
+      return;
+    }
+
+    setLoading(true);
+    const request = (async () => {
+      try {
+        const data = await fetchApi(`/notifications?limit=${NOTIFICATION_FETCH_LIMIT}`);
+        setNotifications(filterBellNotifications<NotificationItem>(data.notifications));
+        lastFetchedAtRef.current = Date.now();
+      } catch (err) {
+        console.error("Failed to load notifications", err);
+      } finally {
+        pendingRefreshRef.current = null;
+        setLoading(false);
+      }
+    })();
+
+    pendingRefreshRef.current = request;
+    return request;
   }, [user]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   useEffect(() => {
@@ -70,13 +94,11 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     const targetId = latestNotification.user_id || latestNotification.userID;
     if (targetId && targetId !== myId) return;
 
-    if (latestNotification.type === "message") return;
+    if (!shouldShowBellNotification(latestNotification.type)) return;
 
-    setNotifications((prev) => {
-      const exists = prev.some((n) => n.id === latestNotification.id);
-      if (exists) return prev;
-      return [latestNotification, ...prev].slice(0, 100);
-    });
+    setNotifications((prev) =>
+      prependBellNotification<NotificationItem>(prev, latestNotification, NOTIFICATION_FETCH_LIMIT)
+    );
   }, [latestNotification, user]);
 
   const markAllRead = useCallback(async () => {

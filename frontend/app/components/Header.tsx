@@ -2,9 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
+import { resolveApiUrl } from "@/lib/api";
+
 
 interface HeaderProps {
   toggleChat?: () => void;
@@ -13,11 +16,12 @@ interface HeaderProps {
 
 export default function Header({ toggleChat, isChatMode }: HeaderProps) {
   const { user, logout } = useAuth();
-  
+  const { totalUnread: unreadChatCount } = useChatNotifications();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false); 
-  
+  const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
+
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +53,6 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
   }, [isNotifMenuOpen, refresh]);
 
   const logo = "/img/social-network.jpeg";
-  const defaultAvatar = "https://img6.arthub.ai/65266a51-47b8.webp"; 
 
   return (
     <header>
@@ -59,7 +62,7 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
         </div>
         <div className="platform-name">social</div>
       </div>
-      
+
       <button className="menu-toggle" type="button" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
         ☰
       </button>
@@ -70,45 +73,58 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
             <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
             <Link href="/add-post" onClick={() => setIsMobileMenuOpen(false)}>Create Post</Link>
 
-            <button 
+
+            <button
+              type="button"
+              className="header-nav-button"
               onClick={() => {
                 if (toggleChat) toggleChat();
-                setIsMobileMenuOpen(false); 
-              }} 
-              style={{ 
-                background: isChatMode ? "var(--color-primary-dark)" : "transparent", 
-                color: isChatMode ? "#fff" : "var(--text-main)", 
-                border: "1px solid var(--color-primary)",
-                padding: "8px 20px", 
-                borderRadius: "20px", 
-                cursor: "pointer", 
-                fontWeight: "bold",
-                transition: "all 0.3s",
-                display: "flex",
-                alignItems: "center"
+                setIsMobileMenuOpen(false);
               }}
+              style={{ position: "relative" }}
             >
-              💬 Messages
+              Messages
+              {unreadChatCount > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: "-8px",
+                  right: "-10px",
+                  background: "#e63946",
+                  color: "white",
+                  fontSize: "0.7rem",
+                  fontWeight: "bold",
+                  borderRadius: "999px",
+                  minWidth: "20px",
+                  height: "20px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0 6px",
+                  border: "2px solid var(--bg-header-start)",
+                }}>
+                  {unreadChatCount}
+                </span>
+              )}
             </button>
 
             <div className="notif-dropdown-container" ref={notifDropdownRef} style={{ position: "relative", display: "flex", alignItems: "center", marginLeft: "10px" }}>
-              <button 
+              <button
                 onClick={() => {
                   setIsNotifMenuOpen(!isNotifMenuOpen);
-                  setIsProfileMenuOpen(false); 
+                  setIsProfileMenuOpen(false);
                 }}
-                style={{ 
+                style={{
                   background: "transparent", border: "none", fontSize: "1.4rem", cursor: "pointer", position: "relative",
                   padding: "5px", borderRadius: "50%", transition: "background 0.3s"
                 }}
                 onMouseOver={(e) => e.currentTarget.style.background = "#2a2e33"}
                 onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
               >
-                🔔
+                <img src="/icons/notifications-white.svg" alt="Notifications" width={22} height={22} style={{ display: "block" }} />
                 {unreadCount > 0 && (
-                  <span style={{ 
-                    position: "absolute", top: "0", right: "0", background: "#e63946", color: "white", 
-                    fontSize: "0.7rem", fontWeight: "bold", borderRadius: "50%", padding: "2px 6px", border: "2px solid var(--bg-header-start)" 
+                  <span style={{
+                    position: "absolute", top: "0", right: "0", background: "#e63946", color: "white",
+                    fontSize: "0.7rem", fontWeight: "bold", borderRadius: "50%", padding: "2px 6px", border: "2px solid var(--bg-header-start)"
                   }}>
                     {unreadCount}
                   </span>
@@ -129,26 +145,26 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                       </button>
                     )}
                   </div>
-                  
+
                   <div style={{ maxHeight: "350px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
                     {notifLoading ? (
                       <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>Loading notifications...</div>
                     ) : notifications.length > 0 ? notifications.map(notif => (
-                      <div key={notif.id} style={{ 
-                        padding: "12px 15px", borderBottom: "1px solid #2f3336", 
+                      <div key={notif.id} style={{
+                        padding: "12px 15px", borderBottom: "1px solid #2f3336",
                         background: notif.is_read ? "transparent" : "rgba(255, 123, 0, 0.08)",
                         transition: "background 0.2s", cursor: "pointer"
                       }}
-                      onMouseOver={(e) => e.currentTarget.style.background = "#2a2e33"}
-                      onMouseOut={(e) => e.currentTarget.style.background = notif.is_read ? "transparent" : "rgba(255, 123, 0, 0.08)"}
-                      onClick={() => {
-                        if (!notif.is_read) markRead(notif.id);
-                      }}>
+                        onMouseOver={(e) => e.currentTarget.style.background = "#2a2e33"}
+                        onMouseOut={(e) => e.currentTarget.style.background = notif.is_read ? "transparent" : "rgba(255, 123, 0, 0.08)"}
+                        onClick={() => {
+                          if (!notif.is_read) markRead(notif.id);
+                        }}>
                         <p style={{ margin: "0 0 5px 0", fontSize: "0.95rem", color: "var(--text-main)", lineHeight: "1.4" }}>
                           {notif.content}
                         </p>
                         <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{timeAgo(notif.created_at)}</span>
-                        
+
                         {!notif.is_read && (notif.type === "follow" || notif.type === "group") && (
                           <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                             <button style={{ flex: 1, background: "var(--color-primary)", color: "#000", border: "none", padding: "6px", borderRadius: "5px", fontWeight: "bold", cursor: "pointer" }}>Accept</button>
@@ -163,19 +179,19 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                 </div>
               )}
             </div>
-            
+
             <div className="profile-dropdown-container" ref={profileDropdownRef} style={{ position: "relative", display: "flex", alignItems: "center" }}>
-              <img 
-                src={user.avatar || defaultAvatar} 
-                alt="Profile" 
+              <img
+                src={resolveApiUrl(user.avatar_url)}
+                alt="Profile"
                 onClick={() => {
                   setIsProfileMenuOpen(!isProfileMenuOpen);
-                  setIsNotifMenuOpen(false); 
+                  setIsNotifMenuOpen(false);
                 }}
-                style={{ 
+                style={{
                   width: "45px", height: "45px", borderRadius: "50%", cursor: "pointer", objectFit: "cover",
                   border: isProfileMenuOpen ? "2px solid var(--color-primary)" : "2px solid #3a3f44", transition: "border 0.3s"
-                }} 
+                }}
               />
 
               {isProfileMenuOpen && (

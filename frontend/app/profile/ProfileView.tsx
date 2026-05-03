@@ -136,9 +136,9 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
   }
 
   const displayUser = profile.user || user;
-  const avatarCandidate = displayUser?.avatar || displayUser?.avatar_url || "";
-  const avatarSrc = avatarCandidate ? resolveApiUrl(avatarCandidate) : "https://img6.arthub.ai/65266a51-47b8.webp";
   const defaultCover = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop";
+  const avatarSrc = resolveApiUrl(profile.user.avatar_url);
+
   const posts = profile.posts || [];
 
   return (
@@ -232,7 +232,7 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
                     />
                   )}
                   <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                    <span>❤️ {post.likes} Likes | 💬 {post.comments} Comments</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "12px" }}><span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><img src="/icons/like.svg" alt="Likes" width={18} height={18} style={{ display: "block" }} /> {post.likes} Likes</span><span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} /> {post.comments} Comments</span></span>
                     <span>{post.date}</span>
                   </div>
                 </div>

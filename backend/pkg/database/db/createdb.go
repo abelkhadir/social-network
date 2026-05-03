@@ -3,8 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"strings"
 )
 
 func EnsureSchema(db *sql.DB) error {
@@ -43,22 +41,9 @@ func EnsureSchema(db *sql.DB) error {
 			title TEXT NOT NULL,
 			description TEXT NOT NULL,
 			authorID TEXT NOT NULL,
-			imageURL TEXT,
+			Image TEXT,
 			createDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (authorID) REFERENCES user(id) ON DELETE CASCADE
-		);`,
-
-		`CREATE TABLE IF NOT EXISTS category (
-			id TEXT PRIMARY KEY,
-			name TEXT UNIQUE NOT NULL
-		);`,
-
-		`CREATE TABLE IF NOT EXISTS post_category (
-			category_id TEXT NOT NULL,
-			post_id TEXT NOT NULL,
-			FOREIGN KEY(category_id) REFERENCES category(id) ON DELETE CASCADE,
-			FOREIGN KEY(post_id) REFERENCES post(id) ON DELETE CASCADE,
-			UNIQUE(category_id, post_id)
 		);`,
 
 		`CREATE TABLE IF NOT EXISTS comment (
@@ -118,7 +103,7 @@ func EnsureSchema(db *sql.DB) error {
 
 		// Groups (FIXED: TEXT IDs + correct FK)
 		`CREATE TABLE IF NOT EXISTS groups (
-			id TEXT PRIMARY KEY,
+			id TEXT  PRIMARY KEY ,
 			user_id TEXT NOT NULL,
 			title TEXT NOT NULL,
 			description TEXT NOT NULL,
@@ -144,6 +129,7 @@ func EnsureSchema(db *sql.DB) error {
 			created_at DATETIME NOT NULL,
 			total_going INTEGER DEFAULT 0,
 			total_not_going INTEGER DEFAULT 0,
+			status TEXT,
 			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
 			FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE
 		);`,
@@ -156,27 +142,38 @@ func EnsureSchema(db *sql.DB) error {
 			FOREIGN KEY (event_id) REFERENCES group_events(id) ON DELETE CASCADE,
 			FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE
 		);`,
-		`CREATE TABLE group_posts (
-    id INTEGER PRIMARY KEY,
-    group_id INTEGER,
-    member_id INTEGER,
-    title TEXT NOT NULL, 
-    content TEXT NOT NULL,
-    media TEXT, 
-    comments INTEGER DEFAULT 0,
-    created_at DATETIME NOT NULL,
-    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (member_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE
-);`,
-`CREATE TABLE group_messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sender_id INTEGER NOT NULL,
-    group_id INTEGER NOT NULL,
-    content TEXT NOT NULL,
-    sent_at DATETIME NOT NULL,
-    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
-)`,
+		`CREATE TABLE IF NOT EXISTS group_posts  (
+			id TEXT PRIMARY KEY,
+			group_id TEXT,
+			member_id TEXT,
+			title TEXT NOT NULL, 
+			content TEXT NOT NULL,
+			image TEXT, 
+			comments INTEGER DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE,
+			FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE ON UPDATE CASCADE
+		);`,
+		`CREATE TABLE IF NOT EXISTS group_requests (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			group_id TEXT NOT NULL,
+			sender_id TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(group_id, sender_id),
+			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+			FOREIGN KEY (sender_id) REFERENCES user(id) ON DELETE CASCADE
+		)`,
+
+		`CREATE TABLE IF NOT EXISTS group_messages (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			sender_id TEXT NOT NULL,
+			group_id TEXT NOT NULL,
+			content TEXT NOT NULL,
+			sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (sender_id) REFERENCES user(id) ON DELETE CASCADE ON UPDATE CASCADE,
+			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
+		)`,
 	}
 
 	// Execute tables safely
@@ -244,6 +241,7 @@ func EnsureSchema(db *sql.DB) error {
 
 	return nil
 }
+
 func ensureUserProfileColumns(db *sql.DB) error {
 	columns := map[string]string{
 		"about_me":   "TEXT DEFAULT ''",
@@ -287,43 +285,4 @@ func ensureColumns(db *sql.DB, table string, columns map[string]string) error {
 	}
 
 	return nil
-}
-
-func SeedData(db *sql.DB) error {
-	if db == nil {
-		return fmt.Errorf("nil database handle")
-	}
-
-	seedPath := resolveSeedPath()
-	if seedPath == "" {
-		return fmt.Errorf("insert.sql not found (expected ./backend/sql/insert.sql or ./sql/insert.sql)")
-	}
-
-	content, err := os.ReadFile(seedPath)
-	if err != nil {
-		return fmt.Errorf("read seed file: %w", err)
-	}
-
-	if strings.TrimSpace(string(content)) == "" {
-		return nil
-	}
-
-	if _, err := db.Exec(string(content)); err != nil {
-		return fmt.Errorf("execute seed data: %w", err)
-	}
-
-	return nil
-}
-
-func resolveSeedPath() string {
-	candidates := []string{
-		"./backend/sql/insert.sql",
-		"./sql/insert.sql",
-	}
-	for _, path := range candidates {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-	return ""
 }
