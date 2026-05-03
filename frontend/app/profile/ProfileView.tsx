@@ -65,7 +65,6 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
     try {
       const endpoint = profileId ? `/profile?id=${encodeURIComponent(profileId)}` : "/profile";
       const data = await fetchApi(endpoint);
-      console.log("Profile data:", data);
       const profileData: ProfileResponse = data.profile || data;
       setProfile(profileData);
       setEditNickname(profileData.user?.nickname || "");

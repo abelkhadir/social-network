@@ -100,6 +100,11 @@ func SetupRoutes(a *app.Application) {
 		websockethandler.GetUsers(a, res, req)
 	})))
 
+	// Chat Handlers
+	http.Handle("/users", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		websockethandler.GetUsers(a, res, req)
+	})))
+
 	http.Handle("/chat/messages/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.GetMessages(a, res, req)
 	})))

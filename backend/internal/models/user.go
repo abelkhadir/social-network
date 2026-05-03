@@ -10,7 +10,7 @@ type User struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 	AvatarURL string `json:"avatar_url,omitempty"`
-	Avatar    Image    `json:"avatar,omitempty"`
+	Avatar    string `json:"avatar,omitempty"`
 	AboutMe   string `json:"aboutMe"`
 	IsPrivate int    `json:"isPrivate"`
 }

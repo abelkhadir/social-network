@@ -277,7 +277,8 @@ export default function SingleGroupPage() {
 
           {posts.length > 0 ? (
             posts.map((post) => {
-              const imageSrc = post.image || "sqfsqfd";
+              console.log(post)
+              const imageSrc = post.avatar;
 
               return (
                 <div
@@ -350,7 +351,6 @@ export default function SingleGroupPage() {
                   {imageSrc && (
                     <img
                       src={resolveApiUrl(imageSrc)}
-                      alt="post media"
                       style={{
                         width: "100%",
                         maxHeight: "420px",

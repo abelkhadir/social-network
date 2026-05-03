@@ -186,7 +186,7 @@ func (r *GroupRepository) AddGroupComment(comments models.Comment, img *models.I
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(comments.PostID, comments.Author.ID, comments.Text, time.Now())
+	_, err = stmt.Exec(comments.PostID, comments.AuthorID, comments.Text, time.Now())
 	if err != nil {
 		return nil, models.GroupError{
 			Code:    http.StatusInternalServerError,
