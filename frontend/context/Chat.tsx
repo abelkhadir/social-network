@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useChatNotifications } from "@/context/ChatNotificationContext";
 import { useSocket } from "@/context/SocketContext";
 import { fetchApi } from "@/lib/api";
 
@@ -12,6 +13,7 @@ interface GroupChatProps {
 export default function GroupChat({ groupId }: GroupChatProps) {
   const { user } = useAuth();
   const { socket, latestMessage } = useSocket();
+  const { markGroupRead } = useChatNotifications();
 
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
@@ -24,7 +26,9 @@ export default function GroupChat({ groupId }: GroupChatProps) {
     fetchApi(`/chat/messages/group/${groupId}`)
       .then((data) => setMessages(data.messages || []))
       .catch(() => console.error("Failed to load group chat history"));
-  }, [groupId]);
+
+    void markGroupRead(groupId);
+  }, [groupId, markGroupRead]);
 
   useEffect(() => {
     if (!latestMessage) return;
@@ -37,8 +41,13 @@ export default function GroupChat({ groupId }: GroupChatProps) {
         }
         return [...prev, latestMessage];
       });
+
+      const senderId = latestMessage.senderID || latestMessage.SenderID || latestMessage.sender_id;
+      if (senderId && senderId !== myId) {
+        void markGroupRead(groupId);
+      }
     }
-  }, [latestMessage, groupId]);
+  }, [groupId, latestMessage, markGroupRead, myId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

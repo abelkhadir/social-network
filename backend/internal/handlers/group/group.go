@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"social/internal/app"
+	websockethandler "social/internal/handlers/websocket"
 	"social/internal/models"
 	"social/pkg/middleware"
 	"social/pkg/utils"
@@ -135,6 +137,29 @@ func JoinGroupRequestHandler(app *app.Application, w http.ResponseWriter, r *htt
 		return
 	}
 
+	adminID, err := app.GroupPostRepo.GetGroupAdmin(body.GroupID)
+	if err == nil && adminID != "" && adminID != userID {
+		requesterName := userID
+		if requester, userErr := app.UserRepo.GetUserByID(userID); userErr == nil && requester != nil && strings.TrimSpace(requester.Nickname) != "" {
+			requesterName = strings.TrimSpace(requester.Nickname)
+		}
+
+		groupTitle := "your group"
+		if groupInfo, groupErr := app.GroupMessage.GetInfoGroupeRepo(body.GroupID, 0); groupErr == nil && groupInfo != nil && strings.TrimSpace(groupInfo.Title) != "" {
+			groupTitle = strings.TrimSpace(groupInfo.Title)
+		}
+
+		notification := models.Notification{
+			UserID:     adminID,
+			ActorID:    userID,
+			Type:       "group_join_request",
+			EntityID:   body.GroupID,
+			EntityType: "group",
+			Content:    requesterName + " requested to join " + groupTitle,
+		}
+		_ = websockethandler.PushNotification(app, &notification, true)
+	}
+
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{"message": "Join request sent"})
 }
 
@@ -226,6 +251,11 @@ func AcceptMemberGroup(app *app.Application, w http.ResponseWriter, r *http.Requ
 			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
 			return
 		}
+
+		if err = app.GroupPostRepo.CancelGroupRequest(body.GroupID, body.UserID); err != nil {
+			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+			return
+		}
 	}
 
 	if body.DecisionType == "reject" {
@@ -236,8 +266,32 @@ func AcceptMemberGroup(app *app.Application, w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	// send notification
-	fmt.Println("Sending notif to ", adminId, "for userid", userID)
+	actorName := userID
+	if actor, userErr := app.UserRepo.GetUserByID(userID); userErr == nil && actor != nil && strings.TrimSpace(actor.Nickname) != "" {
+		actorName = strings.TrimSpace(actor.Nickname)
+	}
+
+	groupTitle := "your group"
+	if groupInfo, groupErr := app.GroupMessage.GetInfoGroupeRepo(body.GroupID, 0); groupErr == nil && groupInfo != nil && strings.TrimSpace(groupInfo.Title) != "" {
+		groupTitle = strings.TrimSpace(groupInfo.Title)
+	}
+
+	notificationType := "group_request_rejected"
+	content := actorName + " rejected your request to join " + groupTitle
+	if body.DecisionType == "accept" {
+		notificationType = "group_request_accepted"
+		content = actorName + " accepted your request to join " + groupTitle
+	}
+
+	notification := models.Notification{
+		UserID:     body.UserID,
+		ActorID:    userID,
+		Type:       notificationType,
+		EntityID:   body.GroupID,
+		EntityType: "group",
+		Content:    content,
+	}
+	_ = websockethandler.PushNotification(app, &notification, true)
 
 	// add unsend request
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{"message": "Desision made"})

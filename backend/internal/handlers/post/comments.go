@@ -97,9 +97,7 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 			Content:    userInSession.Nickname + " commented on your post.",
 		}
 
-		if err := application.NotificationRepo.Create(&notification); err == nil {
-			websockethandler.SendNotification(notification)
-		}
+		_ = websockethandler.PushNotification(application, &notification, true)
 	}
 
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{

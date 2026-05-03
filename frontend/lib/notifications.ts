@@ -6,6 +6,12 @@ const BELL_NOTIFICATION_TYPES = new Set([
   "like",
   "comment",
   "group_event",
+  "group_join_request",
+  "group_request_accepted",
+  "group_request_rejected",
+  "group_invitation",
+  "follow_request",
+  "follow_accept",
 ]);
 
 export function shouldShowBellNotification(type?: string | null) {

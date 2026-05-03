@@ -164,13 +164,6 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                           {notif.content}
                         </p>
                         <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{timeAgo(notif.created_at)}</span>
-
-                        {!notif.is_read && (notif.type === "follow" || notif.type === "group") && (
-                          <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                            <button style={{ flex: 1, background: "var(--color-primary)", color: "#000", border: "none", padding: "6px", borderRadius: "5px", fontWeight: "bold", cursor: "pointer" }}>Accept</button>
-                            <button style={{ flex: 1, background: "transparent", color: "var(--text-main)", border: "1px solid #3a3f44", padding: "6px", borderRadius: "5px", cursor: "pointer" }}>Decline</button>
-                          </div>
-                        )}
                       </div>
                     )) : (
                       <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No new notifications.</div>
