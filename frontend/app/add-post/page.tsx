@@ -52,7 +52,7 @@ export default function AddPostPage() {
 
           <div className="form-group">
             <label htmlFor="title">Title</label>
-            <input type="text" name="title" id="title" placeholder="Give your post a title" required />
+            <input type="text" name="title" id="title" placeholder="Give your post a title" required style={{ background: "#343a40", color: "white" }} />
           </div>
 
           <div className="form-group">

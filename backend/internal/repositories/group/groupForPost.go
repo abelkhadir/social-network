@@ -250,3 +250,35 @@ ORDER BY c.created_at DESC;
 		Message: "Getting the comments went smouthly",
 	}
 }
+
+func (r *GroupRepository) GetGroupPostComments(postID string) ([]*models.CommentItem, error) {
+	rows, err := r.db.Query(`
+		SELECT
+			c.id,
+			c.content,
+			c.member_id,
+			c.created_at,
+			u.nickname,
+			COALESCE(u.avatarURL, ''),
+			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 1),
+			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 0)
+		FROM group_comments c
+		JOIN user u ON u.id = c.member_id
+		WHERE c.group_post_id = ?
+		ORDER BY c.created_at DESC
+	`, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []*models.CommentItem
+	for rows.Next() {
+		var c models.CommentItem
+		if err := rows.Scan(&c.ID, &c.Text, &c.AuthorID, &c.LastCreateDate, &c.AuthorName, &c.AuthorAvatar, &c.Likes, &c.Dislikes); err != nil {
+			return nil, err
+		}
+		comments = append(comments, &c)
+	}
+	return comments, rows.Err()
+}

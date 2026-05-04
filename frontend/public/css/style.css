@@ -1,6 +1,4 @@
 :root {
-
-    /* Abdelilah */
     --violet-50: #F5F1FF;
     --cream-50: #FBF8F3;
 
@@ -286,7 +284,7 @@ header {
     border: 1px solid #3a3f44;
     border-radius: var(--radius-sm);
     background-color: var(--color-input-bg);
-    color: var(--text-main);
+    color: #000;
     font-size: 1rem;
     transition: all 0.3s ease;
 }
@@ -484,7 +482,7 @@ header {
     min-height: 60px;
     background: transparent;
     border: none;
-    color: var(--text-main);
+    color: #000;
     font-size: 1rem;
     resize: vertical;
 }

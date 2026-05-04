@@ -33,18 +33,16 @@ func (r *GroupRepository) GetGroupMembers(groupID string) (*models.GroupMembers,
 
 	for rows.Next() {
 		var member models.User
-		// var ugroup, userid string
 		var nickname sql.NullString
 		var avatar sql.NullString
 
 		err := rows.Scan(
 			&member.ID,
 			&member.ID,
-			&nickname,
 			&member.Firstname,
-			&avatar,
 			&member.Lastname,
-			// &groupID,
+			&avatar,
+			&nickname,
 		)
 		if err != nil {
 			return nil, models.GroupError{
@@ -55,6 +53,9 @@ func (r *GroupRepository) GetGroupMembers(groupID string) (*models.GroupMembers,
 
 		if nickname.Valid {
 			member.Nickname = nickname.String
+		}
+		if avatar.Valid {
+			member.AvatarURL = avatar.String
 		}
 
 		members.Members = append(members.Members, member)

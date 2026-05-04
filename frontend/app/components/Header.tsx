@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useChatNotifications } from "../../context/ChatNotificationContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
@@ -12,15 +11,16 @@ import { resolveApiUrl } from "@/lib/api";
 interface HeaderProps {
   toggleChat?: () => void;
   isChatMode?: boolean;
+  isNotifOpen?: boolean;
+  toggleNotif?: () => void;
+  onNotifClose?: () => void;
 }
 
-export default function Header({ toggleChat, isChatMode }: HeaderProps) {
+export default function Header({ toggleChat, isChatMode, isNotifOpen = false, toggleNotif, onNotifClose }: HeaderProps) {
   const { user, logout } = useAuth();
-  const { totalUnread: unreadChatCount } = useChatNotifications();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
 
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
@@ -33,12 +33,12 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
         setIsProfileMenuOpen(false);
       }
       if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target as Node)) {
-        setIsNotifMenuOpen(false);
+        onNotifClose?.();
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [onNotifClose]);
 
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,10 +47,10 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
   };
 
   useEffect(() => {
-    if (isNotifMenuOpen) {
+    if (isNotifOpen) {
       refresh();
     }
-  }, [isNotifMenuOpen, refresh]);
+  }, [isNotifOpen, refresh]);
 
   const logo = "/img/social-network.jpeg";
 
@@ -73,44 +73,10 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
             <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>Home</Link>
             <Link href="/add-post" onClick={() => setIsMobileMenuOpen(false)}>Create Post</Link>
 
-
-            <button
-              type="button"
-              className="header-nav-button"
-              onClick={() => {
-                if (toggleChat) toggleChat();
-                setIsMobileMenuOpen(false);
-              }}
-              style={{ position: "relative" }}
-            >
-              Messages
-              {unreadChatCount > 0 && (
-                <span style={{
-                  position: "absolute",
-                  top: "-8px",
-                  right: "-10px",
-                  background: "#e63946",
-                  color: "white",
-                  fontSize: "0.7rem",
-                  fontWeight: "bold",
-                  borderRadius: "999px",
-                  minWidth: "20px",
-                  height: "20px",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "0 6px",
-                  border: "2px solid var(--bg-header-start)",
-                }}>
-                  {unreadChatCount}
-                </span>
-              )}
-            </button>
-
             <div className="notif-dropdown-container" ref={notifDropdownRef} style={{ position: "relative", display: "flex", alignItems: "center", marginLeft: "10px" }}>
               <button
                 onClick={() => {
-                  setIsNotifMenuOpen(!isNotifMenuOpen);
+                  toggleNotif?.();
                   setIsProfileMenuOpen(false);
                 }}
                 style={{
@@ -131,7 +97,7 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                 )}
               </button>
 
-              {isNotifMenuOpen && (
+              {isNotifOpen && (
                 <div style={{
                   position: "absolute", top: "50px", right: "-20px", background: "var(--bg-card)",
                   border: "1px solid #3a1c06", borderRadius: "12px", boxShadow: "0 8px 20px rgba(0,0,0,0.8)",
@@ -179,7 +145,7 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                 alt="Profile"
                 onClick={() => {
                   setIsProfileMenuOpen(!isProfileMenuOpen);
-                  setIsNotifMenuOpen(false);
+                  onNotifClose?.();
                 }}
                 style={{
                   width: "45px", height: "45px", borderRadius: "50%", cursor: "pointer", objectFit: "cover",
@@ -203,15 +169,15 @@ export default function Header({ toggleChat, isChatMode }: HeaderProps) {
                   </div>
 
                   <Link href="/profile" onClick={() => { setIsProfileMenuOpen(false); setIsMobileMenuOpen(false); }}
-                    style={{ padding: "10px", color: "var(--text-main)", textDecoration: "none", borderRadius: "8px", transition: "background 0.2s", textAlign: "left" }}
+                    style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 12px", color: "var(--text-main)", textDecoration: "none", borderRadius: "8px", transition: "background 0.2s", fontWeight: "bold" }}
                     onMouseOver={(e) => e.currentTarget.style.background = "#2a2e33"}
                     onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
                   >
-                    👤 My Profile
+                    <img src="/icons/profile.svg" alt="Profile" width={16} height={16} style={{ display: "block", flexShrink: 0 }} /> My Profile
                   </Link>
 
-                  <button onClick={handleLogout} style={{ marginTop: "5px", background: "#e63946", color: "white", border: "none", padding: "12px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
-                    🚪 Logout
+                  <button onClick={handleLogout} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 10px", marginTop: "8px", background: "#e63946", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", width: "100%", fontSize: "0.85rem" }}>
+                    <img src="/icons/logout.svg" alt="Logout" width={16} height={16} style={{ display: "block", flexShrink: 0, filter: "invert(1)" }} /> Logout
                   </button>
                 </div>
               )}

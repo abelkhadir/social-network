@@ -107,7 +107,7 @@
             border: none;
             border-radius: 8px;
             background-color: #343a40;
-            color: #e8ecef;
+            color: #000;
             font-size: 1rem;
             transition: box-shadow 0.3s ease;
         }

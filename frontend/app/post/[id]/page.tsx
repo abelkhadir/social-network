@@ -121,25 +121,25 @@ export default function SinglePostPage() {
     );
   }
 
-  const defaultAvatar = "https://img6.arthub.ai/65266a51-47b8.webp";
   const p = postData;
+
 
   return (
     <div className="single-post-container" style={{ maxWidth: "800px", margin: "0 auto", paddingBottom: "40px" }}>
       
       <div className="post full-post" style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "16px", border: "1px solid var(--color-primary)", boxShadow: "var(--shadow-orange)" }}>
         <div className="post-header" style={{ display: "flex", alignItems: "center", gap: "15px", marginBottom: "20px" }}>
-          <img src={defaultAvatar} alt="avatar" style={{ width: "45px", height: "45px", borderRadius: "50%", border: "2px solid #3a3f44", objectFit: "cover" }} />
+          <img src={resolveApiUrl(p.authorAvatar)} alt="avatar" style={{ width: "45px", height: "45px", borderRadius: "50%", border: "2px solid #3a3f44", objectFit: "cover" }} />
           <div>
-            <h3 style={{ margin: "0 0 5px 0", color: "var(--text-main)", fontSize: "1.1rem" }}>{p.username || "Anonymous"}</h3>
+            <h3 style={{ margin: "0 0 5px 0", color: "var(--text-main)", fontSize: "1.1rem" }}>{p.authorName}</h3>
             <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{formatDateTime(p.createDate)}</span>
           </div>
         </div>
 
         <h1 className="post-title" style={{ color: "var(--color-primary)", fontSize: "1.8rem", marginBottom: "15px" }}>{p.title}</h1>
         
-        <div className="post-content" style={{ color: "#dee2e6", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "20px", whiteSpace: "pre-wrap" }}>
-          {p.content || p.message}
+        <div className="post-content" style={{ color: "var(--text-main)", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "20px", whiteSpace: "pre-wrap" }}>
+          {p.description}
         </div>
 
         {p.image && (
@@ -173,7 +173,7 @@ export default function SinglePostPage() {
             onChange={(e) => setCommentText(e.target.value)}
             placeholder="What are your thoughts?" 
             required 
-            style={{ width: "100%", padding: "15px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "12px", color: "white", minHeight: "80px", resize: "vertical", outline: "none" }}
+            style={{ width: "100%", padding: "15px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "12px", color: "#000", minHeight: "80px", resize: "vertical", outline: "none" }}
           />
           <div style={{ textAlign: "right" }}>
             <button type="submit" style={{ background: "var(--color-primary)", color: "#000", border: "none", padding: "10px 25px", borderRadius: "20px", fontWeight: "bold", cursor: "pointer" }}>
@@ -186,7 +186,7 @@ export default function SinglePostPage() {
         <div className="comments-list" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
           {comments.length > 0 ? comments.map((c, idx) => (
             <div key={idx} className="comment-item" style={{ display: "flex", gap: "15px", background: "var(--color-input-bg)", padding: "15px", borderRadius: "12px" }}>
-              <img src={defaultAvatar} alt="avatar" style={{ width: "40px", height: "40px", borderRadius: "50%", border: "2px solid #3a3f44", objectFit: "cover" }} />
+              <img src={resolveApiUrl(c.authorAvatar)} alt="avatar" style={{ width: "40px", height: "40px", borderRadius: "50%", border: "2px solid #3a3f44", objectFit: "cover" }} />
               <div style={{ flex: 1 }}>
                 
                 {/* Comment Info */}
@@ -196,7 +196,7 @@ export default function SinglePostPage() {
                 </div>
                 
                 {/* Comment Text */}
-                <div style={{ color: "#dee2e6", lineHeight: "1.5", fontSize: "0.95rem", whiteSpace: "pre-wrap", marginBottom: "10px" }}>
+                <div style={{ color: "#2E2A22", lineHeight: "1.5", fontSize: "0.95rem", whiteSpace: "pre-wrap", marginBottom: "10px" }}>
                   {c.text}
                 </div>
 

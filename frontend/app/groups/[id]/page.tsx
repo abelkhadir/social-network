@@ -26,7 +26,6 @@ import {
 } from "@/lib/groups";
 import { useAuth } from "@/context/AuthContext";
 
-const fallbackAvatar = "https://img6.arthub.ai/65266a51-47b8.webp";
 type GroupTab = "feed" | "events" | "members" | "pending" | "chat";
 
 function formatEventDate(value: string) {
@@ -230,6 +229,8 @@ export default function SingleGroupPage() {
     );
   }
 
+  console.log("aaaaaa", posts)
+
   return (
     <div style={{ maxWidth: "840px", margin: "0 auto", paddingBottom: "40px" }}>
       {/* Group Info Header */}
@@ -269,16 +270,15 @@ export default function SingleGroupPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <form onSubmit={handleCreatePost} style={{ background: "var(--bg-card)", padding: "18px", borderRadius: "12px", border: "1px solid #2f3336" }}>
             <h3 style={{ color: "var(--text-main)", marginTop: 0 }}>Create a group post</h3>
-            <input type="text" value={postForm.title} onChange={(e) => setPostForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Post title" style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", marginBottom: "10px" }} />
-            <textarea value={postForm.content} onChange={(e) => setPostForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Write something..." style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", resize: "vertical", minHeight: "90px", marginBottom: "10px" }} />
+            <input type="text" value={postForm.title} onChange={(e) => setPostForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Post title" style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "#000", marginBottom: "10px" }} />
+            <textarea value={postForm.content} onChange={(e) => setPostForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Write something..." style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "#000", resize: "vertical", minHeight: "90px", marginBottom: "10px" }} />
             <input type="file" accept="image/*" onChange={(e) => setPostForm((prev) => ({ ...prev, image: e.target.files?.[0] || null }))} style={{ color: "var(--text-muted)", marginBottom: "10px" }} />
             <div style={{ textAlign: "right" }}><button type="submit" disabled={posting} style={{ background: "var(--color-primary)", color: "#000", border: "none", padding: "10px 20px", borderRadius: "20px", fontWeight: "bold", cursor: posting ? "not-allowed" : "pointer", opacity: posting ? 0.7 : 1 }}>{posting ? "Posting..." : "Post"}</button></div>
           </form>
 
           {posts.length > 0 ? (
             posts.map((post) => {
-              console.log(post)
-              const imageSrc = post.avatar;
+              const imageSrc = post.image;
 
               return (
                 <div
@@ -339,7 +339,7 @@ export default function SingleGroupPage() {
 
                   <p
                     style={{
-                      color: "#dee2e6",
+                      color: "var(--text-main)",
                       margin: "0 0 12px 0",
                       whiteSpace: "pre-wrap",
                       lineHeight: "1.6",
@@ -502,7 +502,7 @@ export default function SingleGroupPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
               {members.map((member) => (
                 <div key={member.id} style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--color-input-bg)", padding: "12px", borderRadius: "10px" }}>
-                  <img src={member.avatar ? resolveApiUrl(member.avatar) : fallbackAvatar} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover" }} />
+                  <img src={resolveApiUrl(member.avatar)} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover" }} />
                   <div><div style={{ color: "var(--text-main)", fontWeight: "bold" }}>{displayName(member)}</div><div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{member.firstname || "Member"}</div></div>
                 </div>
               ))}
@@ -514,6 +514,7 @@ export default function SingleGroupPage() {
       )}
 
 
+
       {/* pending TAB */}
       {activeTab === "pending" && isOwner && (
         <div style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "12px", border: "1px solid #2f3336" }}>
@@ -521,7 +522,7 @@ export default function SingleGroupPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               {pending.map((member) => (
                 <div key={member.id} style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--color-input-bg)", padding: "12px", borderRadius: "10px" }}>
-                  <img src={member.avatar ? resolveApiUrl(member.avatar) : fallbackAvatar} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  <img src={resolveApiUrl(member.avatar)} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ color: "var(--text-main)", fontWeight: "bold" }}>{displayName(member)}</div>
                     <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{member.firstname || "Member"}</div>

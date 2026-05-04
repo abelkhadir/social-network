@@ -58,7 +58,6 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-	log.Println("Received sign-up request for:", user.Email, user.Avatar)
 
 	if err := validateSignUpInput(&user); err != nil {
 		utils.HandleError(res, http.StatusBadRequest, err.Error())

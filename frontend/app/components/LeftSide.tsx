@@ -8,7 +8,7 @@ import { fetchApi, resolveApiUrl } from "../../lib/api";
 import { fetchJoinedGroups, fetchSuggestedGroups, GroupSummary } from "../../lib/groups";
 import Link from "next/link";
 
-export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: boolean; toggleChat?: () => void }) {
+export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isChatMode?: boolean; toggleChat?: () => void; toggleNotif?: () => void }) {
   const { user } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [joinedGroups, setJoinedGroups] = useState<GroupSummary[]>([]);
@@ -88,7 +88,7 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
             <div style={{ flexBasis: "100%", height: "0" }} />
             <button type="button" onClick={() => toggleChat?.()} style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1, textDecoration: "none", background: "transparent" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
               <img src="/icons/chats.svg" alt="Chats" width={18} height={18} style={{ display: "block" }} />
-              Chats
+              Chats 
               {totalUnread > 0 && (
                 <span style={{ background: "#e63946", color: "white", borderRadius: "999px", minWidth: "18px", height: "18px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px", fontSize: "0.7rem", fontWeight: "bold" }}>
                   {totalUnread}
@@ -96,10 +96,10 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
               )}
             </button>
             <div style={{ flexBasis: "100%", height: "0" }} />
-            <span style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1,textDecoration: "none" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
+            <button type="button" onClick={() => toggleNotif?.()} style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1, textDecoration: "none", background: "transparent" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
               <img src="/icons/notifications.svg" alt="Notifications" width={18} height={18} style={{ display: "block" }} />
               Notifications
-            </span>
+            </button>
           </div>
         </div>
       </aside>
@@ -108,9 +108,12 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
 
   return (
     <aside className="sidebar-left">
-      <h2 style={{ color: "var(--text-main)", fontSize: "1.1rem", marginBottom: "12px" }}>
-        Chats
-      </h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+        <h2 style={{ color: "var(--text-main)", fontSize: "1.1rem", margin: 0 }}>Chats</h2>
+        <button type="button" onClick={() => toggleChat?.()} style={{ background: "transparent", border: "none", cursor: "pointer", padding: "4px", display: "flex", alignItems: "center", color: "var(--text-muted)" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}>
+          <img src="/icons/close.svg" alt="Close chats" width={18} height={18} style={{ display: "block" }} />
+        </button>
+      </div>
 
       {loading ? (
         <p style={{ color: "var(--text-muted)", textAlign: "center", marginTop: "20px" }}>Loading...</p>
@@ -141,8 +144,8 @@ export default function LeftSide({ isChatMode, toggleChat }: { isChatMode?: bool
               );
             }) : (
               <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "10px", lineHeight: "1.5" }}>
-                You can only chat with users you follow or who follow you. <br /><br />
-                <Link href="/followers" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: "bold" }}>Find people to follow ➔</Link>
+                You have no friends. <br /><br />
+                <Link href="/followers" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: "bold" }}>Get some friends ➔</Link>
               </p>
             )
           )}

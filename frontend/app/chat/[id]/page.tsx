@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, resolveApiUrl } from "@/lib/api";
 
 export default function ChatPage() {
   const { id: receiverId } = useParams();
@@ -125,7 +125,7 @@ export default function ChatPage() {
   if (!talker) return <h2 style={{ color: "white", textAlign: "center", marginTop: "20px" }}>User not found</h2>;
 
   const talkerName = talker.nickname;
-  const talkerAvatar = talker.avatar_url;
+  const talkerAvatar = resolveApiUrl(talker.avatar_url);
   const talkerOnline = talker.IsConnected ?? talker.is_connected ?? false;
 
   return (

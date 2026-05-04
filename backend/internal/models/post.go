@@ -30,6 +30,8 @@ type Post struct {
 	Title         string `json:"title"`
 	Description   string `json:"description"`
 	AuthorID      string `json:"authorID"`
+	AuthorName    string `json:"authorName"`
+	AuthorAvatar  string `json:"authorAvatar"`
 	CreateDate    string `json:"createDate"`
 	Likes         int    `json:"likes"`
 	Dislikes      int    `json:"dislikes"`

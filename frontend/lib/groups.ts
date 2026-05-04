@@ -257,9 +257,7 @@ export async function fetchGroupDetails(groupId: string | number) {
 export async function fetchGroupEvents(groupId: string | number) {
   const response = await requestWithFallback<any>([
     `/groups/joined/events/${groupId}`,
-    // `/groups/joined/${groupId}/events`,
   ]);
-  console.log("the event and it's time", response)
   const events = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   return events.map(normalizeEvent);
 }
@@ -344,7 +342,6 @@ export async function fetchGroupPosts(groupId: string | number) {
     }
   );
 
-  console.log("aaaaaaaaaaa", response)
 
   const posts = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   return posts.map(normalizePost);

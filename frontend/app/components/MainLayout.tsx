@@ -1,4 +1,3 @@
-// app/components/MainLayout.tsx
 "use client";
 
 import { useState } from "react";
@@ -13,6 +12,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const isAuthPage = pathname === "/login" || pathname === "/register";
 
   const [isChatMode, setIsChatMode] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   if (isAuthPage) {
     return <main className="auth-mode">{children}</main>;
@@ -20,10 +20,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="c-chat">
-      <Header toggleChat={() => setIsChatMode(!isChatMode)} isChatMode={isChatMode} />
+      <Header toggleChat={() => setIsChatMode(!isChatMode)} isChatMode={isChatMode} isNotifOpen={isNotifOpen} toggleNotif={() => setIsNotifOpen(!isNotifOpen)} onNotifClose={() => setIsNotifOpen(false)} />
 
       <div className="main-content">
-        <LeftSide isChatMode={isChatMode} toggleChat={() => setIsChatMode(!isChatMode)} />
+        <LeftSide isChatMode={isChatMode} toggleChat={() => setIsChatMode(!isChatMode)} toggleNotif={() => setIsNotifOpen(!isNotifOpen)} />
 
         <main className="nervna-router">
           {children}

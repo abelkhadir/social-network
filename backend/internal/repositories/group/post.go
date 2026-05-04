@@ -29,9 +29,11 @@ func (pr *GroupRepository) GetPostdetails(postID string) (*models.CompletePost, 
 	var post models.CompletePost
 
 	row := pr.db.QueryRow(`
-        SELECT 
+        SELECT
             gp.id,
             gp.member_id,
+            u.nickname,
+            COALESCE(u.avatarURL, ''),
             gp.title,
             gp.content,
             COALESCE(gp.image, ''),
@@ -39,12 +41,15 @@ func (pr *GroupRepository) GetPostdetails(postID string) (*models.CompletePost, 
             (SELECT COUNT(*) FROM post_vote WHERE post_id = gp.id AND vote = 1) AS likes,
             (SELECT COUNT(*) FROM post_vote WHERE post_id = gp.id AND vote = 0) AS dislikes
         FROM group_posts gp
+        JOIN user u ON u.id = gp.member_id
         WHERE gp.id = ?
     `, postID)
 
 	err := row.Scan(
 		&post.ID,
 		&post.AuthorID,
+		&post.AuthorName,
+		&post.AuthorAvatar,
 		&post.Title,
 		&post.Description,
 		&post.Image,

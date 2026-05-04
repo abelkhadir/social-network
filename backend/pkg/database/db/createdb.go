@@ -61,7 +61,6 @@ func EnsureSchema(db *sql.DB) error {
 			post_id TEXT NOT NULL,
 			vote INTEGER NOT NULL,
 			FOREIGN KEY(user_id) REFERENCES user(id) ON DELETE CASCADE,
-			FOREIGN KEY(post_id) REFERENCES post(id) ON DELETE CASCADE,
 			UNIQUE(user_id, post_id)
 		);`,
 
@@ -70,7 +69,6 @@ func EnsureSchema(db *sql.DB) error {
 			comment_id TEXT NOT NULL,
 			vote INTEGER NOT NULL,
 			FOREIGN KEY(user_id) REFERENCES user(id) ON DELETE CASCADE,
-			FOREIGN KEY(comment_id) REFERENCES comment(id) ON DELETE CASCADE,
 			UNIQUE(user_id, comment_id)
 		);`,
 

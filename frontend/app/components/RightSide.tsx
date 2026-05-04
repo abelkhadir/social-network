@@ -3,7 +3,6 @@ import Link from "next/link";
 export function RightSideBottom() {
   return (
     <aside className="sidebar-right">
-      <h2 style={{ marginBottom: "14px" }}>Network</h2>
       <Link
         href="/followers"
         style={{
@@ -33,7 +32,7 @@ export function RightSideBottom() {
         }}
       >
         <img src="/icons/groups.svg" alt="" width={24} height={24} style={{ display: "block" }} />
-        <div>See followers</div>
+        <div>See Network</div>
       </Link>
     </aside>
   );

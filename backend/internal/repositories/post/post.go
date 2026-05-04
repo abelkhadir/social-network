@@ -37,22 +37,27 @@ func (pr *PostRepository) CreatePost(post *models.PostCreation) error {
 func (pr *PostRepository) GetPostByID(postID string) (*models.CompletePost, error) {
 	var post models.CompletePost
 	row := pr.db.QueryRow(`
-  SELECT 
-    p.id, 
-    p.title, 
+  SELECT
+    p.id,
+    p.title,
     p.description,
     p.authorID,
+    u.nickname,
+    COALESCE(u.avatarURL, ''),
     p.createDate,
     COALESCE(p.Image, ''),
     (SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
     (SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes
 FROM post p
+JOIN user u ON u.id = p.authorID
 WHERE p.id = ?`, postID)
 	err := row.Scan(
 		&post.ID,
 		&post.Title,
 		&post.Description,
 		&post.AuthorID,
+		&post.AuthorName,
+		&post.AuthorAvatar,
 		&post.CreateDate,
 		&post.Image,
 		&post.Likes,

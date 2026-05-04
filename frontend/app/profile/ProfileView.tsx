@@ -171,7 +171,7 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
             </p>
 
             <p style={{ color: "var(--text-main)", lineHeight: "1.5", marginBottom: "15px" }}>
-              {displayUser?.aboutMe || "No bio yet. Update your profile to add an 'About Me' section!"}
+              {displayUser?.aboutMe || "No bio yet."}
             </p>
 
             <div style={{ display: "flex", gap: "20px", color: "var(--text-muted)", fontSize: "0.95rem" }}>
@@ -291,8 +291,8 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "15px", background: "#1a1d20", borderRadius: "8px", marginBottom: "20px", border: "1px solid #2f3336" }}>
               <div>
-                <strong style={{ color: "var(--text-main)", display: "block", marginBottom: "5px" }}>Private Profile</strong>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>When your profile is private, only followers can see your posts.</span>
+                <strong style={{ color: "#D4CFC1", display: "block", marginBottom: "5px" }}>Private Profile</strong>
+                <span style={{ color: "#8A8273", fontSize: "0.85rem" }}>When your profile is private, only followers can see your posts.</span>
               </div>
 
               <label style={{ position: "relative", display: "inline-block", width: "50px", height: "26px" }}>
