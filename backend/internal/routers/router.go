@@ -12,7 +12,7 @@ import (
 	groupshandler "social/internal/handlers/group"
 	notificationshandler "social/internal/handlers/notifications"
 	posthandler "social/internal/handlers/post"
-	"social/internal/handlers/profile"
+	profile "social/internal/handlers/profile"
 	websockethandler "social/internal/handlers/websocket"
 	"social/pkg/middleware"
 )
@@ -209,4 +209,8 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		websockethandler.HandleWebSocket(a, w, r)
 	}))
+
+	//follow
+	http.HandleFunc("/follow", profile.FollowUser)
+	http.HandleFunc("/unfollow", profile.UnfollowUser)
 }
