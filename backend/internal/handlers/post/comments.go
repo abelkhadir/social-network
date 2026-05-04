@@ -3,11 +3,13 @@ package posthandler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html"
 	"net/http"
 	"strings"
 
 	"social/internal/app"
+	groupshandler "social/internal/handlers/group"
 	websockethandler "social/internal/handlers/websocket"
 	"social/internal/models"
 	"social/pkg/utils"
@@ -22,25 +24,51 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 		RateCommentHandler(application, res, req)
 		return
 	}
-
+	
 	if !utils.ValidateRequest(req, res, "/comment/*", http.MethodPost) {
 		return
 	}
-
+	
 	pathParts := strings.Split(req.URL.Path, "/")
 	if len(pathParts) < 3 {
 		utils.HandleError(res, http.StatusBadRequest, "invalid URL")
 		return
 	}
 	postID := pathParts[2]
-
+	
 	userInSession, _ := application.SessionRepo.GetUserFromSession(req)
 	if !application.SessionRepo.ValidSession(req) {
 		utils.HandleError(res, http.StatusUnauthorized, "not connected")
 		return
 	}
-
+	
+	
 	var commentInfo models.Comment
+	commentInfo.AuthorID = userInSession.ID
+	commentInfo.PostID = postID
+	
+	exist, err := application.GroupPostRepo.PostExistsInGroup(postID)
+	if err != nil {
+		utils.HandleError(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+	
+	fmt.Println("khonaa dkhaal")
+	if exist {
+		groupshandler.AddGroupComment(application, res, req)
+		// _, groupErr := application.GroupPostRepo.AddGroupComment(commentInfo, nil)
+		// if groupErr.Code != http.StatusOK {
+			// 	utils.HandleError(res, groupErr.Code, groupErr.Message)
+		// 	return
+		// }
+
+		// utils.SendJSONResponse(res, http.StatusOK, map[string]any{
+		// 	"message": "comment created successfully (group post)",
+		// 	"comment": commentInfo,
+		// })
+		// return
+	}
+	
 	if err := json.NewDecoder(req.Body).Decode(&commentInfo); err != nil {
 		utils.HandleError(res, http.StatusBadRequest, "Invalid JSON format")
 		return
@@ -50,30 +78,6 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 		utils.HandleError(res, http.StatusBadRequest, err.Error())
 		return
 	}
-
-	commentInfo.AuthorID = userInSession.ID
-	commentInfo.PostID = postID
-
-	exist, err := application.GroupPostRepo.PostExistsInGroup(postID)
-	if err != nil {
-		utils.HandleError(res, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if exist {
-		_, groupErr := application.GroupPostRepo.AddGroupComment(commentInfo, nil)
-		if groupErr.Code != http.StatusOK {
-			utils.HandleError(res, groupErr.Code, groupErr.Message)
-			return
-		}
-
-		utils.SendJSONResponse(res, http.StatusOK, map[string]any{
-			"message": "comment created successfully (group post)",
-			"comment": commentInfo,
-		})
-		return
-	}
-
 	post, err := application.PostRepo.GetPostByID(postID)
 	if err != nil {
 		utils.HandleError(res, http.StatusNotFound, "post not found")

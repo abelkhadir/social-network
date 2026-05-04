@@ -7,6 +7,8 @@ type Comment struct {
 	PostID     string `json:"postID"`
 	CreateDate string `json:"createDate"`
 	Author     User   `json:"author"` // or `UserID`
+	Image            string `json:"image"`
+
 }
 
 type CommentItem struct {

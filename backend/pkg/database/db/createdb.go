@@ -174,7 +174,7 @@ func EnsureSchema(db *sql.DB) error {
 		)`,
 
 		`CREATE TABLE IF NOT EXISTS group_comments (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			id TEXT PRIMARY KEY,
 			group_post_id TEXT NOT NULL,
 			member_id TEXT NOT NULL,
 			content TEXT NOT NULL,

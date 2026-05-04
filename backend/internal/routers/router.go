@@ -71,10 +71,24 @@ func SetupRoutes(a *app.Application) {
 		posthandler.GetAllPosts(a, res, req)
 	}))
 
-	http.Handle("/comment/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		posthandler.CreateComment(a, res, req)
-	})))
+	// http.Handle("/comment/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	// 	posthandler.CreateComment(a, res, req)
 
+	// })))
+		http.Handle("/comment/",
+		rateLimiter.Wrap("api",
+			middleware.AuthMiddleware(a.DB,
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					posthandler.CreateComment(a,w,r)
+				}),
+			),
+		),
+	)
+
+	//comment for grouup 
+	// http.Handle("/grouup/comment/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	// 	groupshandler.AddGroupComment(a, res, req)
+	// })))
 	// Notifications
 	http.Handle("/notifications", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		notificationshandler.ListNotifications(a, res, req)
