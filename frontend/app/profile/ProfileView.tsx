@@ -33,6 +33,7 @@ type ProfileViewProps = {
 export default function ProfileView({ profileId }: ProfileViewProps) {
   const { user, loading, updateUser } = useAuth();
   const { showToast } = useToast();
+  const [followers, setFollowers] = useState<any[]>([]);
 
   const [activeTab, setActiveTab] = useState<"posts" | "followers" | "following" | "settings">("posts");
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -78,6 +79,7 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
       console.log("Profile:",profile);
     }
   };
+<<<<<<< HEAD
   
   const handleSave = async () => {
     setSaving(true);
@@ -89,42 +91,80 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
         form.append("aboutMe", editAboutMe);
         form.append("isPrivate", editIsPrivate ? "true" : "false");
         form.append("avatar", avatarFile);
+=======
+const loadFollowers = async () => {
+  try {
+     const res = await fetchApi("/user/followers");
+     const list = res?.data?.followers || [];
 
-        data = await fetchApi("/profile", {
-          method: "PUT",
-          body: form,
-        });
-      } else {
-        data = await fetchApi("/profile", {
-          method: "PUT",
-          body: JSON.stringify({
-            nickname: editNickname,
-            aboutMe: editAboutMe,
-            isPrivate: editIsPrivate,
-          }),
-        });
-      }
+    setFollowers(list);
+>>>>>>> 8d06227bb4e592b4936f6b26a8d92cd8af73a3e0
 
-      const updatedUser = data.user || data;
-      if (updatedUser) {
-        updateUser(updatedUser);
-        setProfile((prev) =>
-          prev
-            ? {
-                ...prev,
-                user: { ...prev.user, ...updatedUser },
-                isPrivate: typeof updatedUser.isPrivate === "boolean" ? updatedUser.isPrivate : prev.isPrivate,
-              }
-            : prev
-        );
-      }
-      showToast("Profile updated successfully", "success");
-    } catch (err: any) {
-      showToast(err.message || "Failed to update profile", "error");
-    } finally {
-      setSaving(false);
+    console.log("followers:", list);
+  } catch (err) {
+    console.log("error:", err);
+    return null;
+  }
+};
+
+useEffect(() => {
+  loadFollowers();
+}, []);
+
+ const handleSave = async () => {
+  setSaving(true);
+
+  try {
+    let updateRes;
+
+    if (avatarFile) {
+      const form = new FormData();
+      form.append("nickname", editNickname);
+      form.append("aboutMe", editAboutMe);
+      form.append("isPrivate", editIsPrivate ? "true" : "false");
+      form.append("avatar", avatarFile);
+
+      updateRes = await fetchApi("/profile", {
+        method: "PUT",
+        body: form,
+      });
+    } else {
+      updateRes = await fetchApi("/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          nickname: editNickname,
+          aboutMe: editAboutMe,
+          isPrivate: editIsPrivate,
+        }),
+      });
     }
-  };
+
+    const updatedUser = updateRes.user || updateRes;
+
+    if (updatedUser) {
+      updateUser(updatedUser);
+
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              user: { ...prev.user, ...updatedUser },
+              isPrivate:
+                typeof updatedUser.isPrivate === "boolean"
+                  ? updatedUser.isPrivate
+                  : prev.isPrivate,
+            }
+          : prev
+      );
+    }
+
+    showToast("Profile updated successfully", "success");
+  } catch (err: any) {
+    showToast(err.message || "Failed to update profile", "error");
+  } finally {
+    setSaving(false);
+  }
+};
 
   if (loading || loadingProfile) {
     return <div style={{ textAlign: "center", padding: "50px", color: "white" }}>Loading Profile...</div>;
@@ -241,11 +281,66 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
         )}
 
         {activeTab === "followers" && (
-          <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
-            Followers list is not available yet.
-          </div>
-        )}
+  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    {followers.length === 0 ? (
+      <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+        No followers yet.
+      </div>
+    ) : (
+      followers.map((f: any) => (
+        <div
+          key={f.id}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px",
+            background: "var(--bg-card)",
+            border: "1px solid #2f3336",
+            borderRadius: "10px",
+          }}
+        >
+          {/* LEFT SIDE */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <img
+              src={f.avatar || "https://img6.arthub.ai/65266a51-47b8.webp"}
+              alt={f.name}
+              style={{
+                width: "45px",
+                height: "45px",
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
 
+            <div>
+              <div style={{ color: "var(--text-main)", fontWeight: "bold" }}>
+                {f.name}
+              </div>
+              <div style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                @{f.username}
+              </div>
+            </div>
+          </div>
+
+          {/* ACTION BUTTON (optional) */}
+          <button
+            style={{
+              padding: "6px 14px",
+              borderRadius: "20px",
+              border: "1px solid var(--text-muted)",
+              background: "transparent",
+              color: "var(--text-main)",
+              cursor: "pointer",
+            }}
+          >
+            View
+          </button>
+        </div>
+      ))
+    )}
+  </div>
+)}
         {activeTab === "following" && (
           <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
             Following list is not available yet.

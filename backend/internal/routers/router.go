@@ -3,8 +3,11 @@ package routers
 import (
 	"encoding/json"
 	"net/http"
+<<<<<<< HEAD
 	"path/filepath"
 	"runtime"
+=======
+>>>>>>> 8d06227bb4e592b4936f6b26a8d92cd8af73a3e0
 	"time"
 
 	"social/internal/app"
@@ -112,6 +115,7 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/chat/new", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.SendChatMessage(a, res, req)
 	})))
+<<<<<<< HEAD
 
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
 
@@ -205,6 +209,29 @@ func SetupRoutes(a *app.Application) {
 		),
 	)
 
+=======
+	http.Handle("/api/followers",  http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		// websockethandler.GetUsers(a, res, req)
+		profile.GetUserFollowers(a,res,req)
+	}))
+		http.Handle("/followFetch/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		// websockethandler.GetUsers(a, res, req)
+		profile.GetUserFollowers(a,res,req)
+	})))
+	
+	// vote the event
+	http.Handle("/user/followers/",
+		rateLimiter.Wrap("api",
+			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				middleware.AuthMiddleware(a.DB,
+					http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						profile.GetUserFollowers(a, w, r)
+					}),
+				).ServeHTTP(w, r)
+			}),
+		),
+	)
+>>>>>>> 8d06227bb4e592b4936f6b26a8d92cd8af73a3e0
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		websockethandler.HandleWebSocket(a, w, r)
