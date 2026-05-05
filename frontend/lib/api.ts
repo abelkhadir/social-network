@@ -45,3 +45,15 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   if (response.status === 204) return null;
   return response.json();
 }
+
+export function followUser(follower_id: string, following_id: string) {
+  return fetchApi(`/follow?follower_id=${follower_id}&following_id=${following_id}`, {
+    method: "POST",
+  });
+}
+
+export function unfollowUser(follower_id: string, following_id: string) {
+  return fetchApi(`/unfollow?follower_id=${follower_id}&following_id=${following_id}`, {
+    method: "POST",
+  });
+}
