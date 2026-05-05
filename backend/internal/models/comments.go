@@ -20,4 +20,5 @@ type CommentItem struct {
 	LastCreateDate string `json:"lastCreateDate"`
 	Likes          int    `json:"likes"`
 	Dislikes       int    `json:"dislikes"`
+	Image          string  `json:"image"`
 }

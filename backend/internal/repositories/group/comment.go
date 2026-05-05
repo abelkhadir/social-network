@@ -140,6 +140,7 @@ func (r *GroupRepository) GetGroupPostComments(postID string) ([]*models.Comment
 			c.content,
 			c.member_id,
 			c.created_at,
+			c.image,
 			u.nickname,
 			COALESCE(u.avatarURL, ''),
 			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 1),
@@ -150,6 +151,7 @@ func (r *GroupRepository) GetGroupPostComments(postID string) ([]*models.Comment
 		ORDER BY c.created_at DESC
 	`, postID)
 	if err != nil {
+		fmt.Println("ma3amaar waaalo")
 		return nil, err
 	}
 	defer rows.Close()
@@ -157,7 +159,7 @@ func (r *GroupRepository) GetGroupPostComments(postID string) ([]*models.Comment
 	var comments []*models.CommentItem
 	for rows.Next() {
 		var c models.CommentItem
-		if err := rows.Scan(&c.ID, &c.Text, &c.AuthorID, &c.LastCreateDate, &c.AuthorName, &c.AuthorAvatar, &c.Likes, &c.Dislikes); err != nil {
+		if err := rows.Scan(&c.ID, &c.Text, &c.AuthorID, &c.LastCreateDate, &c.Image, &c.AuthorName, &c.AuthorAvatar, &c.Likes, &c.Dislikes); err != nil {
 			return nil, err
 		}
 		comments = append(comments, &c)

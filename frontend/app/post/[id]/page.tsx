@@ -27,6 +27,7 @@ export default function SinglePostPage() {
     try {
       setLoading(true);
       const data = await fetchApi(`/post/${id}`); 
+      console.log("the daata of the post",data.post.Comments)
       setPostData(data.post || data); 
       setComments(data.post?.Comments || data.Comments || []);
     } catch (err) {
