@@ -68,8 +68,10 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
 		return
 	}
-
-	utils.SendJSONResponse(w, http.StatusCreated, comment)
+	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
+		"message": "comment created successfully (group post)",
+		"comment": comment,
+	})
 }
 
 func GetGRoupComment(app *app.Application, w http.ResponseWriter, r *http.Request) {

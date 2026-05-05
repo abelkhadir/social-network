@@ -53,21 +53,22 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 		return
 	}
 	
-	fmt.Println("khonaa dkhaal")
 	if exist {
 		groupshandler.AddGroupComment(application, res, req)
 		// _, groupErr := application.GroupPostRepo.AddGroupComment(commentInfo, nil)
 		// if groupErr.Code != http.StatusOK {
 			// 	utils.HandleError(res, groupErr.Code, groupErr.Message)
-		// 	return
-		// }
-
-		// utils.SendJSONResponse(res, http.StatusOK, map[string]any{
-		// 	"message": "comment created successfully (group post)",
-		// 	"comment": commentInfo,
-		// })
-		// return
+			// 	return
+			// }
+			// fmt.Println("raah rjaa3 bghaa ziid ",commentInfo)
+			
+			// utils.SendJSONResponse(res, http.StatusOK, map[string]any{
+				// 	"message": "comment created successfully (group post)",
+				// 	"comment": commentInfo,
+				// })
+				return
 	}
+	fmt.Println("khonaa ohbiibnaa")
 	
 	if err := json.NewDecoder(req.Body).Decode(&commentInfo); err != nil {
 		utils.HandleError(res, http.StatusBadRequest, "Invalid JSON format")
@@ -109,6 +110,7 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 		"comment": commentInfo,
 	})
 }
+
 
 func GetComments(application *app.Application, res http.ResponseWriter, req *http.Request) {
 	if utils.ValidateRequest(req, res, "/comments/*", http.MethodGet) {
