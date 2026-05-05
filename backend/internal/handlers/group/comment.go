@@ -2,6 +2,7 @@ package groupshandler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -10,9 +11,11 @@ import (
 	"social/internal/models"
 	"social/pkg/middleware"
 	"social/pkg/utils"
+
+	"github.com/google/uuid"
 )
 
-const maxUploadSize = 10 << 20 // 10 MB
+const maxUploadSize = 0 << 20 // 10 MB
 
 func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -23,55 +26,146 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 		return
 	}
 	userId := r.Context().Value(middleware.UserIDKey).(string)
-	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
-	// fmt.Println("zaaaamel hada id," ,userId)
-	err := r.ParseMultipartForm(maxUpload)
-	if err != nil {
+	file, header, err := r.FormFile("image")
+	if err!=nil{
+	fmt.Println("the file that the usdfdsfdsfsd ",err)
+	}
+	fmt.Println("the file that the user sent ",file)
+	text := r.FormValue("text")
+
+	// fmt.Println("the text", text)
+	if text == "" && file == nil {
 		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
-			"message": "Bad Request",
-			"status":  http.StatusBadRequest,
+			"message": "comment must contain text or image",
 		})
 		return
 	}
-
-	pathParts := strings.Split(r.URL.Path, "/")
-	if len(pathParts) < 3 {
-		utils.HandleError(w, http.StatusBadRequest, "invalid URL")
-		return
-	}
-	postID := pathParts[2]
-
-	groupcomments := models.Comment{
-		ID:         userId,
-		PostID:     postID,
-		CreateDate: time.Now().Format(time.RFC3339),
-		AuthorID:   r.FormValue("comment"),
-	}
-
-	file, header, err := r.FormFile("image")
-
+	fmt.Println("the text", text)
+	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
 	var img *models.Image // nil unless file is provided
-	if err == nil {
-		img = &models.Image{
-			ImgHeader:  header,
-			ImgContent: file,
+	if text != ""&&err!=nil {
+		// fmt.Println("i don't knooooow ")
+		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) < 3 {
+			utils.HandleError(w, http.StatusBadRequest, "invalid URL")
+			return
+		}
+		postID := pathParts[2]
+
+		groupcomments := models.Comment{
+			ID:         uuid.New().String(),
+			PostID:     postID,
+			CreateDate: time.Now().Format(time.RFC3339),
+			AuthorID:   r.FormValue("comment"),
 		}
 
-		defer file.Close()
-	}
-
-	// fmt.Println("(9aaaahbaaa)")
-	groupcomments.AuthorID = userId
-	// fmt.Println("the comment all", groupcomments)
-	comment, err := app.GroupPostRepo.SaveGroupeComment(groupcomments, img)
-	if err != nil {
-		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
+		// fmt.Println("(9aaaahbaaa)")
+		groupcomments.AuthorID = userId
+		// fmt.Println("the comment all", groupcomments)
+		comment, err := app.GroupPostRepo.SaveGroupeComment(groupcomments, img)
+		if err != nil {
+			fmt.Println("i don't know ")
+			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
+			return
+		}
+		utils.SendJSONResponse(w, http.StatusOK, map[string]any{
+			"message": "comment created successfully (group post)",
+			"comment": comment,
+		})
 		return
 	}
-	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
-		"message": "comment created successfully (group post)",
-		"comment": comment,
-	})
+	if err == nil && text=="" {
+		fmt.Println("zaaaamel hada id," ,userId)
+		err = r.ParseMultipartForm(maxUploadSize)
+		if err != nil {
+			utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+				"message": "Bad Request",
+				"status":  http.StatusBadRequest,
+			})
+			return
+		}
+		if err == nil {
+			img = &models.Image{
+				ImgHeader:  header,
+				ImgContent: file,
+			}
+
+			defer file.Close()
+		}
+
+		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) < 3 {
+			utils.HandleError(w, http.StatusBadRequest, "invalid URL")
+			return
+		}
+		postID := pathParts[2]
+
+		groupcomments := models.Comment{
+			ID:         uuid.New().String(),
+			PostID:     postID,
+			CreateDate: time.Now().Format(time.RFC3339),
+			AuthorID:   r.FormValue("comment"),
+		}
+
+		groupcomments.AuthorID = userId
+		// fmt.Println("the comment all", groupcomments)
+		comment, err := app.GroupPostRepo.SaveGroupeComment(groupcomments, img)
+		if err != nil {
+			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
+			return
+		}
+		utils.SendJSONResponse(w, http.StatusOK, map[string]any{
+			"message": "comment created successfully (group post)",
+			"comment": comment,
+		})
+	}
+	if (text!=""&&err==nil){
+				fmt.Println("imaage and the text dosn't emty")
+		err = r.ParseMultipartForm(maxUploadSize)
+		if err != nil {
+			utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+				"message": "Bad Request",
+				"status":  http.StatusBadRequest,
+			})
+			return
+		}
+		if err == nil {
+			img = &models.Image{
+				ImgHeader:  header,
+				ImgContent: file,
+			}
+
+			defer file.Close()
+		}
+
+		pathParts := strings.Split(r.URL.Path, "/")
+		if len(pathParts) < 3 {
+			utils.HandleError(w, http.StatusBadRequest, "invalid URL")
+			return
+		}
+		postID := pathParts[2]
+
+		groupcomments := models.Comment{
+			ID:         uuid.New().String(),
+			PostID:     postID,
+			CreateDate: time.Now().Format(time.RFC3339),
+			AuthorID:   r.FormValue("comment"),
+			Text: text,
+		}
+
+		// fmt.Println("the text howaa haaad a",text)
+		groupcomments.AuthorID = userId
+		// fmt.Println("the comment all", groupcomments)
+		comment, err := app.GroupPostRepo.SaveGroupeComment(groupcomments, img)
+		if err != nil {
+			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
+			return
+		}
+		utils.SendJSONResponse(w, http.StatusOK, map[string]any{
+			"message": "comment created successfully (group post)",
+			"comment": comment,
+		})
+	}
 }
 
 func GetGRoupComment(app *app.Application, w http.ResponseWriter, r *http.Request) {

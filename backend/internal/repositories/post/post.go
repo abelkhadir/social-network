@@ -202,6 +202,7 @@ func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error
 		ORDER BY p.createDate DESC
 	`
 	row := pr.db.QueryRow(request, postID)
+	// fmt.Println("i don't knooow ")
 
 	var post models.PostItem
 	err := row.Scan(

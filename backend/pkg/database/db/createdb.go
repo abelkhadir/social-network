@@ -52,6 +52,7 @@ func EnsureSchema(db *sql.DB) error {
 			authorID TEXT NOT NULL,
 			postID TEXT NOT NULL,
 			createDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			image TEXT,
 			FOREIGN KEY (authorID) REFERENCES user(id) ON DELETE CASCADE,
 			FOREIGN KEY (postID) REFERENCES post(id) ON DELETE CASCADE
 		);`,
@@ -177,7 +178,7 @@ func EnsureSchema(db *sql.DB) error {
 			id TEXT PRIMARY KEY,
 			group_post_id TEXT NOT NULL,
 			member_id TEXT NOT NULL,
-			content TEXT NOT NULL,
+			content TEXT ,
 			image TEXT,
 			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (group_post_id) REFERENCES group_posts(id) ON DELETE CASCADE,

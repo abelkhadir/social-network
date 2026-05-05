@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
+
 	"social/internal/models"
 	"social/pkg/utils"
-	"strings"
-	"time"
 
 	"github.com/gofrs/uuid"
 )
@@ -16,10 +16,12 @@ import (
 func (s *GroupRepository) SaveGroupeComment(comments models.Comment, img *models.Image) (*models.Comment, error) {
 	// Validate text or image
 	// fmt.Println("bghaaaa save ")
+	fmt.Println("the connrtent ",comments.Text)
 
-	if (len(strings.Fields(comments.Text)) == 0 || len(strings.Fields(comments.Text)) > 500) && (img == nil || img.ImgHeader == nil) {
-		return nil, errors.New("Comment must be between 1 and 500 words or an image must be provided")
-	}
+	// if (len(strings.Fields(comments.Text)) == 0 || len(strings.Fields(comments.Text)) > 500) || (img == nil || img.ImgHeader == nil) {
+	// 	fmt.Println("ffffffffffffff")
+	// 	return nil, errors.New("Comment must be between 1 and 500 words or an image must be provided")
+	// }
 	fmt.Println("bghaaaa save ", comments.Author.ID)
 
 	if comments.PostID == "" || comments.AuthorID == "" {
@@ -27,22 +29,21 @@ func (s *GroupRepository) SaveGroupeComment(comments models.Comment, img *models
 		return nil, errors.New(("Invalid PostID or Author ID."))
 
 	}
-
+	// fmt.Println("shooof wax dkhhaaal")
 	// Check image ()
-	// 	// if img != nil {
+	// if img != nil {
 	// 	ImgErr := utils.CheckImage(img)
-	// 	if ImgErr.Code != http.StatusOK {
+	// 	if ImgErr!=nil {
 	// 		return nil, ImgErr
 	// 	}
 	// }
 	savedComment, err := s.AddGroupComment(comments, img)
-
-	// هذا هو المنطق الصحيح
 	if err != nil {
 		return nil, errors.New(err.Error())
 	}
-	return savedComment,nil
+	return savedComment, nil
 }
+
 func (r *GroupRepository) AddGroupComment(comments models.Comment, img *models.Image) (*models.Comment, error) {
 	var fullPath string
 	if img != nil {
@@ -65,18 +66,17 @@ func (r *GroupRepository) AddGroupComment(comments models.Comment, img *models.I
 		return &comments, errors.New(err.Error())
 	}
 	defer stmt.Close()
-
 	_, err = stmt.Exec(ID, comments.PostID, comments.AuthorID, comments.Text, fullPath, time.Now())
 	if err != nil {
 		return &comments, errors.New(err.Error())
 	}
 	// fmt.Println("haaada raah zmeeel ")
 	comments.ID = string(ID.String())
-	fmt.Println("ajiii yaaa",comments.AuthorID)
-	fmt.Println("ajiii yaaa",comments.CreateDate)
-	fmt.Println("ajiii yaaa",comments.ID)
-	fmt.Println("ajiii yaaa",comments.Text)
-	fmt.Println("ajiii yaaa",comments.PostID)
+	// fmt.Println("ajiii yaaa", comments.AuthorID)
+	// fmt.Println("ajiii yaaa", comments.CreateDate)
+	// fmt.Println("ajiii yaaa", comments.ID)
+	// fmt.Println("ajiii yaaa", comments.Text)
+	// fmt.Println("ajiii yaaa", comments.PostID)
 
 	return &comments, nil
 }
@@ -99,6 +99,7 @@ WHERE c.group_post_id = ?
 ORDER BY c.created_at DESC;
 
 	`
+	fmt.Println("the liiiiiiiiiiiiiiiiiiife")
 	rows, rowsErr := r.db.Query(query, post_id)
 	if rowsErr != nil {
 		return []models.Comment{}, models.GroupError{

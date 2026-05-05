@@ -94,12 +94,13 @@ export default function SinglePostPage() {
 
     try {
       let response;
-
+      console.log("the text ",commentText)
+      console.log("the image ",commentImage)
+      const formData = new FormData();
+      formData.append("text", commentText.trim());
+      formData.append("postID", String(id));
       if (commentImage) {
         // Upload with image using FormData
-        const formData = new FormData();
-        formData.append("text", commentText.trim());
-        formData.append("postID", String(id));
         formData.append("image", commentImage);
 
         response = await fetchApi(`/comment/${id}`, {
@@ -110,12 +111,10 @@ export default function SinglePostPage() {
         });
       } else {
         // Text-only comment (original behavior)
+              console.log("the text req",commentText)
         response = await fetchApi(`/comment/${id}`, {
           method: "POST",
-          body: JSON.stringify({ 
-            text: commentText.trim(),           
-            postID: String(id)           
-          }),
+          body: formData,
         });
       }
 

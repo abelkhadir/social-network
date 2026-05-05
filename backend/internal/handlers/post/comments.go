@@ -1,7 +1,6 @@
 package posthandler
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
@@ -16,6 +15,7 @@ import (
 	// "errors"
 )
 
+const maxUploadSize = 10 << 20 // 10 MB
 var MAX_COMMENT_LENGTH = 50
 
 func CreateComment(application *app.Application, res http.ResponseWriter, req *http.Request) {
@@ -24,68 +24,90 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 		RateCommentHandler(application, res, req)
 		return
 	}
-	
+
 	if !utils.ValidateRequest(req, res, "/comment/*", http.MethodPost) {
 		return
 	}
-	
+
 	pathParts := strings.Split(req.URL.Path, "/")
 	if len(pathParts) < 3 {
 		utils.HandleError(res, http.StatusBadRequest, "invalid URL")
 		return
 	}
 	postID := pathParts[2]
-	
+
 	userInSession, _ := application.SessionRepo.GetUserFromSession(req)
 	if !application.SessionRepo.ValidSession(req) {
 		utils.HandleError(res, http.StatusUnauthorized, "not connected")
 		return
 	}
-	
-	
+
 	var commentInfo models.Comment
 	commentInfo.AuthorID = userInSession.ID
 	commentInfo.PostID = postID
-	
+
 	exist, err := application.GroupPostRepo.PostExistsInGroup(postID)
 	if err != nil {
 		utils.HandleError(res, http.StatusInternalServerError, err.Error())
 		return
 	}
-	
+
 	if exist {
 		groupshandler.AddGroupComment(application, res, req)
+		
 		// _, groupErr := application.GroupPostRepo.AddGroupComment(commentInfo, nil)
 		// if groupErr.Code != http.StatusOK {
-			// 	utils.HandleError(res, groupErr.Code, groupErr.Message)
-			// 	return
-			// }
-			// fmt.Println("raah rjaa3 bghaa ziid ",commentInfo)
-			
-			// utils.SendJSONResponse(res, http.StatusOK, map[string]any{
-				// 	"message": "comment created successfully (group post)",
-				// 	"comment": commentInfo,
-				// })
-				return
+		// 	utils.HandleError(res, groupErr.Code, groupErr.Message)
+		// 	return
+		// }
+		// fmt.Println("raah rjaa3 bghaa ziid ",commentInfo)
+
+		// utils.SendJSONResponse(res, http.StatusOK, map[string]any{
+		// 	"message": "comment created successfully (group post)",
+		// 	"comment": commentInfo,
+		// })
+		return
 	}
 	fmt.Println("khonaa ohbiibnaa")
-	
-	if err := json.NewDecoder(req.Body).Decode(&commentInfo); err != nil {
-		utils.HandleError(res, http.StatusBadRequest, "Invalid JSON format")
+	// var err error
+	req.Body = http.MaxBytesReader(res, req.Body, maxUploadSize)
+	// fmt.Println("zaaaamel hada id," ,userId)
+	err = req.ParseMultipartForm(maxUploadSize)
+	if err != nil {
+		utils.SendJSONResponse(res, http.StatusBadRequest, map[string]any{
+			"message": "Bad Request",
+			"status":  http.StatusBadRequest,
+		})
 		return
 	}
+	file, header, err := req.FormFile("image")
 
-	if err := validateCommentInput(&commentInfo); err != nil {
-		utils.HandleError(res, http.StatusBadRequest, err.Error())
-		return
+	var img *models.Image // nil unless file is provided
+	if err == nil {
+		img = &models.Image{
+			ImgHeader:  header,
+			ImgContent: file,
+		}
+
+		defer file.Close()
 	}
+	fmt.Println("There is an imaage", img)
+	// if err := json.NewDecoder(req.Body).Decode(&commentInfo); err != nil {
+	// 	utils.HandleError(res, http.StatusBadRequest, "Invalid JSON format")
+	// 	return
+	// }
+
+	// if err := validateCommentInput(&commentInfo); err != nil {
+	// 	utils.HandleError(res, http.StatusBadRequest, err.Error())
+	// 	return
+	// }
 	post, err := application.PostRepo.GetPostByID(postID)
 	if err != nil {
 		utils.HandleError(res, http.StatusNotFound, "post not found")
 		return
 	}
 
-	err = application.CommentRepo.CreateComment(&commentInfo)
+	err = application.CommentRepo.CreateComment(&commentInfo,img)
 	if err != nil {
 		utils.HandleError(res, http.StatusInternalServerError, "Error creating comment: "+err.Error())
 		return
@@ -110,7 +132,6 @@ func CreateComment(application *app.Application, res http.ResponseWriter, req *h
 		"comment": commentInfo,
 	})
 }
-
 
 func GetComments(application *app.Application, res http.ResponseWriter, req *http.Request) {
 	if utils.ValidateRequest(req, res, "/comments/*", http.MethodGet) {
