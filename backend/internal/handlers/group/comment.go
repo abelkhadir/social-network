@@ -57,6 +57,7 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 			PostID:     postID,
 			CreateDate: time.Now().Format(time.RFC3339),
 			AuthorID:   r.FormValue("comment"),
+			Text: text,
 		}
 
 		// fmt.Println("(9aaaahbaaa)")

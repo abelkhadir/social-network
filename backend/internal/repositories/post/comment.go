@@ -3,11 +3,10 @@ package post
 import (
 	"database/sql"
 	"fmt"
-	"log"
+
 	"social/internal/models"
 	"social/pkg/utils"
 
-	uuid "github.com/gofrs/uuid"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -22,7 +21,7 @@ func NewCommentRepository(db *sql.DB) *CommentRepository {
 }
 
 // Create a new comment in the database
-func (cr *CommentRepository) CreateComment(comment *models.Comment ,img  *models.Image) error {
+func (cr *CommentRepository) CreateComment(comment *models.Comment, img *models.Image) (*models.Comment, error) {
 	var fullPath string
 	if img != nil {
 		fileName, err := utils.HandleImage(img, "uploads/groupimages")
@@ -31,14 +30,20 @@ func (cr *CommentRepository) CreateComment(comment *models.Comment ,img  *models
 		}
 		fullPath = "uploads/groupimages/" + fileName.String // assuming string
 	}
-	ID, err := uuid.NewV4()
+	_, err := cr.db.Exec("INSERT INTO comment (id, text, authorID, postID, image) VALUES (?, ?, ?, ?, ?)",
+		comment.ID, comment.Text, comment.AuthorID, comment.PostID, fullPath)
 	if err != nil {
-		log.Printf("❌ Failed to generate UUID: %v", err)
+		return nil, err
 	}
-	comment.ID = ID.String()
-	_, err = cr.db.Exec("INSERT INTO comment (id, text, authorID, postID, image) VALUES (?, ?, ?, ?, ?)",
-		comment.ID, comment.Text, comment.AuthorID, comment.PostID,fullPath)
-	return err
+	// fmt.Println("-----------")
+	// fmt.Println("the comment infoo",comment.AuthorID)
+	// fmt.Println("the comment infoo",comment.ID)
+	// fmt.Println("the comment infoo",comment.Image)
+	// fmt.Println("the comment infoo",comment.PostID)
+	// fmt.Println("the comment infoo",comment.Text)
+	// fmt.Println("-----------")
+
+	return comment, err
 }
 
 // Get a comment by ID from the database
@@ -53,14 +58,14 @@ func (cr *CommentRepository) GetCommentByID(id string) (models.CommentItem, erro
 		FROM comment c 
 		LEFT JOIN user u ON c.authorID = u.id 
 		WHERE c.id = ?`, id)
-	err := row.Scan(&comment.ID, 
+	err := row.Scan(&comment.ID,
 		&comment.Text,
-		 &comment.AuthorID,
-		 &comment.LastCreateDate,
-		  &comment.AuthorName,
-		   &comment.AuthorAvatar, 
-		   &comment.Likes,
-		    &comment.Dislikes)
+		&comment.AuthorID,
+		&comment.LastCreateDate,
+		&comment.AuthorName,
+		&comment.AuthorAvatar,
+		&comment.Likes,
+		&comment.Dislikes)
 	if err != nil {
 		return comment, err
 	}
@@ -87,12 +92,12 @@ func (cr *CommentRepository) GetCommentsOfPost(postID string) ([]*models.Comment
 
 	for rows.Next() {
 		var comment models.CommentItem
-		err := rows.Scan(&comment.ID, &comment.Text, &comment.AuthorID, &comment.LastCreateDate,&comment.Image, &comment.AuthorName, &comment.AuthorAvatar, &comment.Likes, &comment.Dislikes)
+		err := rows.Scan(&comment.ID, &comment.Text, &comment.AuthorID, &comment.LastCreateDate, &comment.Image, &comment.AuthorName, &comment.AuthorAvatar, &comment.Likes, &comment.Dislikes)
 		if err != nil {
 			return nil, err
 		}
 		comments = append(comments, &comment)
-		fmt.Println("maaar3aaftch ",err)
+		// fmt.Println("maaar3aaftch ", err)
 	}
 
 	if err := rows.Err(); err != nil {
