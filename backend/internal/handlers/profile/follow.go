@@ -4,11 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"social/internal/repository"
+	"social/internal/profile"
 )
 
 type FollowHandler struct {
-	repo *repository.ProfileRepository
+	repo *profile.ProfileRepository
+}
+
+func NewFollowHandler(repo *profile.ProfileRepository) *FollowHandler {
+	return &FollowHandler{repo: repo}
 }
 
 func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
@@ -41,4 +45,30 @@ func (h *FollowHandler) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "unfollowed",
 	})
+}
+
+func (h *FollowHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
+
+	userID := r.URL.Query().Get("user_id")
+
+	data, err := h.repo.GetUserFollowers("followers", userID)
+	if err.Code != 200 {
+		http.Error(w, err.Message, err.Code)
+		return
+	}
+
+	json.NewEncoder(w).Encode(data)
+}
+
+func (h *FollowHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
+
+	userID := r.URL.Query().Get("user_id")
+
+	data, err := h.repo.GetUserFollowers("following", userID)
+	if err.Code != 200 {
+		http.Error(w, err.Message, err.Code)
+		return
+	}
+
+	json.NewEncoder(w).Encode(data)
 }

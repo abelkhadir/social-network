@@ -95,7 +95,6 @@ func EnsureSchema(db *sql.DB) error {
 			FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
 			FOREIGN KEY (actor_id) REFERENCES user(id) ON DELETE SET NULL
 		);`,
-<<<<<<< HEAD
 
 		`CREATE INDEX IF NOT EXISTS idx_notification_user 
 		 ON notification(user_id, is_read, created_at);`,
@@ -184,8 +183,6 @@ func EnsureSchema(db *sql.DB) error {
 			FOREIGN KEY (group_post_id) REFERENCES group_posts(id) ON DELETE CASCADE,
 			FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE
 		)`,
-=======
->>>>>>> 8d06227bb4e592b4936f6b26a8d92cd8af73a3e0
 		`CREATE TABLE IF NOT EXISTS followers (
 	follower_id TEXT NOT NULL,
 	following_id TEXT NOT NULL,
@@ -197,10 +194,6 @@ func EnsureSchema(db *sql.DB) error {
 
 	UNIQUE(follower_id, following_id)
 );`,
-<<<<<<< HEAD
-=======
-		`CREATE INDEX IF NOT EXISTS idx_notification_user ON notification(user_id, is_read, created_at);`,
->>>>>>> 8d06227bb4e592b4936f6b26a8d92cd8af73a3e0
 	}
 
 	// Execute tables safely

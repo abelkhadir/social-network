@@ -1,60 +1,99 @@
 package profile
 
 import (
-	"encoding/json"
-	"fmt"
+	"database/sql"
 	"net/http"
 
-	"social/internal/app"
-	"social/pkg/middleware"
-	"social/pkg/utils"
+	"social/internal/models"
 )
 
-type FollowRequest struct{
-	Action string `json:"action"`
-	UserId string `json:"UserId"`
-}
+func (r *ProfileRepository) GetUserFollowers(action string, userID string) (*models.Followers, models.FollowerError) {
 
-func GetUserFollowers(app *app.Application, res http.ResponseWriter, req *http.Request) {
-	fmt.Println("siiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii")
-	fmt.Println("happen")
-	if req.Method != http.MethodPost {
-		utils.SendJSONResponse(res, http.StatusMethodNotAllowed, map[string]any{
-			"error": "Method not allowed",
-		})
-		return
+	var query string
+
+	switch action {
+
+	case "followers":
+		query = `
+		SELECT 
+			u.id,
+			u.firstname,
+			u.lastname,
+			u.nickname,
+			u.avatarURL
+		FROM followers f
+		JOIN user u ON u.id = f.follower_id
+		WHERE f.following_id = ?
+		AND f.status = 'accepted';
+		`
+
+	case "following":
+		query = `
+		SELECT 
+			u.id,
+			u.firstname,
+			u.lastname,
+			u.nickname,
+			u.avatarURL
+		FROM followers f
+		JOIN user u ON u.id = f.following_id
+		WHERE f.follower_id = ?
+		AND f.status = 'accepted';
+		`
+
+	default:
+		return nil, models.FollowerError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid action",
+		}
 	}
 
-	// groupIDStr, errId := utils.GetGroupId(r, "members")
-	userID, ok := req.Context().Value(middleware.UserIDKey).(string)
-	fmt.Println("the id in the profile", userID)
-	if !ok {
-		// fmt.Println("userID not found in context")
-		// fmt.Printf("CTX KEY TYPE HANDLER: %T\n",userID)
-		utils.SendJSONResponse(res, http.StatusUnauthorized, map[string]any{
-			"error": "Unauthorized",
-		})
-		return
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return nil, models.FollowerError{
+			Code:    http.StatusInternalServerError,
+			Message: "db error",
+		}
 	}
-	var info FollowRequest
-	json.NewDecoder(req.Body).Decode(&info)
-	info.UserId = userID
-	folowers, err := app.ProfileRepo.GetUserFollowersrepo(info.Action,info.UserId)
-	fmt.Println("--------------------------------------------")
-	fmt.Println("the followers from data base", folowers)
-	fmt.Println("--------------------------------------------")
+	defer rows.Close()
 
-	if err.Code != http.StatusOK {
-		// 		fmt.Println("--------------------------------------------")
-		// fmt.Println("errrrror sdfsdafsdfsdfsdgsdgfdsfg", err)
-		// fmt.Println("--------------------------------------------")
-		utils.SendJSONResponse(res, err.Code, map[string]any{
-			"error": err.Message,
-		})
-		return
+	result := &models.Followers{
+		Followers: []models.User{},
 	}
-	// fmt.Println("the memberssssssssssssssssss fuck ",Members)
-	utils.SendJSONResponse(res, http.StatusOK, map[string]any{
-		"data": folowers,
-	})
+
+	for rows.Next() {
+
+		var u models.User
+		var nickname sql.NullString
+		var avatar sql.NullString
+
+		if err := rows.Scan(
+			&u.ID,
+			&u.Firstname,
+			&u.Lastname,
+			&nickname,
+			&avatar,
+		); err != nil {
+
+			return nil, models.FollowerError{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+
+		if nickname.Valid {
+			u.Nickname = nickname.String
+		}
+
+		if avatar.Valid {
+			u.Avatar = avatar.String
+		}
+
+		result.Followers = append(result.Followers, u)
+	}
+
+	return result, models.FollowerError{
+		Code:    http.StatusOK,
+		Message: "success",
+	}
 }
