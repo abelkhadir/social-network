@@ -32,6 +32,7 @@ type Application struct {
 	GroupMembers     *groupsrepos.GroupRepository
 	GroupEvents      *groupsrepos.GroupRepository
 	GroupMessage     *groupsrepos.MessageRepository
+	// Profile        *profilerepo.ProfileRepository
 }
 
 // NewApp initializes the database and repositories

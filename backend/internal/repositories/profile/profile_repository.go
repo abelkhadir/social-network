@@ -1,13 +1,13 @@
 package profile
 
-func (r *ProfileRepository) FollowUser(followerID, followingID string) error {
+func (r *ProfileRepository) FollowUser(followerID string) error {
 
 	query := `
 	INSERT INTO followers (follower_id, following_id, status)
 	VALUES (?, ?, 'pending')
 	`
 
-	_, err := r.db.Exec(query, followerID, followingID)
+	_, err := r.db.Exec(query, followerID,"jawad")
 	return err
 }
 

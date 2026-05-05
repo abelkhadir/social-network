@@ -2,9 +2,12 @@ package profile
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
-	"social/internal/profile"
+	"social/internal/app"
+	"social/internal/repositories/profile"
+	"social/pkg/middleware"
 )
 
 type FollowHandler struct {
@@ -16,23 +19,30 @@ func NewFollowHandler(repo *profile.ProfileRepository) *FollowHandler {
 }
 
 func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("------------------------------------------")
 
-	followerID := r.URL.Query().Get("follower_id")
-	followingID := r.URL.Query().Get("following_id")
 
-	err := h.repo.FollowUser(followerID, followingID)
+	UserID := r.Context().Value(middleware.UserIDKey).(string)
+
+	followerID := r.URL.Query().Get("followerId")
+
+	fmt.Println("//////////////////////////////////",UserID)
+
+	fmt.Println("this is the followerID:", followerID)
+	err := h.repo.FollowUser(followerID)
+	fmt.Println(err)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "followed",
 	})
 }
 
-func (h *FollowHandler) UnfollowUser(w http.ResponseWriter, r *http.Request) {
-
+func (h *FollowHandler) UnfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 	followerID := r.URL.Query().Get("follower_id")
 	followingID := r.URL.Query().Get("following_id")
 
@@ -47,28 +57,18 @@ func (h *FollowHandler) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *FollowHandler) GetFollowers(w http.ResponseWriter, r *http.Request) {
-
-	userID := r.URL.Query().Get("user_id")
-
-	data, err := h.repo.GetUserFollowers("followers", userID)
-	if err.Code != 200 {
-		http.Error(w, err.Message, err.Code)
+func (h *FollowHandler) GetContactHandler(application *app.Application, w http.ResponseWriter, r *http.Request) {
+	action := r.URL.Query().Get("action")
+	fmt.Println(action)
+	user, err := application.SessionRepo.GetUserFromSession(r)
+	if err != nil {
+		//
+	}
+	data, errorr := h.repo.GetUserFollowersRepo(action, user.ID)
+	if errorr.Code != 200 {
+		http.Error(w, errorr.Message, errorr.Code)
 		return
 	}
-
-	json.NewEncoder(w).Encode(data)
-}
-
-func (h *FollowHandler) GetFollowing(w http.ResponseWriter, r *http.Request) {
-
-	userID := r.URL.Query().Get("user_id")
-
-	data, err := h.repo.GetUserFollowers("following", userID)
-	if err.Code != 200 {
-		http.Error(w, err.Message, err.Code)
-		return
-	}
-
+	fmt.Println(data, "²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²")
 	json.NewEncoder(w).Encode(data)
 }

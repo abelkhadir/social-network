@@ -2,15 +2,17 @@ package profile
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	"social/internal/models"
 )
 
 func (r *ProfileRepository) GetUserFollowersRepo(action string, userID string) (*models.Followers, models.FollowerError) {
-
+	var err error
 	var query string
-
+	var rows *sql.Rows
+	var flag bool
 	switch action {
 
 	case "followers":
@@ -40,7 +42,42 @@ func (r *ProfileRepository) GetUserFollowersRepo(action string, userID string) (
 		WHERE f.follower_id = ?
 		AND f.status = 'accepted';
 		`
+		case "discover":
+	query = `
+	SELECT 
+		u.id,
+		u.firstname,
+		u.lastname,
+		u.nickname,
+		u.avatarURL
+	FROM user u
+	WHERE u.id != ?
+	AND u.id NOT IN (
+		SELECT following_id 
+		FROM followers 
+		WHERE follower_id = ? 
+		AND status = 'accepted'
 
+		UNION
+
+		SELECT follower_id 
+		FROM followers 
+		WHERE following_id = ? 
+		AND status = 'accepted'
+	);
+	`
+	rows, err = r.db.Query(query, userID,userID,userID)
+	if err != nil {
+			fmt.Println("1",err)
+
+		return nil, models.FollowerError{
+			Code:    http.StatusInternalServerError,
+			Message: "Internal server error",
+		}
+	}
+	defer rows.Close()
+
+	flag=true
 	default:
 		return nil, models.FollowerError{
 			Code:    http.StatusBadRequest,
@@ -48,14 +85,19 @@ func (r *ProfileRepository) GetUserFollowersRepo(action string, userID string) (
 		}
 	}
 
-	rows, err := r.db.Query(query, userID)
+if !flag{
+	rows, err = r.db.Query(query, userID)
 	if err != nil {
+			fmt.Println("1",err)
+
 		return nil, models.FollowerError{
 			Code:    http.StatusInternalServerError,
 			Message: "Internal server error",
 		}
 	}
 	defer rows.Close()
+
+}
 
 	result := &models.Followers{
 		Followers: []models.User{},
@@ -76,6 +118,7 @@ func (r *ProfileRepository) GetUserFollowersRepo(action string, userID string) (
 		)
 
 		if err != nil {
+			fmt.Println("2")
 			return nil, models.FollowerError{
 				Code:    http.StatusInternalServerError,
 				Message: err.Error(),
@@ -94,7 +137,6 @@ func (r *ProfileRepository) GetUserFollowersRepo(action string, userID string) (
 
 		result.Followers = append(result.Followers, user)
 	}
-
 	return result, models.FollowerError{
 		Code:    http.StatusOK,
 		Message: "successfully fetched users",

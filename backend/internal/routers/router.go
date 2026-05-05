@@ -210,7 +210,11 @@ func SetupRoutes(a *app.Application) {
 		websockethandler.HandleWebSocket(a, w, r)
 	}))
 
-	//follow
-	http.HandleFunc("/follow", profile.FollowUser)
-	http.HandleFunc("/unfollow", profile.UnfollowUser)
+	// follow
+	http.Handle("/follow", middleware.AuthMiddleware(a.DB,http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			profile.NewFollowHandler(a.ProfileRepo).FollowUser(w,r)})))
+		http.Handle("/fetchUsers", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			profile.NewFollowHandler(a.ProfileRepo).GetContactHandler(a,w,r)
+		}))
+	// http.HandleFunc("/unfollow", profile.UnfollowUser)
 }
