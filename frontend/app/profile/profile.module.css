@@ -1,0 +1,559 @@
+/* ============ Layout ============ */
+.container {
+    max-width: 860px;
+    margin: 40px auto;
+    padding: 0 16px;
+    color: #fff;
+  }
+  
+  /* ============ Loading ============ */
+  .loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    color: #aaa;
+    gap: 16px;
+  }
+  
+  .errorContainer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    color: #ff6b6b;
+    font-size: 18px;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #333;
+    border-top-color: #6c63ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* ============ Private Account ============ */
+  .privateContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 16px;
+    color: #fff;
+  }
+  
+  .privateBadge {
+    background: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 14px;
+    color: #aaa;
+  }
+  
+  /* ============ Header ============ */
+  .header {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    padding: 24px;
+    background: #1a1a1a;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    border: 1px solid #2a2a2a;
+  }
+  
+  .avatarWrapper {
+    flex-shrink: 0;
+  }
+  
+  .avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #6c63ff;
+  }
+  
+  .headerInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .name {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+  }
+  
+  .nickname {
+    color: #888;
+    font-size: 14px;
+    margin: 0;
+  }
+  
+  .stats {
+    display: flex;
+    gap: 24px;
+    font-size: 14px;
+    color: #ccc;
+  }
+  
+  .stats strong {
+    color: #fff;
+    font-size: 16px;
+  }
+  
+  .aboutMe {
+    font-size: 14px;
+    color: #bbb;
+    margin: 4px 0 0;
+    line-height: 1.5;
+  }
+  
+  /* ============ Follow Buttons ============ */
+  .followActions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  
+  .btnFollow {
+    background: #6c63ff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  
+  .btnFollow:hover {
+    background: #574fd6;
+  }
+  
+  .btnUnfollow {
+    background: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+    border-radius: 8px;
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  
+  .btnUnfollow:hover {
+    background: #ff6b6b;
+    color: #fff;
+  }
+  
+  .btnPending {
+    background: #2a2a2a;
+    color: #aaa;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 8px 20px;
+    cursor: not-allowed;
+    font-size: 14px;
+  }
+  
+  /* ============ Tabs ============ */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid #2a2a2a;
+    margin-bottom: 24px;
+  }
+  
+  .tab {
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    text-transform: capitalize;
+  }
+  
+  .tab:hover {
+    color: #fff;
+  }
+  
+  .activeTab {
+    color: #6c63ff;
+    border-bottom-color: #6c63ff;
+  }
+  
+  /* ============ Tab Content ============ */
+  .tabContent {
+    min-height: 300px;
+  }
+  
+  /* ============ Posts ============ */
+  .postsGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .postCard {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  
+  .postCard:hover {
+    border-color: #6c63ff;
+  }
+  
+  .postImage {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+  }
+  
+  .postBody {
+    padding: 16px;
+  }
+  
+  .postTitle {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+  
+  .postContent {
+    font-size: 14px;
+    color: #bbb;
+    margin: 0 0 12px;
+    line-height: 1.5;
+  }
+  
+  .postMeta {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: #777;
+  }
+  
+  /* ============ User Cards ============ */
+  .sectionTitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    color: #ccc;
+  }
+  
+  .userCard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    border: 1px solid #2a2a2a;
+    margin-bottom: 8px;
+    transition: border-color 0.2s;
+  }
+  
+  .userCard:hover {
+    border-color: #444;
+  }
+  
+  .userAvatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #333;
+  }
+  
+  .userInfo {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  
+  .userName {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .userNickname {
+    font-size: 12px;
+    color: #777;
+  }
+  
+  /* ============ Pending Requests ============ */
+  .pendingSection {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #1a1a1a;
+    border: 1px solid #3a3a1a;
+    border-radius: 12px;
+  }
+  
+  .pendingActions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
+  
+  .btnAccept {
+    background: #2d5a27;
+    color: #6fcf6f;
+    border: 1px solid #3a7a34;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  
+  .btnAccept:hover {
+    background: #3a7a34;
+    color: #fff;
+  }
+  
+  .btnDecline {
+    background: #5a2727;
+    color: #cf6f6f;
+    border: 1px solid #7a3434;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  
+  .btnDecline:hover {
+    background: #7a3434;
+    color: #fff;
+  }
+  
+  /* ============ Settings ============ */
+  .settingsForm {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 500px;
+  }
+  
+  .avatarUpload {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  
+  .avatarPreview {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #6c63ff;
+  }
+  
+  .uploadLabel {
+    background: #2a2a2a;
+    color: #aaa;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  
+  .uploadLabel:hover {
+    background: #333;
+    color: #fff;
+  }
+  
+  .formGroup {
+    margin-bottom: 20px;
+  }
+  
+  .formLabel {
+    display: block;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  
+  .formInput {
+    width: 100%;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  
+  .formInput:focus {
+    border-color: #6c63ff;
+  }
+  
+  .formTextarea {
+    width: 100%;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 14px;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  
+  .formTextarea:focus {
+    border-color: #6c63ff;
+  }
+  
+  /* ============ Toggle Switch ============ */
+  .toggleLabel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    font-size: 14px;
+    color: #ccc;
+  }
+  
+  .toggle {
+    width: 48px;
+    height: 26px;
+    background: #333;
+    border-radius: 13px;
+    position: relative;
+    transition: background 0.2s;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  
+  .toggleOn {
+    background: #6c63ff;
+  }
+  
+  .toggleThumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  
+  .toggleOn .toggleThumb {
+    transform: translateX(22px);
+  }
+  
+  .formHint {
+    font-size: 12px;
+    color: #666;
+    margin: 6px 0 0;
+  }
+  
+  /* ============ Save Button ============ */
+  .btnSave {
+    width: 100%;
+    background: #6c63ff;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 8px;
+  }
+  
+  .btnSave:hover:not(:disabled) {
+    background: #574fd6;
+  }
+  
+  .btnSave:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  /* ============ Empty Message ============ */
+  .emptyMsg {
+    color: #555;
+    text-align: center;
+    padding: 40px 0;
+    font-size: 14px;
+  }
+  
+  /* ============ Responsive ============ */
+  @media (max-width: 600px) {
+    .header {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  
+    .stats {
+      justify-content: center;
+    }
+  
+    .followActions {
+      justify-content: center;
+    }
+  
+    .tabs {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+  
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+  
+    .tab {
+      white-space: nowrap;
+    }
+  
+    .settingsForm {
+      max-width: 100%;
+    }
+  
+    .pendingActions {
+      flex-direction: column;
+    }
+  }

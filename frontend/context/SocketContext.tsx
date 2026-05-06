@@ -76,7 +76,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!user) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    const apiUrl = "http://localhost:8080";
     const wsUrl = apiUrl.replace("http", "ws") + "/ws";
 
     let active = true;

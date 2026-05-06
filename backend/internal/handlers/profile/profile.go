@@ -51,6 +51,7 @@ func GetProfile(app *app.Application, res http.ResponseWriter, req *http.Request
 	}
 
 	profileID := resolveProfileID(req, viewer.ID)
+
 	profile, err := app.ProfileRepo.GetProfile(viewer.ID, profileID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -61,9 +62,69 @@ func GetProfile(app *app.Application, res http.ResponseWriter, req *http.Request
 		return
 	}
 
+	isOwner := viewer.ID == profile.User.ID
+
+	// Private account - viewer is NOT the owner
+	if profile.IsPrivate && !isOwner {
+		isFollowing, err := app.ProfileRepo.IsFollowing(viewer.ID, profile.User.ID)
+		if err != nil {
+			utils.HandleError(res, http.StatusInternalServerError, "Error checking follow")
+			return
+		}
+
+		isPending, _ := app.ProfileRepo.IsPending(viewer.ID, profile.User.ID)
+
+		if !isFollowing {
+			utils.SendJSONResponse(res, http.StatusOK, map[string]any{
+				"isPrivate": true,
+				"canView":   false,
+				"isPending": isPending,
+				"profile": map[string]any{
+					"user": map[string]any{
+						"id":        profile.User.ID,
+						"firstname": profile.User.Firstname,
+						"lastname":  profile.User.Lastname,
+						"nickname":  profile.User.Nickname,
+						"avatarURL": profile.User.AvatarURL,
+					},
+				},
+			})
+			return
+		}
+
+		//  Is following  load posts
+		posts, err := app.ProfileRepo.GetProfilePosts(profile.User.ID)
+		if err != nil {
+			utils.HandleError(res, http.StatusInternalServerError, "Failed to load posts")
+			return
+		}
+		profile.Posts = posts
+
+		utils.SendJSONResponse(res, http.StatusOK, map[string]any{
+			"isPrivate":   true,
+			"canView":     true,
+			"isPending":   false,
+			"isFollowing": isFollowing,
+			"profile":     profile,
+		})
+		return
+	}
+
+	if len(profile.Posts) == 0 && isOwner {
+		posts, err := app.ProfileRepo.GetProfilePosts(profile.User.ID)
+		if err != nil {
+			utils.HandleError(res, http.StatusInternalServerError, "Failed to load posts")
+			return
+		}
+		profile.Posts = posts
+	}
+	isFollowing, _ := app.ProfileRepo.IsFollowing(viewer.ID, profile.User.ID)
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{
-		"message": "Profile retrieved successfully",
-		"profile": profile,
+		"isPrivate":   profile.IsPrivate,
+		"canView":     true,
+		"isPending":   false,
+		"isFollowing": isFollowing,
+		"profile":     profile,
 	})
 }
 

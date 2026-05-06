@@ -13,6 +13,7 @@ import (
 	notificationshandler "social/internal/handlers/notifications"
 	posthandler "social/internal/handlers/post"
 	"social/internal/handlers/profile"
+	profileHandler "social/internal/handlers/profile"
 	websockethandler "social/internal/handlers/websocket"
 	"social/pkg/middleware"
 )
@@ -37,6 +38,7 @@ func SetupRoutes(a *app.Application) {
 		}
 		return
 	})
+	followHandler := profileHandler.NewFollowHandler(a)
 
 	// Authentication
 	http.Handle("/me", rateLimiter.Wrap("auth", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
@@ -60,6 +62,18 @@ func SetupRoutes(a *app.Application) {
 		profile.Profile(a, res, req)
 	})))
 
+	http.Handle("/follow/accept", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.AcceptFollow)))        // PUT
+	http.Handle("/follow/decline", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.DeclineFollow)))      // DELETE
+	http.Handle("/follow/pending", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.GetPendingRequests))) // GET
+
+	// ========== Follow main ==========
+	http.Handle("/follow", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.FollowUser)))     // POST
+	http.Handle("/unfollow", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.UnfollowUser))) // DELETE
+
+	// ========== Followers / Following ==========
+	http.Handle("/followers", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.GetFollowers))) // GET
+	http.Handle("/following", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.GetFollowing))) // GET
+
 	// Post Handlers
 	http.Handle("/post", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		posthandler.CreatePost(a, res, req)
@@ -75,17 +89,17 @@ func SetupRoutes(a *app.Application) {
 	// 	posthandler.CreateComment(a, res, req)
 
 	// })))
-		http.Handle("/comment/",
+	http.Handle("/comment/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					posthandler.CreateComment(a,w,r)
+					posthandler.CreateComment(a, w, r)
 				}),
 			),
 		),
 	)
 
-	//comment for grouup 
+	// comment for grouup
 	// http.Handle("/grouup/comment/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 	// 	groupshandler.AddGroupComment(a, res, req)
 	// })))
@@ -223,4 +237,13 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		websockethandler.HandleWebSocket(a, w, r)
 	}))
+	// follow
+	http.Handle("/followuserhome", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		profile.NewFollowHandler(a).FollowUser(w,r)
+	}))
+
+	http.Handle("/fetchUsers", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		profile.NewFollowHandler(a).GetContactHandler(a, w, r)
+	}))
+	// http.HandleFunc("/unfollow", profile.UnfollowUser)
 }

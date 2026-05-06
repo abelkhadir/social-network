@@ -39,17 +39,21 @@ func (repo *ProfileRepository) GetProfile(viewerID, profileID string) (*models.C
 		return nil, err
 	}
 
+	isMyAccount := viewerID == profileID
+
 	profile := &models.CommunInfoProfile{
 		User:      user,
 		IsPrivate: isPrivate == 1,
-		MyAccount: viewerID == profileID,
+		MyAccount: isMyAccount,
 	}
 
-	if err := repo.db.QueryRow("SELECT COUNT(*) FROM post WHERE authorID = ?", profileID).Scan(&profile.PostsCount); err != nil {
+	if err := repo.db.QueryRow(
+		"SELECT COUNT(*) FROM post WHERE authorID = ?", profileID,
+	).Scan(&profile.PostsCount); err != nil {
 		return nil, err
 	}
 
-	if profile.IsPrivate && !profile.MyAccount {
+	if profile.IsPrivate && !isMyAccount {
 		profile.User.Email = ""
 		profile.User.Age = 0
 		profile.User.Gender = ""
@@ -66,13 +70,14 @@ func (repo *ProfileRepository) GetProfile(viewerID, profileID string) (*models.C
 	return profile, nil
 }
 
+func (repo *ProfileRepository) GetProfilePosts(userID string) ([]models.ProfilePost, error) {
+	return repo.listProfilePosts(userID)
+}
+
 func (repo *ProfileRepository) UpdateProfile(userID, nickname, aboutMe, avatarURL string, isPrivate int) error {
-	_, err := repo.db.Exec(`UPDATE user SET nickname = ?, about_me = ?, avatarURL = ?, is_private = ? WHERE id = ?`,
-		nickname,
-		aboutMe,
-		avatarURL,
-		isPrivate,
-		userID,
+	_, err := repo.db.Exec(
+		`UPDATE user SET nickname = ?, about_me = ?, avatarURL = ?, is_private = ? WHERE id = ?`,
+		nickname, aboutMe, avatarURL, isPrivate, userID,
 	)
 	return err
 }

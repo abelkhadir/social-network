@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { fetchApi, resolveApiUrl } from "@/lib/api";
-import { log } from "node:console";
+import styles from "./profile.module.css";
 
+// ============ Types ============
 type ProfilePost = {
   id: string;
   title: string;
@@ -16,15 +18,43 @@ type ProfilePost = {
   image?: string;
 };
 
-type ProfileResponse = {
-  user: any;
-  isPrivate: boolean;
-  followers: number;
-  following: number;
-  postsCount: number;
-  myAccount: boolean;
-  posts?: ProfilePost[];
+type ProfileUser = {
+  id: string;
+  firstname: string;
+  lastname: string;
+  nickname: string;
+  email?: string;
+  age?: number;
+  gender?: string;
+  aboutMe?: string;
+  avatarURL?: string;
 };
+
+type FollowUser = {
+  id: string;
+  firstname: string;
+  lastname: string;
+  nickname: string;
+  avatar: string;
+};
+
+type BackendProfile = {
+  user: ProfileUser;
+  isPrivate: boolean;
+  myAccount: boolean;
+  postsCount: number;
+  posts: ProfilePost[];
+};
+
+type ProfileResponse = {
+  isPrivate: boolean;
+  canView: boolean;
+  isPending: boolean;
+  isFollowing: boolean; 
+  profile: BackendProfile;
+};
+
+type TabType = "posts" | "followers" | "following" | "settings";
 
 type ProfileViewProps = {
   profileId?: string;
@@ -33,69 +63,214 @@ type ProfileViewProps = {
 export default function ProfileView({ profileId }: ProfileViewProps) {
   const { user, loading, updateUser } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"posts" | "followers" | "following" | "settings">("posts");
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [profileRes, setProfileRes] = useState<ProfileResponse | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [saving, setSaving] = useState(false);
+
+  const [followers, setFollowers] = useState<FollowUser[]>([]);
+  const [following, setFollowing] = useState<FollowUser[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<FollowUser[]>([]);
+  const [loadingFollow, setLoadingFollow] = useState(false);
+
+  const [activeTab, setActiveTab] = useState<TabType>("posts");
 
   const [editNickname, setEditNickname] = useState("");
   const [editAboutMe, setEditAboutMe] = useState("");
   const [editIsPrivate, setEditIsPrivate] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const tabs = useMemo(() => {
-    return profile?.myAccount ? ["posts", "followers", "following", "settings"] : ["posts", "followers", "following"];
-  }, [profile?.myAccount]);
+ 
+  const isMyProfile = !profileId || profileId === user?.id;
 
+  const tabs = useMemo<TabType[]>(() => {
+    return isMyProfile
+      ? ["posts", "followers", "following", "settings"]
+      : ["posts", "followers", "following"];
+  }, [isMyProfile]);
+
+  // ============ Load Profile ============
   useEffect(() => {
     if (!loading && user) {
       loadProfile();
     }
   }, [loading, user, profileId]);
 
-  useEffect(() => {
-    if (profile && !profile.myAccount && activeTab === "settings") {
-      setActiveTab("posts");
-    }
-  }, [profile, activeTab]);
-
   const loadProfile = async () => {
+    console.log("🔄 LOADING PROFILE...");
     setLoadingProfile(true);
+  
     try {
-      const endpoint = profileId ? `/profile?id=${encodeURIComponent(profileId)}` : "/profile";
+      const endpoint = profileId
+        ? `/profile?id=${encodeURIComponent(profileId)}`
+        : "/profile";
+  
+      console.log("📡 PROFILE ENDPOINT:", endpoint);
+  
       const data = await fetchApi(endpoint);
-      const profileData: ProfileResponse = data.profile || data;
-      setProfile(profileData);
-      setEditNickname(profileData.user?.nickname || "");
-      setEditAboutMe(profileData.user?.aboutMe || "");
-      setEditIsPrivate(!!profileData.isPrivate);
-      setAvatarFile(null);
+  
+      console.log("👤 PROFILE DATA:", data);
+  
+      setProfileRes(data);
+
+      
+      if (data.canView && data.profile?.user) {
+        setEditNickname(data.profile.user.nickname || "");
+        setEditAboutMe(data.profile.user.aboutMe || "");
+        setEditIsPrivate(data.isPrivate);
+      }
     } catch (err: any) {
       showToast(err.message || "Failed to load profile", "error");
     } finally {
       setLoadingProfile(false);
-      console.log("Profile:",profile);
     }
   };
+
+  // ============ Follow Status ============
+  const getFollowStatus = (): "following" | "pending" | "not-following" => {
+    if (!profileRes || isMyProfile) return "not-following";
+    if (profileRes.isPending) return "pending";
+   
+    if (profileRes.isPrivate && profileRes.canView) return "following";
+    if (!profileRes.isPrivate && profileRes.isFollowing) return "following";
+    return "not-following";
+};
+const loadFollowers = async (targetId: string) => {
+  setLoadingFollow(true);
+
+  try {
+    const [followersData, followingData] = await Promise.all([
+      fetchApi(`/followers?user_id=${targetId}`),
+      fetchApi(`/following?user_id=${targetId}`),
+    ]);
+
+    console.log("👥 FOLLOWERS RESPONSE:", followersData);
+    console.log("➡️ FOLLOWING RESPONSE:", followingData);
+
+    setFollowers(followersData?.followers || []);
+    setFollowing(followingData?.followers || []);
+  } catch (err) {
+    console.error("Failed to load followers:", err);
+  } finally {
+    setLoadingFollow(false);
+  }
+};
+
+  const loadPending = async () => {
+    try {
+      const data = await fetchApi("/follow/pending");
+
+      setPendingRequests(data?.pendingRequests?.followers || []);
+    } catch (err) {
+      console.error("Failed to load pending:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!profileRes) return;
+    const targetId = profileId || user?.id;
+    if (!targetId) return;
+
+    if (activeTab === "followers" || activeTab === "following") {
+      loadFollowers(targetId);
+    }
+    if (activeTab === "followers" && isMyProfile) {
+      loadPending();
+    }
+  }, [activeTab, profileRes]);
+
+  // ============ Follow / Unfollow ============
+  const handleFollow = async () => {
+    if (!profileId) return;
   
+    console.log("👉 CLICKED FOLLOW BUTTON");
+    console.log("➡️ following_id:", profileId);
+  
+    try {
+      const data = await fetchApi(`/follow?following_id=${profileId}`, {
+        method: "POST",
+      });
+  
+      console.log("✅ FOLLOW RESPONSE FROM BACKEND:", data);
+  
+      showToast(data.message || "Done", "success");
+  
+      console.log("🔄 Reloading profile after follow...");
+      await loadProfile();
+  
+    } catch (err: any) {
+      console.log("❌ FOLLOW ERROR:", err);
+      showToast(err.message || "Failed to follow", "error");
+    }
+  };
+  const handleUnfollow = async () => {
+    if (!profileId) return;
+    try {
+      await fetchApi(`/unfollow?following_id=${profileId}`, {
+        method: "DELETE",
+      });
+      showToast("Unfollowed", "success");
+      await loadProfile();
+    } catch (err: any) {
+      showToast(err.message || "Failed to unfollow", "error");
+    }
+  };
+
+  // ============ Accept / Decline ============
+  const handleAccept = async (followerId: string) => {
+    try {
+      await fetchApi(`/follow/accept?follower_id=${followerId}`, {
+        method: "PUT",
+      });
+      console.log("hi");
+      
+      showToast("Accepted!", "success");
+      console.log("hi");
+      
+      loadPending();
+      loadFollowers(user?.id || "");
+    } catch (err: any) {
+      showToast(err.message || "Failed", "error");
+    }
+  };
+
+  const handleDecline = async (followerId: string) => {
+    try {
+      await fetchApi(`/follow/decline?follower_id=${followerId}`, {
+        method: "DELETE",
+      });
+      showToast("Declined", "success");
+      loadPending();
+    } catch (err: any) {
+      showToast(err.message || "Failed", "error");
+    }
+  };
+
+  // ============ Avatar ============
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  // ============ Save ============
   const handleSave = async () => {
     setSaving(true);
     try {
-      let data: any;
+      let updateRes;
+
       if (avatarFile) {
         const form = new FormData();
         form.append("nickname", editNickname);
         form.append("aboutMe", editAboutMe);
         form.append("isPrivate", editIsPrivate ? "true" : "false");
         form.append("avatar", avatarFile);
-
-        data = await fetchApi("/profile", {
-          method: "PUT",
-          body: form,
-        });
+        updateRes = await fetchApi("/profile", { method: "PUT", body: form });
       } else {
-        data = await fetchApi("/profile", {
+        updateRes = await fetchApi("/profile", {
           method: "PUT",
           body: JSON.stringify({
             nickname: editNickname,
@@ -105,231 +280,335 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
         });
       }
 
-      const updatedUser = data.user || data;
-      if (updatedUser) {
-        updateUser(updatedUser);
-        setProfile((prev) =>
-          prev
-            ? {
-                ...prev,
-                user: { ...prev.user, ...updatedUser },
-                isPrivate: typeof updatedUser.isPrivate === "boolean" ? updatedUser.isPrivate : prev.isPrivate,
-              }
-            : prev
-        );
-      }
-      showToast("Profile updated successfully", "success");
+      if (updateRes?.user) updateUser(updateRes.user);
+      showToast("Profile updated!", "success");
+      setAvatarFile(null);
+      setAvatarPreview(null);
+      await loadProfile();
     } catch (err: any) {
-      showToast(err.message || "Failed to update profile", "error");
+      showToast(err.message || "Failed to update", "error");
     } finally {
       setSaving(false);
     }
   };
 
+
   if (loading || loadingProfile) {
-    return <div style={{ textAlign: "center", padding: "50px", color: "white" }}>Loading Profile...</div>;
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner} />
+        <p>Loading profile...</p>
+      </div>
+    );
   }
 
-  if (!profile) {
-    return <div style={{ textAlign: "center", padding: "50px", color: "white" }}>Profile not found.</div>;
+  if (!profileRes) {
+    return <div className={styles.errorContainer}>Profile not found</div>;
   }
 
-  const displayUser = profile.user || user;
-  const defaultCover = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop";
-  const avatarSrc = resolveApiUrl(profile.user.avatar_url);
+  if (!profileRes.canView) {
+    const limitedUser = profileRes.profile?.user;
+    return (
+      <div className={styles.privateContainer}>
+        <img
+          src={resolveApiUrl(limitedUser?.avatarURL) || "/default-avatar.png"}
+          alt="avatar"
+          className={styles.avatar}
+        />
+        <h2 className={styles.name}>
+          {limitedUser?.firstname} {limitedUser?.lastname}
+        </h2>
+        <p className={styles.nickname}>@{limitedUser?.nickname}</p>
+        <div className={styles.privateBadge}>🔒 Private Account</div>
 
-  const posts = profile.posts || [];
+        {getFollowStatus() === "pending" ? (
+          <button className={styles.btnPending} disabled>
+            ⏳ Request Sent
+          </button>
+        ) : (
+          <button className={styles.btnFollow} onClick={handleFollow}>
+            Follow
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  
+  const profileData = profileRes.profile;
+  const displayUser = profileData?.user;
+  const avatarSrc =
+    avatarPreview ||
+    resolveApiUrl(displayUser?.avatarURL) ||
+    "/default-avatar.png";
+
+  const followStatus = getFollowStatus();
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto", paddingBottom: "40px" }}>
-      <div style={{ background: "var(--bg-card)", borderRadius: "var(--radius-lg)", overflow: "hidden", border: "1px solid #2f3336", marginBottom: "20px" }}>
-        <div style={{ height: "200px", width: "100%", backgroundImage: `url(${defaultCover})`, backgroundSize: "cover", backgroundPosition: "center" }}></div>
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.avatarWrapper}>
+          <img src={avatarSrc} alt="avatar" className={styles.avatar} />
+        </div>
 
-        <div style={{ padding: "0 20px 20px 20px", position: "relative" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "-50px", marginBottom: "15px" }}>
-            <img
-              src={avatarSrc}
-              alt="Avatar"
-              style={{ width: "120px", height: "120px", borderRadius: "50%", border: "4px solid var(--bg-card)", objectFit: "cover", backgroundColor: "var(--bg-card)" }}
-            />
-            {profile.myAccount && (
-              <button
-                onClick={() => setActiveTab("settings")}
-                style={{ padding: "8px 20px", borderRadius: "20px", background: "transparent", border: "1px solid var(--text-muted)", color: "var(--text-main)", cursor: "pointer", fontWeight: "bold" }}
-              >
-                Edit Profile
-              </button>
-            )}
+        <div className={styles.headerInfo}>
+          <h1 className={styles.name}>
+            {displayUser?.firstname} {displayUser?.lastname}
+          </h1>
+          <p className={styles.nickname}>@{displayUser?.nickname}</p>
+
+          <div className={styles.stats}>
+            <span>
+              <strong>{profileData?.postsCount || 0}</strong> Posts
+            </span>
           </div>
 
-          <div>
-            <h1 style={{ margin: "0 0 5px 0", fontSize: "1.8rem", color: "var(--color-primary)" }}>
-              {displayUser?.firstname} {displayUser?.lastname}
-            </h1>
-            <p style={{ margin: "0 0 15px 0", color: "var(--text-muted)", fontSize: "1rem" }}>
-              @{displayUser?.nickname || displayUser?.username}
-            </p>
-
-            <p style={{ color: "var(--text-main)", lineHeight: "1.5", marginBottom: "15px" }}>
-              {displayUser?.aboutMe || "No bio yet."}
-            </p>
-
-            <div style={{ display: "flex", gap: "20px", color: "var(--text-muted)", fontSize: "0.95rem" }}>
-              <span style={{ cursor: "pointer" }} onClick={() => setActiveTab("following")}>
-                <strong style={{ color: "var(--text-main)" }}>{profile.following || 0}</strong> Following
-              </span>
-              <span style={{ cursor: "pointer" }} onClick={() => setActiveTab("followers")}>
-                <strong style={{ color: "var(--text-main)" }}>{profile.followers || 0}</strong> Followers
-              </span>
-              <span>
-                <strong style={{ color: "var(--text-main)" }}>{profile.postsCount || posts.length}</strong> Posts
-              </span>
+          {/* ✅ Follow/Unfollow buttons */}
+          {!isMyProfile && (
+            <div className={styles.followActions}>
+              {followStatus === "following" && (
+                <button
+                  className={styles.btnUnfollow}
+                  onClick={handleUnfollow}
+                >
+                  Unfollow
+                </button>
+              )}
+              {followStatus === "pending" && (
+                <button className={styles.btnPending} disabled>
+                  ⏳ Request Sent
+                </button>
+              )}
+              {followStatus === "not-following" && (
+                <button className={styles.btnFollow} onClick={handleFollow}>
+                  Follow
+                </button>
+              )}
             </div>
-          </div>
+          )}
+
+          {displayUser?.aboutMe && (
+            <p className={styles.aboutMe}>{displayUser.aboutMe}</p>
+          )}
         </div>
       </div>
 
-      <div style={{ display: "flex", borderBottom: "1px solid #2f3336", marginBottom: "20px" }}>
-        {tabs.map((tab) => (
+      {/* Tabs */}
+      <div className={styles.tabs}>
+        {tabs.map((t) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab as any)}
-            style={{
-              flex: 1,
-              padding: "15px",
-              background: "transparent",
-              border: "none",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              cursor: "pointer",
-              color: activeTab === tab ? "var(--color-primary)" : "var(--text-muted)",
-              borderBottom: activeTab === tab ? "3px solid var(--color-primary)" : "3px solid transparent",
-              textTransform: "capitalize",
-              transition: "all 0.2s",
-            }}
+            key={t}
+            className={`${styles.tab} ${activeTab === t ? styles.activeTab : ""}`}
+            onClick={() => setActiveTab(t)}
           >
-            {tab}
+            {t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
 
-      <div>
+      {/* Tab Content */}
+      <div className={styles.tabContent}>
+        {/* Posts */}
         {activeTab === "posts" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-            {posts.length === 0 ? (
-              <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>No posts yet.</div>
-            ) : (
-              posts.map((post) => (
-                <div key={post.id} style={{ background: "var(--bg-card)", padding: "15px", borderRadius: "12px", border: "1px solid #2f3336" }}>
-                  <h3 style={{ color: "var(--text-main)", margin: "0 0 10px 0" }}>{post.title}</h3>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", marginBottom: "10px" }}>{post.content}</p>
+          <div className={styles.postsGrid}>
+            {profileData?.posts && profileData.posts.length > 0 ? (
+              profileData.posts.map((post) => (
+                <div key={post.id} className={styles.postCard}>
                   {post.image && (
                     <img
                       src={resolveApiUrl(post.image)}
                       alt={post.title}
-                      style={{ width: "100%", borderRadius: "10px", marginBottom: "10px", border: "1px solid #2f3336" }}
+                      className={styles.postImage}
                     />
                   )}
-                  <div style={{ display: "flex", justifyContent: "space-between", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: "12px" }}><span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><img src="/icons/like.svg" alt="Likes" width={18} height={18} style={{ display: "block" }} /> {post.likes} Likes</span><span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} /> {post.comments} Comments</span></span>
-                    <span>{post.date}</span>
+                  <div className={styles.postBody}>
+                    <h3 className={styles.postTitle}>{post.title}</h3>
+                    <p className={styles.postContent}>{post.content}</p>
+                    <div className={styles.postMeta}>
+                      <span>❤️ {post.likes}</span>
+                      <span>💬 {post.comments}</span>
+                      <span>{post.date}</span>
+                    </div>
                   </div>
                 </div>
               ))
+            ) : (
+              <p className={styles.emptyMsg}>No posts yet</p>
             )}
           </div>
         )}
 
+        {/* Followers */}
         {activeTab === "followers" && (
-          <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
-            Followers list is not available yet.
+          <div>
+            {/* Pending - my account only */}
+            {isMyProfile && pendingRequests.length > 0 && (
+              <div className={styles.pendingSection}>
+                <h3 className={styles.sectionTitle}>
+                  Pending Requests ({pendingRequests.length})
+                </h3>
+                {pendingRequests.map((u) => (
+                  <div key={u.id} className={styles.userCard}>
+                    <img
+                      src={resolveApiUrl(u.avatar) || "/default-avatar.png"}
+                      alt={u.firstname}
+                      className={styles.userAvatar}
+                    />
+                    <div className={styles.userInfo}>
+                      <span className={styles.userName}>
+                        {u.firstname} {u.lastname}
+                      </span>
+                      <span className={styles.userNickname}>
+                        @{u.nickname}
+                      </span>
+                    </div>
+                    <div className={styles.pendingActions}>
+                      <button
+                        className={styles.btnAccept}
+                        onClick={() => handleAccept(u.id)}
+                      >
+                        ✓ Accept
+                      </button>
+                      <button
+                        className={styles.btnDecline}
+                        onClick={() => handleDecline(u.id)}
+                      >
+                        ✗ Decline
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <h3 className={styles.sectionTitle}>Followers</h3>
+            {loadingFollow ? (
+              <div className={styles.spinner} />
+            ) : followers.length > 0 ? (
+              followers.map((u) => (
+                <div
+                  key={u.id}
+                  className={styles.userCard}
+                  onClick={() => router.push(`/profile/${u.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <img
+                    src={resolveApiUrl(u.avatar) || "/default-avatar.png"}
+                    alt={u.firstname}
+                    className={styles.userAvatar}
+                  />
+                  <div className={styles.userInfo}>
+                    <span className={styles.userName}>
+                      {u.firstname} {u.lastname}
+                    </span>
+                    <span className={styles.userNickname}>@{u.nickname}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className={styles.emptyMsg}>No followers yet</p>
+            )}
           </div>
         )}
 
+        {/* Following */}
         {activeTab === "following" && (
-          <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
-            Following list is not available yet.
+          <div>
+            <h3 className={styles.sectionTitle}>Following</h3>
+            {loadingFollow ? (
+              <div className={styles.spinner} />
+            ) : following.length > 0 ? (
+              following.map((u) => (
+                <div
+                  key={u.id}
+                  className={styles.userCard}
+                  onClick={() => router.push(`/profile/${u.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <img
+                    src={resolveApiUrl(u.avatar) || "/default-avatar.png"}
+                    alt={u.firstname}
+                    className={styles.userAvatar}
+                  />
+                  <div className={styles.userInfo}>
+                    <span className={styles.userName}>
+                      {u.firstname} {u.lastname}
+                    </span>
+                    <span className={styles.userNickname}>@{u.nickname}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className={styles.emptyMsg}>Not following anyone</p>
+            )}
           </div>
         )}
 
-        {activeTab === "settings" && profile.myAccount && (
-          <div style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "12px", border: "1px solid #2f3336" }}>
-            <h2 style={{ color: "var(--color-primary)", marginBottom: "20px" }}>Profile Settings</h2>
+        {/* Settings */}
+        {activeTab === "settings" && isMyProfile && (
+          <div className={styles.settingsForm}>
+            <h3 className={styles.sectionTitle}>Edit Profile</h3>
 
-            <div style={{ display: "grid", gap: "15px", marginBottom: "20px" }}>
-              <div className="form-group">
-                <label style={{ color: "var(--text-muted)", marginBottom: "5px", display: "block" }}>Nickname</label>
-                <input
-                  type="text"
-                  value={editNickname}
-                  onChange={(e) => setEditNickname(e.target.value)}
-                  placeholder="Your nickname"
-                  style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white" }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label style={{ color: "var(--text-muted)", marginBottom: "5px", display: "block" }}>About Me</label>
-                <textarea
-                  value={editAboutMe}
-                  onChange={(e) => setEditAboutMe(e.target.value)}
-                  placeholder="Tell people about yourself..."
-                  style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", minHeight: "80px", resize: "vertical" }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label style={{ color: "var(--text-muted)", marginBottom: "5px", display: "block" }}>Avatar</label>
+            <div className={styles.avatarUpload}>
+              <img
+                src={avatarSrc}
+                alt="avatar"
+                className={styles.avatarPreview}
+              />
+              <label className={styles.uploadLabel}>
+                Change Avatar
                 <input
                   type="file"
-                  accept="image/*"
-                  onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
-                  style={{ color: "var(--text-muted)" }}
+                  accept="image/jpeg,image/png,image/gif"
+                  onChange={handleAvatarChange}
+                  style={{ display: "none" }}
                 />
-              </div>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "15px", background: "#1a1d20", borderRadius: "8px", marginBottom: "20px", border: "1px solid #2f3336" }}>
-              <div>
-                <strong style={{ color: "#D4CFC1", display: "block", marginBottom: "5px" }}>Private Profile</strong>
-                <span style={{ color: "#8A8273", fontSize: "0.85rem" }}>When your profile is private, only followers can see your posts.</span>
-              </div>
-
-              <label style={{ position: "relative", display: "inline-block", width: "50px", height: "26px" }}>
-                <input type="checkbox" checked={editIsPrivate} onChange={() => setEditIsPrivate(!editIsPrivate)} style={{ opacity: 0, width: 0, height: 0 }} />
-                <span
-                  style={{
-                    position: "absolute",
-                    cursor: "pointer",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: editIsPrivate ? "var(--color-primary)" : "#3a3f44",
-                    borderRadius: "34px",
-                    transition: ".4s",
-                  }}
-                >
-                  <span
-                    style={{
-                      position: "absolute",
-                      height: "18px",
-                      width: "18px",
-                      left: editIsPrivate ? "28px" : "4px",
-                      bottom: "4px",
-                      backgroundColor: "white",
-                      borderRadius: "50%",
-                      transition: ".4s",
-                    }}
-                  ></span>
-                </span>
               </label>
             </div>
 
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Nickname</label>
+              <input
+                className={styles.formInput}
+                value={editNickname}
+                onChange={(e) => setEditNickname(e.target.value)}
+                placeholder="Your nickname"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>About Me</label>
+              <textarea
+                className={styles.formTextarea}
+                value={editAboutMe}
+                onChange={(e) => setEditAboutMe(e.target.value)}
+                placeholder="Tell us about yourself..."
+                rows={4}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.toggleLabel}>
+                <span>Private Account</span>
+                <div
+                  className={`${styles.toggle} ${editIsPrivate ? styles.toggleOn : ""}`}
+                  onClick={() => setEditIsPrivate(!editIsPrivate)}
+                >
+                  <div className={styles.toggleThumb} />
+                </div>
+              </label>
+              <p className={styles.formHint}>
+                {editIsPrivate
+                  ? "🔒 Only approved followers can see your profile"
+                  : "🌍 Everyone can see your profile"}
+              </p>
+            </div>
+
             <button
+              className={styles.btnSave}
               onClick={handleSave}
               disabled={saving}
-              style={{ background: "var(--color-primary)", color: "#000", border: "none", padding: "10px 20px", borderRadius: "8px", fontWeight: "bold", cursor: saving ? "not-allowed" : "pointer" }}
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>

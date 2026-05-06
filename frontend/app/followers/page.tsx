@@ -19,28 +19,49 @@ export default function FollowersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [endpoint,setEndPoint]=useState("discover");
+  // const [displayedUsers,setDisplayedUsers]=useState<User[]>([]);
   useEffect(() => {
-    fetchApi("/chat/users")
-      .then((data) => {
-        const raw: any[] = data.users || [];
-        setUsers(
-          raw.map((u) => ({
-            id: u.id,
-            name: u.nickname,
-            username: `@${u.nickname}`,
-            avatar: u.avatar_url || "",
-            bio: "",
-            isPrivate: false,
-            relationship: "none",
-          }))
-        );
-      })
-      .catch(() => setUsers([]))
-      .finally(() => setLoading(false));
-  }, []);
+   console.log("Fetching users for endpoint:", endpoint);
+      fetchApi(`/fetchUsers?action=${endpoint}`)
+        .then((data) => {
+          console.log("this is the data from backend------------", data);
+          const raw: any[] = data.followers || [];
+          setUsers(
+            raw.map((u) => ({
+              id: u.id,
+              name: u.firstname + " " + u.lastname,
+              username: `@${u.nickname}`,
+              avatar: u.avatar || "",
+              bio: u.aboutMe,
+              isPrivate: false,
+              relationship: u.relationship ,
+            }))
+          );
+        })
+        .catch(() => setUsers([]))
+        .finally(() => setLoading(false));
+  
+  }, [endpoint]);
 
-  const handleFollowAction = (userId: string, isPrivate: boolean, currentRel: string) => {
+  const handleFollowAction = async (userId: string, isPrivate: boolean, currentRel: string) => {
+  try {
+    fetch(`http://localhost:8080/followuserhome?following_id=${userId}`, {
+  method: "POST",
+  credentials: "include"
+
+
+    }).then(res => res.json())
+      .then(resData => {
+        // if (!resData.success) {
+        //   console.error("API error:", resData.message);
+        //   return;
+        // }
+        // console.log("Follow action response:", resData);
+        console.log('this is the data from followin unfollowing:',resData);
+        
+      })
+  }catch(err){console.error("Error in follow action:", err)}
     setUsers(users.map(user => {
       if (user.id === userId) {
         if (currentRel === "none") {
@@ -54,22 +75,7 @@ export default function FollowersPage() {
   };
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
-  const displayedUsers = users.filter(user => {
-    const matchTab =
-      activeTab === "discover"
-        ? user.relationship === "none" || user.relationship === "requested"
-        : activeTab === "followers"
-        ? user.relationship === "follower" || user.relationship === "mutual"
-        : activeTab === "following"
-        ? user.relationship === "following" || user.relationship === "mutual"
-        : true;
-
-    if (!matchTab) return false;
-    if (!normalizedSearch) return true;
-
-    const haystack = `${user.name} ${user.username} ${user.bio}`.toLowerCase();
-    return haystack.includes(normalizedSearch);
-  });
+  
 
   return (
     <div style={{ maxWidth: "800px", margin: "0 auto", paddingBottom: "40px" }}>
@@ -100,13 +106,13 @@ export default function FollowersPage() {
       </div>
 
       <div style={{ display: "flex", borderBottom: "1px solid #2f3336", marginBottom: "20px" }}>
-        <button onClick={() => setActiveTab("discover")} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "discover" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "discover" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
+        <button onClick={() => {setActiveTab("discover");setEndPoint("discover")}} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "discover" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "discover" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
           🌍 Discover Users
         </button>
-        <button onClick={() => setActiveTab("followers")} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "followers" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "followers" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
+        <button onClick={() => {setActiveTab("followers");setEndPoint("followers")}} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "followers" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "followers" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
           ⬇️ Followers
         </button>
-        <button onClick={() => setActiveTab("following")} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "following" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "following" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
+        <button onClick={() => {setActiveTab("following");setEndPoint("following")}} style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", color: activeTab === "following" ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === "following" ? "3px solid var(--color-primary)" : "3px solid transparent" }}>
           ⬆️ Following
         </button>
       </div>
@@ -115,7 +121,8 @@ export default function FollowersPage() {
         <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>Loading users...</div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-          {displayedUsers.length > 0 ? displayedUsers.map(u => (
+          {users.length > 0 ? users.map(u => (
+            console.log("Rendering user:", u),
             <div key={u.id} style={{ background: "var(--bg-card)", padding: "15px", borderRadius: "12px", border: "1px solid #2f3336", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
 
               <Link href={`/profile/${u.id}`} style={{ display: "flex", alignItems: "center", gap: "15px", textDecoration: "none" }}>
@@ -154,6 +161,7 @@ export default function FollowersPage() {
 
             </div>
           )) : (
+            console.log(users),
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
               No users found in this tab.
             </div>
