@@ -8,8 +8,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
+	"time"
 
 	"social/internal/app"
 	websockethandler "social/internal/handlers/websocket"
@@ -23,7 +23,6 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	var user models.User
-
 	contentType := req.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "multipart/form-data") {
 		if err := req.ParseMultipartForm(20 * 1024 * 1024); err != nil {
@@ -35,14 +34,13 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		user.Nickname = req.FormValue("nickname")
 		user.Firstname = req.FormValue("firstname")
 		user.Lastname = req.FormValue("lastname")
-		if ageStr := req.FormValue("age"); ageStr != "" {
-			if age, err := strconv.Atoi(ageStr); err == nil {
-				user.Age = age
-			}
-		}
+		user.DateOfBirth = req.FormValue("date")
+
 		user.Gender = req.FormValue("gender")
 		user.Email = req.FormValue("email")
 		user.Password = req.FormValue("password")
+		user.ConfirmPassword = req.FormValue("confirm_password")
+
 		user.AboutMe = req.FormValue("about")
 
 		// Handle avatar file upload
@@ -58,7 +56,23 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 			return
 		}
 	}
-
+	if user.Password != user.ConfirmPassword {
+		utils.HandleError(res, http.StatusBadRequest, "Passwords do not match")
+		return
+	}
+	if user.DateOfBirth != "" {
+		age, err := CalculateAge(user.DateOfBirth)
+		if err != nil {
+			utils.HandleError(res, http.StatusBadRequest, "Invalid date format")
+			log.Printf("Error calculating age: %v", err)
+			return
+		}
+		user.Age = age
+		if age < 18 || age > 100 {
+			utils.HandleError(res, http.StatusBadRequest, "Age must be between 18 and 100")
+			return
+		}
+	}
 	if err := validateSignUpInput(&user); err != nil {
 		utils.HandleError(res, http.StatusBadRequest, err.Error())
 		return
@@ -66,7 +80,8 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
-		utils.HandleError(res, http.StatusInternalServerError, "Error hashing password")
+		utils.HandleError(res, http.StatusInternalServerError, "samething went wrong")
+		log.Printf("Error hashing password: %v", err)
 		return
 	}
 	user.Password = hashedPassword
@@ -84,6 +99,8 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	err = app.SessionRepo.NewSessionToken(res, user.ID)
 	if err != nil {
 		fmt.Println("Error making session token")
+		utils.HandleError(res, http.StatusInternalServerError, "something went wrong")
+		return
 	}
 
 	notification := models.Notification{
@@ -240,8 +257,8 @@ func validateSignUpInput(user *models.User) error {
 	if !emailRegex.MatchString(user.Email) {
 		return errors.New("invalid email format")
 	}
-	if !NicknameRegex.MatchString(user.Nickname) {
-		return errors.New("invalid nickname format ")
+	if len(user.Nickname) > 0 && !NicknameRegex.MatchString(user.Nickname) {
+		return errors.New("invalid nickname format must be 3-20 characters containing letters, numbers, underscores or hyphens")
 	}
 	if !nameRegex.MatchString(user.Firstname) {
 		return errors.New("invalid first name format must contain only letters")
@@ -251,7 +268,7 @@ func validateSignUpInput(user *models.User) error {
 	}
 	user.Nickname = html.EscapeString(user.Nickname)
 	user.Email = html.EscapeString(user.Email)
-	user.Password = html.EscapeString(user.Password)
+	user.AboutMe = html.EscapeString(user.AboutMe)
 	return nil
 }
 
@@ -260,4 +277,23 @@ func validateSignInInput(login models.UserSignIn) error {
 		return ErrMissingRequiredFields
 	}
 	return nil
+}
+
+func CalculateAge(dateStr string) (int, error) {
+	layout := "2006-01-02"
+	birthdate, err := time.Parse(layout, dateStr)
+	if err != nil {
+		return 0, errors.New("invalid date format")
+	}
+
+	now := time.Now()
+
+	age := now.Year() - birthdate.Year()
+
+	if now.Month() < birthdate.Month() ||
+		(now.Month() == birthdate.Month() && now.Day() < birthdate.Day()) {
+		age--
+	}
+
+	return age, nil
 }

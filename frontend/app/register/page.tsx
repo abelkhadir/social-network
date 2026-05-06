@@ -13,7 +13,7 @@ export default function RegisterPage() {
     firstname: "",
     lastname: "",
     nickname: "",
-    age: "",
+    date: "",
     email: "",
     password: "",
     confirmpassword: "",
@@ -47,9 +47,10 @@ export default function RegisterPage() {
         firstname: formData.firstname,
         lastname: formData.lastname,
         nickname: formData.nickname,
-        age: Number(formData.age),
+        date: formData.date.toString(),
         email: formData.email,
         password: formData.password,
+        confirmpassword: formData.confirmpassword,
         gender: formData.gender,
         about: formData.about,
         avatar: formData.avatar,
@@ -98,8 +99,8 @@ export default function RegisterPage() {
                 <input type="text" id="nickname" name="nickname" value={formData.nickname} onChange={handleChange} placeholder="CoolUser99" />
               </div>
               <div className="form-group">
-                <label htmlFor="age">Age</label>
-                <input type="number" id="age" name="age" value={formData.age} onChange={handleChange} placeholder="25" min="12" max="100" required />
+                <label htmlFor="date">Date of Birth</label>
+                <input type="date" id="date" name="date" value={formData.date} onChange={handleChange} />
               </div>
             </div>
             
