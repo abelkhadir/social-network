@@ -7,7 +7,6 @@ import (
 
 	"social/internal/app"
 	"social/internal/repositories/profile"
-	"social/pkg/middleware"
 )
 
 type FollowHandler struct {
@@ -18,50 +17,33 @@ func NewFollowHandler(repo *profile.ProfileRepository) *FollowHandler {
 	return &FollowHandler{repo: repo}
 }
 
-func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("------------------------------------------")
-
-
-	UserID := r.Context().Value(middleware.UserIDKey).(string)
-
+func (h *FollowHandler) FollowUser(a *app.Application, w http.ResponseWriter, r *http.Request) {
+	user, err := a.SessionRepo.GetUserFromSession(r)
+	if err != nil{
+		fmt.Println("err from follow user handelr:-------------------------",err)
+		return 
+	}
 	followerID := r.URL.Query().Get("followerId")
-
-	fmt.Println("//////////////////////////////////",UserID)
-
-	fmt.Println("this is the followerID:", followerID)
-	err := h.repo.FollowUser(followerID)
+	fmt.Println("follwerId:",followerID,"followingId:",user.ID)
+	err = h.repo.FollowUser(user.ID,followerID)
 	fmt.Println(err)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "followed",
 	})
 }
 
-func (h *FollowHandler) UnfollowUserHandler(w http.ResponseWriter, r *http.Request) {
-	followerID := r.URL.Query().Get("follower_id")
-	followingID := r.URL.Query().Get("following_id")
-
-	err := h.repo.UnfollowUser(followerID, followingID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "unfollowed",
-	})
-}
 
 func (h *FollowHandler) GetContactHandler(application *app.Application, w http.ResponseWriter, r *http.Request) {
 	action := r.URL.Query().Get("action")
-	fmt.Println(action)
 	user, err := application.SessionRepo.GetUserFromSession(r)
 	if err != nil {
+		fmt.Println("get user inf err:", err)
+		return
 		//
 	}
 	data, errorr := h.repo.GetUserFollowersRepo(action, user.ID)

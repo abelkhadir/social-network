@@ -211,8 +211,10 @@ func SetupRoutes(a *app.Application) {
 	}))
 
 	// follow
-	http.Handle("/follow", middleware.AuthMiddleware(a.DB,http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			profile.NewFollowHandler(a.ProfileRepo).FollowUser(w,r)})))
+	http.Handle("/follow", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			profile.NewFollowHandler(a.ProfileRepo).FollowUser(a,w,r)}))
+
+
 		http.Handle("/fetchUsers", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			profile.NewFollowHandler(a.ProfileRepo).GetContactHandler(a,w,r)
 		}))

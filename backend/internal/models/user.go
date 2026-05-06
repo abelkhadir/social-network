@@ -13,6 +13,7 @@ type User struct {
 	Avatar    string `json:"avatar,omitempty"`
 	AboutMe   string `json:"aboutMe"`
 	IsPrivate int    `json:"isPrivate"`
+	Relationship string `json:"relationship"`
 }
 
 type UserSignIn struct {

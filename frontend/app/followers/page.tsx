@@ -20,22 +20,22 @@ export default function FollowersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [endpoint,setEndPoint]=useState("discover");
-  const [displayedUsers,setDisplayedUsers]=useState<User[]>([]);
+  // const [displayedUsers,setDisplayedUsers]=useState<User[]>([]);
   useEffect(() => {
    console.log("Fetching users for endpoint:", endpoint);
       fetchApi(`/fetchUsers?action=${endpoint}`)
         .then((data) => {
-          console.log("Raw API response:", data);
+          console.log("this is the data from backend------------", data);
           const raw: any[] = data.followers || [];
           setUsers(
             raw.map((u) => ({
               id: u.id,
-              name: u.nickname,
+              name: u.firstname + " " + u.lastname,
               username: `@${u.nickname}`,
-              avatar: u.avatar_url || "",
-              bio: "",
+              avatar: u.avatar || "",
+              bio: u.aboutMe,
               isPrivate: false,
-              relationship: "none",
+              relationship: u.relationship ,
             }))
           );
         })
@@ -45,33 +45,32 @@ export default function FollowersPage() {
   }, [endpoint]);
 
   const handleFollowAction = async (userId: string, isPrivate: boolean, currentRel: string) => {
-
   try {
-    const data = await fetch(`http://localhost:8080/follow?action=${currentRel}&followerId=${userId}`, {
+    fetch(`http://localhost:8080/follow?action=${currentRel}&followerId=${userId}`, {
       method: "POST",
-    })
-    console.log('data',data);
-    
-    // .then(res => res.json())
-    //   .then(resData => {
-    //     if (!resData.success) {
-    //       console.error("API error:", resData.message);
-    //       return;
-    //     }
-    //     console.log("Follow action response:", resData);
-    //   })
-      // .catch(e => console.error("Network error in follow action:", e));
+      credentials: "include"
+
+    }).then(res => res.json())
+      .then(resData => {
+        // if (!resData.success) {
+        //   console.error("API error:", resData.message);
+        //   return;
+        // }
+        // console.log("Follow action response:", resData);
+        console.log('this is the data from followin unfollowing:',resData);
+        
+      })
   }catch(err){console.error("Error in follow action:", err)}
-    // setUsers(users.map(user => {
-    //   if (user.id === userId) {
-    //     if (currentRel === "none") {
-    //       return { ...user, relationship: isPrivate ? "requested" : "following" };
-    //     } else if (currentRel === "following" || currentRel === "mutual" || currentRel === "requested") {
-    //       return { ...user, relationship: "none" };
-    //     }
-    //   }
-    //   return user;
-    // }));
+    setUsers(users.map(user => {
+      if (user.id === userId) {
+        if (currentRel === "none") {
+          return { ...user, relationship: isPrivate ? "requested" : "following" };
+        } else if (currentRel === "following" || currentRel === "mutual" || currentRel === "requested") {
+          return { ...user, relationship: "none" };
+        }
+      }
+      return user;
+    }));
   };
 
   const normalizedSearch = searchTerm.trim().toLowerCase();

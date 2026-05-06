@@ -42,62 +42,71 @@ func (r *ProfileRepository) GetUserFollowersRepo(action string, userID string) (
 		WHERE f.follower_id = ?
 		AND f.status = 'accepted';
 		`
-		case "discover":
-	query = `
+	case "discover":
+		query = `
 	SELECT 
-		u.id,
-		u.firstname,
-		u.lastname,
-		u.nickname,
-		u.avatarURL
-	FROM user u
-	WHERE u.id != ?
-	AND u.id NOT IN (
-		SELECT following_id 
-		FROM followers 
-		WHERE follower_id = ? 
-		AND status = 'accepted'
+	u.id,
+	u.firstname,
+	u.lastname,
+	u.nickname,
+	u.avatarURL,
+	u.is_private,
 
-		UNION
+	CASE 
+		WHEN f1.status = 'accepted' AND f2.status = 'accepted' THEN 'mutual'
+		WHEN f1.status = 'accepted' THEN 'following'
+		WHEN f1.status = 'pending' THEN 'requested'
+		WHEN f2.status = 'accepted' THEN 'follower'
+		ELSE 'none'
+	END AS relationship
 
-		SELECT follower_id 
-		FROM followers 
-		WHERE following_id = ? 
-		AND status = 'accepted'
-	);
+FROM user u
+
+-- You → them
+LEFT JOIN followers f1 
+	ON f1.following_id = u.id 
+	AND f1.follower_id = ?
+
+-- Them → you
+LEFT JOIN followers f2 
+	ON f2.follower_id = u.id 
+	AND f2.following_id = ?
+
+WHERE u.id != ?;
 	`
-	rows, err = r.db.Query(query, userID,userID,userID)
-	if err != nil {
-			fmt.Println("1",err)
+		rows, err = r.db.Query(query, userID, userID, userID)
+		if err != nil {
+			fmt.Println("1", err)
 
-		return nil, models.FollowerError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
+			return nil, models.FollowerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			}
 		}
-	}
-	defer rows.Close()
+		defer rows.Close()
 
-	flag=true
+		flag = true
 	default:
+		fmt.Println("saaaaaaaaaaaaaa march m3leeeeeeeeeeem")
 		return nil, models.FollowerError{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid action (must be followers or following)",
+			Message: "Invalid action (must be followers or following ,discover)",
 		}
 	}
 
-if !flag{
-	rows, err = r.db.Query(query, userID)
-	if err != nil {
-			fmt.Println("1",err)
+	if !flag {
+		rows, err = r.db.Query(query, userID)
+		if err != nil {
+			fmt.Println("1", err)
 
-		return nil, models.FollowerError{
-			Code:    http.StatusInternalServerError,
-			Message: "Internal server error",
+			return nil, models.FollowerError{
+				Code:    http.StatusInternalServerError,
+				Message: "Internal server error",
+			}
 		}
-	}
-	defer rows.Close()
+		defer rows.Close()
 
-}
+	}
 
 	result := &models.Followers{
 		Followers: []models.User{},
@@ -108,15 +117,27 @@ if !flag{
 		var user models.User
 		var nickname sql.NullString
 		var avatar sql.NullString
-
-		err := rows.Scan(
+		var err error
+		if action == "discover"{
+			err = rows.Scan(
+			&user.ID,
+			&user.Firstname,
+			&user.Lastname,
+			&nickname,
+			&avatar,
+			&user.IsPrivate,
+			&user.Relationship,
+		)
+		}else{
+			err = rows.Scan(
 			&user.ID,
 			&user.Firstname,
 			&user.Lastname,
 			&nickname,
 			&avatar,
 		)
-
+		}
+		
 		if err != nil {
 			fmt.Println("2")
 			return nil, models.FollowerError{
@@ -137,6 +158,7 @@ if !flag{
 
 		result.Followers = append(result.Followers, user)
 	}
+	// fmt.Println("*****************************************",result.Followers)
 	return result, models.FollowerError{
 		Code:    http.StatusOK,
 		Message: "successfully fetched users",

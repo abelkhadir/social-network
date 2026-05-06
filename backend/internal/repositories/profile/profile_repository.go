@@ -1,23 +1,37 @@
 package profile
 
-func (r *ProfileRepository) FollowUser(followerID string) error {
+func (r *ProfileRepository) FollowUser(followerID string, followingID string) error {
+	var exists int
+	err := r.db.QueryRow(`
+		SELECT 1 FROM followers 
+		WHERE follower_id = ? AND following_id = ?
+	`, followerID, followingID).Scan(&exists)
 
-	query := `
-	INSERT INTO followers (follower_id, following_id, status)
-	VALUES (?, ?, 'pending')
-	`
+	if err == nil {
+		_, err = r.db.Exec(`
+			DELETE FROM followers 
+			WHERE follower_id = ? AND following_id = ?
+		`, followerID, followingID)
+		return err
+	}
 
-	_, err := r.db.Exec(query, followerID,"jawad")
-	return err
-}
+	var isPrivate int
+	err = r.db.QueryRow(`
+		SELECT is_private FROM user WHERE id = ?
+	`, followingID).Scan(&isPrivate)
+	if err != nil {
+		return err
+	}
 
-func (r *ProfileRepository) UnfollowUser(followerID, followingID string) error {
+	status := "accepted"
+	if isPrivate == 1 {
+		status = "pending"
+	}
 
-	query := `
-	DELETE FROM followers
-	WHERE follower_id = ? AND following_id = ?
-	`
+	_, err = r.db.Exec(`
+		INSERT INTO followers (follower_id, following_id, status)
+		VALUES (?, ?, ?)
+	`, followerID, followingID, status)
 
-	_, err := r.db.Exec(query, followerID, followingID)
 	return err
 }
