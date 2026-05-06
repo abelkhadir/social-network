@@ -440,6 +440,8 @@ export default function SingleGroupPage() {
             <input
               type="datetime-local"
               value={eventForm.eventDate}
+              min="1900-01-01T00:00"
+              max="9999-12-31T23:59"
               onChange={(e) => setEventForm((prev) => ({ ...prev, eventDate: e.target.value }))}
               style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", marginBottom: "12px" }}
             />

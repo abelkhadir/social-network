@@ -2,7 +2,6 @@ package groupsrepos
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -305,6 +304,9 @@ func (r *GroupRepository) GetGroupNotifs(requestedID int) ([]*models.GroupReques
 
 func (r *GroupRepository) IsMember(GrpID string, sessionID string) (bool, error) {
 	var exists bool
+	fmt.Println(sessionID)
+
+	fmt.Println(GrpID)
 
 	query := `
 		SELECT EXISTS(
@@ -319,9 +321,10 @@ func (r *GroupRepository) IsMember(GrpID string, sessionID string) (bool, error)
 		return exists, err
 	}
 
-	if !exists {
-		return exists, errors.New("Want to join? Send a request to the admin!")
-	}
+	//if !exists {
+	//	fmt.Println(exists)
+	//	return exists, errors.New("Want to join? Send a request to the admin!")
+	//}
 
 	return exists, nil
 }

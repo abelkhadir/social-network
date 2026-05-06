@@ -127,6 +127,7 @@ func JoinGroupRequestHandler(app *app.Application, w http.ResponseWriter, r *htt
 	}
 
 	exists, err := app.GroupPostRepo.IsMember(body.GroupID, userID)
+	fmt.Println(err, exists)
 	if err != nil || exists {
 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": "Already member"})
 		return

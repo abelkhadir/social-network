@@ -95,11 +95,6 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
                 </span>
               )}
             </button>
-            <div style={{ flexBasis: "100%", height: "0" }} />
-            <button type="button" onClick={() => toggleNotif?.()} style={{ color: "var(--text-muted)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.85rem", border: "1px solid #3a3f44", cursor: "pointer", transition: "0.2s", display: "inline-flex", alignItems: "center", gap: "8px", lineHeight: 1, textDecoration: "none", background: "transparent" }} onMouseOver={(e) => { e.currentTarget.style.color = "var(--color-primary)"; e.currentTarget.style.borderColor = "var(--color-primary)"; }} onMouseOut={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "#3a3f44"; }}>
-              <img src="/icons/notifications.svg" alt="Notifications" width={18} height={18} style={{ display: "block" }} />
-              Notifications
-            </button>
           </div>
         </div>
       </aside>
@@ -126,6 +121,7 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
               const isConnected = u.IsConnected ?? u.is_connected ?? false;
               const count = unreadByUser[userID] || 0;
               const lastMessage = lastMessages[userID];
+              const name = u.nickname;
 
               return (
                 <Link href={`/chat/${userID}`} key={userID} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--bg-card)", borderRadius: "8px", alignItems: "center", border: "1px solid var(--border-default)", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "var(--border-default)"} onClick={() => void markThreadRead(userID)}>
@@ -136,7 +132,7 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: "bold", color: "var(--text-main)" }}>{u.Nickname || u.username}</div>
                     <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                      {lastMessage?.text ? lastMessage.text : isConnected ? "Online" : "Offline"}
+                      {name}
                     </div>
                   </div>
                   {count > 0 && <div style={{ backgroundColor: "#e63946", color: "white", fontSize: "0.75rem", borderRadius: "50%", padding: "2px 6px", fontWeight: "bold" }}>{count}</div>}

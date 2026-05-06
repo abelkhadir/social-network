@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { resolveApiUrl } from "@/lib/api";
 
 
@@ -26,6 +27,7 @@ export default function Header({ toggleChat, isChatMode, isNotifOpen = false, to
   const notifDropdownRef = useRef<HTMLDivElement>(null);
 
   const { notifications, unreadCount, loading: notifLoading, refresh, markAllRead, markRead } = useNotifications();
+  const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -125,6 +127,9 @@ export default function Header({ toggleChat, isChatMode, isNotifOpen = false, to
                         onMouseOut={(e) => e.currentTarget.style.background = notif.is_read ? "transparent" : "rgba(255, 123, 0, 0.08)"}
                         onClick={() => {
                           if (!notif.is_read) markRead(notif.id);
+                          if ((notif.type === "group_join_request" || notif.type === "group_request_accepted") && notif.entity_id) {
+                            router.push(`/groups/${notif.entity_id}`);
+                          }
                         }}>
                         <p style={{ margin: "0 0 5px 0", fontSize: "0.95rem", color: "var(--text-main)", lineHeight: "1.4" }}>
                           {notif.content}

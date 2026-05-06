@@ -1,9 +1,4 @@
-images in comments
 responsivity
-test notifications
-handle real-time cases
-events dates - better frontend - harden backend
-
-followers + following
-
+following private accounts sends request only
 make private profiles only visible to accepted followers
+network search 

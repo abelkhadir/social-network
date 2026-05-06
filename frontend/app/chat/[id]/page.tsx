@@ -151,7 +151,7 @@ export default function ChatPage() {
             const timeString = new Date( msg.createDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return (
-              <div key={idx} style={{ maxWidth: "70%", padding: "10px 15px", borderRadius: "15px", marginBottom: "10px", display: "flex", flexDirection: "column", alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "var(--color-primary-dark)" : "#343a40", color: isMe ? "white" : "var(--text-main)", borderBottomRightRadius: isMe ? "4px" : "15px", borderBottomLeftRadius: isMe ? "15px" : "4px" }}>
+              <div key={idx} style={{ maxWidth: "70%", padding: "10px 15px", borderRadius: "15px", marginBottom: "10px", display: "flex", flexDirection: "column", alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "var(--color-primary-dark)" : "#343a40", color: "white", borderBottomRightRadius: isMe ? "4px" : "15px", borderBottomLeftRadius: isMe ? "15px" : "4px" }}>
                 <span style={{ fontSize: "0.95rem", lineHeight: 1.4, wordWrap: "break-word" }}>{msg.text || msg.Text || ""}</span>
                 <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", alignSelf: "flex-end", marginTop: "5px" }}>{timeString}</span>
               </div>
@@ -183,7 +183,7 @@ export default function ChatPage() {
             required 
             value={text}
             onChange={handleInput}
-            style={{ flexGrow: 1, padding: "12px 15px", borderRadius: "25px", border: "none", background: "var(--color-input-bg)", color: "#fff", fontSize: "1rem", outline: "none" }}
+            style={{ flexGrow: 1, padding: "12px 5px", borderRadius: "25px", border: "none", background: "var(--color-input-bg)", color: "#fff", fontSize: "1rem", outline: "none" }}
           />
           <button type="submit" style={{ background: "var(--color-primary-blue)", color: "#000", border: "none", borderRadius: "50%", width: "45px", height: "45px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "white" }}>

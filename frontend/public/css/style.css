@@ -274,7 +274,7 @@ header {
 .form-group label {
     display: block;
     font-size: 0.95rem;
-    color: var(--text-muted);
+    color: #e2e3e4;
     margin-bottom: 0.5rem;
 }
 
