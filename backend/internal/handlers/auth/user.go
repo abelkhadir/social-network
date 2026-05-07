@@ -39,7 +39,7 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		user.Gender = req.FormValue("gender")
 		user.Email = req.FormValue("email")
 		user.Password = req.FormValue("password")
-		user.ConfirmPassword = req.FormValue("confirm_password")
+		user.ConfirmPassword = req.FormValue("confirmpassword")
 
 		user.AboutMe = req.FormValue("about")
 

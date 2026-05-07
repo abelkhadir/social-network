@@ -6,3 +6,26 @@ chaat doesn't go down when same one sends messages
 follow cancel  dommend  
 notification 
 the normal chat should be just with the followers 
+
+---->
+After a user is logged in he/she can create posts and comments on already created posts. While creating a post or a comment, the user can include an image or GIF.
+
+The user must be able to specify the privacy of the post:
+
+public (all users in the social network will be able to see the post)
+
+almost private (only followers of the creator of the post will be able to see the post)
+
+private (only the followers chosen by the creator of the post will be able to see it)
+--->
+
+
+
+
+unfollow  request doesn't go to the notification >
+
+see just the followed users in chat
+
+handle  image in group when it is  emty 
+
+error page 

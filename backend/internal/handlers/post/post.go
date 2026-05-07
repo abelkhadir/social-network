@@ -194,9 +194,12 @@ func GetAllPosts(application *app.Application, res http.ResponseWriter, req *htt
 	}
 }
 
-func validatePostInput(post *models.PostCreation) error {
-	if post.Title == "" || post.Description == "" {
-		return errors.New("ErrMissingRequiredFields")
+func validatePostInput(post *models.PostCreation) error {	
+	if post.Title == "" || post.Description == ""  {
+		return errors.New("the title or Description shouldn't be emty ")
+	}
+	if len(post.Title) >= 500 || len(post.Description) >= 500 {
+	return errors.New("you have entere a  long Title or Description ")
 	}
 	post.Title = html.EscapeString(post.Title)
 	post.Description = html.EscapeString(post.Description)
