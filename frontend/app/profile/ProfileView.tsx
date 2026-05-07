@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { fetchApi, resolveApiUrl } from "@/lib/api";
@@ -64,6 +64,7 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
   const { user, loading, updateUser } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [profileRes, setProfileRes] = useState<ProfileResponse | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -97,6 +98,20 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
       loadProfile();
     }
   }, [loading, user, profileId]);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+    if (!requestedTab) return;
+
+    const nextTab = requestedTab as TabType;
+    const allowedTabs: TabType[] = isMyProfile
+      ? ["posts", "followers", "following", "settings"]
+      : ["posts", "followers", "following"];
+
+    if (allowedTabs.includes(nextTab)) {
+      setActiveTab(nextTab);
+    }
+  }, [isMyProfile, searchParams]);
 
   const loadProfile = async () => {
     console.log("🔄 LOADING PROFILE...");

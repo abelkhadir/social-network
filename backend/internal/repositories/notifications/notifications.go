@@ -106,7 +106,7 @@ func (nr *NotificationRepository) MarkAllRead(userID string) error {
 }
 
 func (nr *NotificationRepository) MarkRead(userID, notificationID string) error {
-	_, err := nr.db.Exec(`UPDATE notification SET is_read = 1 WHERE user_id = ? AND id = ?`, userID, notificationID)
+	_, err := nr.db.Exec(`DELETE FROM notification WHERE user_id = ? AND id = ?`, userID, notificationID)
 	return err
 }
 
@@ -145,8 +145,7 @@ func (nr *NotificationRepository) ListUnreadMessageCounts(userID string) ([]mode
 
 func (nr *NotificationRepository) MarkMessageThreadRead(userID, actorID string) error {
 	_, err := nr.db.Exec(`
-		UPDATE notification
-		SET is_read = 1
+		DELETE FROM notification
 		WHERE user_id = ?
 		  AND type = 'message'
 		  AND actor_id = ?
@@ -189,8 +188,7 @@ func (nr *NotificationRepository) ListUnreadGroupMessageCounts(userID string) ([
 
 func (nr *NotificationRepository) MarkGroupThreadRead(userID, groupID string) error {
 	_, err := nr.db.Exec(`
-		UPDATE notification
-		SET is_read = 1
+		DELETE FROM notification
 		WHERE user_id = ?
 		  AND type = 'group_message'
 		  AND entity_id = ?

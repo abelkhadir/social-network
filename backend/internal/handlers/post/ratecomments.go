@@ -75,7 +75,7 @@ func RateCommentHandler(application *app.Application, res http.ResponseWriter, r
 				UserID:     comment.AuthorID,
 				ActorID:    userInSession.ID,
 				Type:       "like",
-				EntityID:   commentID,
+				EntityID:   comment.PostID,
 				EntityType: "comment",
 				Content:    userInSession.Nickname + " liked your comment.",
 			}

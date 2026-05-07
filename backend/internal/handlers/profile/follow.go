@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"social/internal/app"
+	websockethandler "social/internal/handlers/websocket"
+	"social/internal/models"
 	"social/pkg/utils"
 )
 
@@ -55,12 +57,27 @@ func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	actorName := viewer.ID
+	if viewer.Nickname != "" {
+		actorName = viewer.Nickname
+	}
+
 	if !targetProfile.IsPrivate {
 		err = h.app.ProfileRepo.AcceptFollow(followerID, followingID)
 		if err != nil {
 			utils.HandleError(w, http.StatusInternalServerError, "Failed to accept follow")
 			return
 		}
+
+		notification := models.Notification{
+			UserID:     followingID,
+			ActorID:    followerID,
+			Type:       "follow",
+			EntityID:   followerID,
+			EntityType: "user",
+			Content:    actorName + " started following you",
+		}
+		_ = websockethandler.PushNotification(h.app, &notification, true)
 
 		utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 			"message":   "followed successfully",
@@ -69,7 +86,16 @@ func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-		
+
+	notification := models.Notification{
+		UserID:     followingID,
+		ActorID:    followerID,
+		Type:       "follow_request",
+		EntityID:   followerID,
+		EntityType: "user",
+		Content:    actorName + " requested to follow you",
+	}
+	_ = websockethandler.PushNotification(h.app, &notification, true)
 
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 		"message":   "follow request sent",
@@ -134,6 +160,21 @@ func (h *FollowHandler) AcceptFollow(w http.ResponseWriter, r *http.Request) {
 		utils.HandleError(w, http.StatusInternalServerError, "Failed to accept follow request")
 		return
 	}
+
+	actorName := viewer.ID
+	if viewer.Nickname != "" {
+		actorName = viewer.Nickname
+	}
+
+	notification := models.Notification{
+		UserID:     followerID,
+		ActorID:    followingID,
+		Type:       "follow_accept",
+		EntityID:   followingID,
+		EntityType: "user",
+		Content:    actorName + " accepted your follow request",
+	}
+	_ = websockethandler.PushNotification(h.app, &notification, true)
 
 	utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 		"message": "follow request accepted",

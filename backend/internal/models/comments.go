@@ -15,6 +15,7 @@ type CommentItem struct {
 	ID             string `json:"id"`
 	Text           string `json:"text"`
 	AuthorID       string `json:"authorID"`
+	PostID         string `json:"postID"`
 	AuthorName     string `json:"authorName"`
 	AuthorAvatar   string `json:"authorAvatar"`
 	LastCreateDate string `json:"lastCreateDate"`

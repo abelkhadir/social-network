@@ -52,7 +52,7 @@ func (cr *CommentRepository) GetCommentByID(id string) (models.CommentItem, erro
 	fmt.Println("el 9aaaamar zaaarna ")
 	row := cr.db.QueryRow(`
 		SELECT 
-			c.id, c.text, c.authorID, c.createDate, u.nickname, u.avatarURL,
+			c.id, c.text, c.authorID, c.postID, c.createDate, u.nickname, u.avatarURL,
 			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 1) AS likes,
 			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 0) AS dislikes
 		FROM comment c 
@@ -61,6 +61,7 @@ func (cr *CommentRepository) GetCommentByID(id string) (models.CommentItem, erro
 	err := row.Scan(&comment.ID,
 		&comment.Text,
 		&comment.AuthorID,
+		&comment.PostID,
 		&comment.LastCreateDate,
 		&comment.AuthorName,
 		&comment.AuthorAvatar,

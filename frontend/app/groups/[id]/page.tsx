@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useChatNotifications } from "@/context/ChatNotificationContext";
 import { useToast } from "@/context/ToastContext";
 import { resolveApiUrl } from "@/lib/api";
@@ -48,6 +48,7 @@ function displayName(user: GroupMember | GroupDetails["author"]) {
 
 export default function SingleGroupPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const { unreadByGroup, markGroupRead } = useChatNotifications();
   const { user } = useAuth();
@@ -112,6 +113,24 @@ export default function SingleGroupPage() {
   useEffect(() => {
     loadGroupPage();
   }, [id]);
+
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+    if (!requestedTab) return;
+
+    const nextTab = requestedTab as GroupTab;
+    const allowedTabs: GroupTab[] = [
+      "feed",
+      "events",
+      "members",
+      "chat",
+      ...(isOwner ? ["pending"] : []),
+    ];
+
+    if (allowedTabs.includes(nextTab)) {
+      setActiveTab(nextTab);
+    }
+  }, [isOwner, searchParams]);
 
   useEffect(() => {
     if (!id || activeTab !== "chat") return;

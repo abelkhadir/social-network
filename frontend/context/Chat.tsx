@@ -13,7 +13,7 @@ interface GroupChatProps {
 export default function GroupChat({ groupId }: GroupChatProps) {
   const { user } = useAuth();
   const { socket, latestMessage } = useSocket();
-  const { markGroupRead } = useChatNotifications();
+  const { markGroupRead, setActiveGroupChat } = useChatNotifications();
 
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
@@ -29,6 +29,15 @@ export default function GroupChat({ groupId }: GroupChatProps) {
 
     void markGroupRead(groupId);
   }, [groupId, markGroupRead]);
+
+  useEffect(() => {
+    if (!groupId) return;
+
+    setActiveGroupChat(groupId);
+    return () => {
+      setActiveGroupChat(null);
+    };
+  }, [groupId, setActiveGroupChat]);
 
   useEffect(() => {
     if (!latestMessage) return;

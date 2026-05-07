@@ -7,6 +7,7 @@ import { timeAgo } from "@/lib/time";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { resolveApiUrl } from "@/lib/api";
+import { getNotificationHref } from "@/lib/notifications";
 
 
 interface HeaderProps {
@@ -126,9 +127,10 @@ export default function Header({ toggleChat, isChatMode, isNotifOpen = false, to
                         onMouseOver={(e) => e.currentTarget.style.background = "#2a2e33"}
                         onMouseOut={(e) => e.currentTarget.style.background = notif.is_read ? "transparent" : "rgba(255, 123, 0, 0.08)"}
                         onClick={() => {
-                          if (!notif.is_read) markRead(notif.id);
-                          if ((notif.type === "group_join_request" || notif.type === "group_request_accepted") && notif.entity_id) {
-                            router.push(`/groups/${notif.entity_id}`);
+                          void markRead(notif.id);
+                          const href = getNotificationHref(notif);
+                          if (href) {
+                            router.push(href);
                           }
                         }}>
                         <p style={{ margin: "0 0 5px 0", fontSize: "0.95rem", color: "var(--text-main)", lineHeight: "1.4" }}>

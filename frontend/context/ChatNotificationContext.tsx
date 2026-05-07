@@ -22,6 +22,7 @@ interface ChatNotificationContextType {
   totalGroupUnread: number;
   markThreadRead: (userId: string) => Promise<void>;
   markGroupRead: (groupId: string) => Promise<void>;
+  setActiveGroupChat: (groupId: string | null) => void;
 }
 
 const ChatNotificationContext = createContext<ChatNotificationContextType>({
@@ -31,6 +32,7 @@ const ChatNotificationContext = createContext<ChatNotificationContextType>({
   totalGroupUnread: 0,
   markThreadRead: async () => {},
   markGroupRead: async () => {},
+  setActiveGroupChat: () => {},
 });
 
 function getActiveChatUserId(pathname: string) {
@@ -48,6 +50,7 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
   const { latestNotification } = useSocket();
   const [unreadByUser, setUnreadByUser] = useState<Record<string, number>>({});
   const [unreadByGroup, setUnreadByGroup] = useState<Record<string, number>>({});
+  const activeGroupChatIdRef = useRef("");
 
   const activeChatUserId = getActiveChatUserId(pathname);
   const lastFetchedAtRef = useRef(0);
@@ -140,6 +143,10 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
     [refresh, user]
   );
 
+  const setActiveGroupChat = useCallback((groupId: string | null) => {
+    activeGroupChatIdRef.current = groupId ? String(groupId) : "";
+  }, []);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -176,12 +183,17 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
     }
 
     if (latestNotification.type === "group_message" && groupId) {
+      if (String(groupId) === activeGroupChatIdRef.current) {
+        void markGroupRead(String(groupId));
+        return;
+      }
+
       setUnreadByGroup((prev) => ({
         ...prev,
         [groupId]: (prev[groupId] || 0) + 1,
       }));
     }
-  }, [activeChatUserId, latestNotification, markThreadRead, user]);
+  }, [activeChatUserId, latestNotification, markGroupRead, markThreadRead, user]);
 
   const totalUnread = useMemo(
     () => Object.values(unreadByUser).reduce((sum, count) => sum + count, 0),
@@ -202,6 +214,7 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
         totalGroupUnread,
         markThreadRead,
         markGroupRead,
+        setActiveGroupChat,
       }}
     >
       {children}

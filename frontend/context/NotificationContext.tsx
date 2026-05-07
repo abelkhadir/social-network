@@ -122,7 +122,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
           method: "POST",
           body: JSON.stringify({ id }),
         });
-        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
       } catch (err) {
         console.error("Failed to mark notification", err);
       }

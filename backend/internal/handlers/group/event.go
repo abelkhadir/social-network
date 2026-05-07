@@ -81,7 +81,7 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 				UserID:     memberID,
 				ActorID:    userID,
 				Type:       "group_event",
-				EntityID:   newevent.ID,
+				EntityID:   event.GroupId,
 				EntityType: "group_event",
 				Content:    creatorName + " created a new event in " + groupTitle,
 			}
