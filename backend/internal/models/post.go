@@ -40,6 +40,7 @@ type Post struct {
 	AllowedUsres  []int  `json:"omitempty"` // if the post is private
 	Author        User   `json:"author"`
 	TotalComments int    `json:"total_comments"`
+	Privecytype string `json:"privecy"`
 }
 
 type PostCreation struct {
@@ -49,6 +50,8 @@ type PostCreation struct {
 	AuthorID    string `json:"authorID"`
 	Image       string `json:"image"`
 	CreateDate  string `json:"createDate"`
+	Privecytype string `json:"privecy"`
+	AllowedUsres  []string   `json:"omitempty"` 
 }
 type Image struct {
 	ImgHeader  *multipart.FileHeader

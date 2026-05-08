@@ -2,6 +2,7 @@ package post
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"strings"
 
@@ -25,12 +26,44 @@ func NewPostRepository(db *sql.DB) *PostRepository {
 func (pr *PostRepository) CreatePost(post *models.PostCreation) error {
 	ID, err := uuid.NewV4()
 	if err != nil {
-		log.Printf("❌ Failed to generate UUID: %v", err)
+		log.Printf("Failed to generate UUID: %v", err)
 	}
+	tx, err := pr.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	// fmt.Println("baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaakhchaa")
+	// if len(post.AllowedUsres)>0{
+	// _, err = pr.db.Exec("INSERT INTO post () VALUES (?)",
+	// 	post.ID, post.Title, post.Description, post.AuthorID, post.Image)
+	// }
 	post.ID = ID.String()
-	_, err = pr.db.Exec("INSERT INTO post (id, title, description, authorID, Image) VALUES (?, ?, ?, ?, ?)",
-		post.ID, post.Title, post.Description, post.AuthorID, post.Image)
-	return err
+	_, err = pr.db.Exec("INSERT INTO post (id, title, description, authorID, Image, Privecytype) VALUES (?,?, ?, ?, ?, ?)",
+		post.ID, post.Title, post.Description, post.AuthorID, post.Image, post.Privecytype)
+	if err != nil {
+		fmt.Println("asdbfdsjfbsjdfbsjd", err)
+		return err
+	}
+	if post.Privecytype == "private" && len(post.AllowedUsres) > 0 {
+		const insertAllowedUsers = `
+            INSERT INTO post_shared_users (post_id, user_id) VALUES (?, ?)
+        `
+		stmt, err2 := tx.Prepare(insertAllowedUsers)
+		// fmt.Println("theeeee ", err2)
+		if err2 != nil {
+			return fmt.Errorf("prepare audience stmt: %w", err2)
+		}
+		defer stmt.Close()
+
+		for _, useriddd := range post.AllowedUsres {
+			if _, err2 = stmt.Exec(post.ID, useriddd); err2 != nil {
+				return fmt.Errorf("insert user in private post  (%d): %w", useriddd, err2)
+			}
+		}
+		fmt.Println("kolxxxi normaaaal daaaba")
+	}
+	return tx.Commit()
 }
 
 // Get a post by ID from the database
@@ -123,40 +156,73 @@ func (pr *PostRepository) GetUserOwnPosts(userId, nickName string) ([]models.Pos
 	return tabPostItem, nil
 }
 
-func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error) {
-	var postItems []*models.PostItem
+func (pr *PostRepository) GetAllPosts(userID string) ([]*models.Post, error) {
+	var postItems []*models.Post
+
 	request := `
 		SELECT 
-			p.id, p.title,
+			p.id,
+			p.title,
 			u.nickname AS authorName,
 			p.createDate AS lastEditionDate,
 			COUNT(DISTINCT cm.id) AS numberOfComments,
-			COALESCE(p.Image, ''),
+			COALESCE(p.Image, '') AS image,
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes,
-			pv.vote AS vote_status
+			MAX(pv.vote) AS vote_status
 		FROM post p
 		JOIN user u ON p.authorID = u.id
-		LEFT JOIN "comment" cm ON p.id = cm.postID
+		LEFT JOIN comment cm ON p.id = cm.postID
 		LEFT JOIN post_vote pv ON pv.post_id = p.id AND pv.user_id = ?
+
+		WHERE 
+			p.Privecytype = 'public'
+
+			OR p.authorID = ?
+
+			OR (
+				p.Privecytype = 'almost_private'
+				AND EXISTS (
+					SELECT 1 FROM followers f
+					WHERE f.following_id = p.authorID
+					AND f.follower_id = ?
+				)
+			)
+
+			OR (
+				p.Privecytype = 'private'
+				AND EXISTS (
+					SELECT 1 FROM post_shared_users pau
+					WHERE pau.post_id = p.id 
+					AND pau.user_id = ?
+				)
+			)
+
 		GROUP BY p.id
 		ORDER BY p.createDate DESC
 	`
-	rows, err := pr.db.Query(request, userID)
+
+	rows, err := pr.db.Query(request,
+		userID,
+		userID,
+		userID,
+		userID,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var post models.PostItem
+		var post models.Post
 		var voteStatus sql.NullInt64
+
 		err := rows.Scan(
 			&post.ID,
 			&post.Title,
 			&post.AuthorName,
 			&post.CreateDate,
-			&post.NumberOfComments,
+			&post.TotalComments,
 			&post.Image,
 			&post.Likes,
 			&post.Dislikes,
@@ -167,15 +233,18 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 		}
 
 		post.CreateDate = utils.FormatDateDB(post.CreateDate)
+
 		if voteStatus.Valid {
 			v := int(voteStatus.Int64)
 			post.VoteStatus = &v
 		} else {
 			post.VoteStatus = nil
 		}
+
 		if post.Image != "" {
 			post.Image = "/uploads/images/" + post.Image
 		}
+
 		postItems = append(postItems, &post)
 	}
 
@@ -185,6 +254,7 @@ func (pr *PostRepository) GetAllPosts(userID string) ([]*models.PostItem, error)
 
 	return postItems, nil
 }
+
 
 func (pr *PostRepository) GetPostItemByID(postID string) (models.PostItem, error) {
 	request := `

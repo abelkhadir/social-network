@@ -3,6 +3,7 @@ package posthandler
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
@@ -33,10 +34,24 @@ func CreatePost(application *app.Application, res http.ResponseWriter, req *http
 			}
 
 			title := strings.TrimSpace(req.FormValue("title"))
+			shared_with := req.FormValue("shared_with")
+			fmt.Println("----------------posssssst ----------------")
+			fmt.Println("the title is ", title)
+			fmt.Println("the shared_with is ", shared_with)
+			fmt.Println("the privery", req.FormValue("privacy"))
+			fmt.Println("----------------posssssst ----------------")
 			description := strings.TrimSpace(req.FormValue("description"))
 			postInfo := models.PostCreation{
 				Title:       title,
 				Description: description,
+				Privecytype: req.FormValue("privacy"),
+			}
+			if postInfo.Privecytype == "private" {
+				usersidd := req.Form["shared_with"]
+				for _, idddd := range usersidd {
+					fmt.Println("the users that the user want to share with them ",idddd)
+					postInfo.AllowedUsres=append(postInfo.AllowedUsres, idddd)
+				}
 			}
 
 			if err := validatePostInput(&postInfo); err != nil {
@@ -184,7 +199,9 @@ func GetAllPosts(application *app.Application, res http.ResponseWriter, req *htt
 			userInSession, _ := application.SessionRepo.GetUserFromSession(req)
 			posts, err := application.PostRepo.GetAllPosts(userInSession.ID)
 			if err != nil {
+				fmt.Println("the problem comes from here",err)
 				utils.HandleError(res, http.StatusInternalServerError, err.Error())
+				return
 			}
 
 			utils.SendJSONResponse(res, http.StatusOK, map[string]any{"message": "posts retrieved successfully", "posts": posts})
@@ -194,12 +211,12 @@ func GetAllPosts(application *app.Application, res http.ResponseWriter, req *htt
 	}
 }
 
-func validatePostInput(post *models.PostCreation) error {	
-	if post.Title == "" || post.Description == ""  {
+func validatePostInput(post *models.PostCreation) error {
+	if post.Title == "" || post.Description == "" {
 		return errors.New("the title or Description shouldn't be emty ")
 	}
 	if len(post.Title) >= 500 || len(post.Description) >= 500 {
-	return errors.New("you have entere a  long Title or Description ")
+		return errors.New("you have entere a  long Title or Description ")
 	}
 	post.Title = html.EscapeString(post.Title)
 	post.Description = html.EscapeString(post.Description)
