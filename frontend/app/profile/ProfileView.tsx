@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { fetchApi, resolveApiUrl } from "@/lib/api";
-import styles from "./profile.module.css";
+// import styles from "../../public/css/profile.css";
+import styles from "../../public/css/profile.module.css";
 
 // ============ Types ============
 type ProfilePost = {
@@ -326,7 +327,7 @@ const loadFollowers = async (targetId: string) => {
     return (
       <div className={styles.privateContainer}>
         <img
-          src={resolveApiUrl(limitedUser?.avatarURL) || "/default-avatar.png"}
+          src={resolveApiUrl(limitedUser?.avatarURL) }
           alt="avatar"
           className={styles.avatar}
         />
@@ -354,8 +355,7 @@ const loadFollowers = async (targetId: string) => {
   const displayUser = profileData?.user;
   const avatarSrc =
     avatarPreview ||
-    resolveApiUrl(displayUser?.avatarURL) ||
-    "/default-avatar.png";
+    resolveApiUrl(displayUser?.avatarURL ||user.avatar) ;
 
   const followStatus = getFollowStatus();
 
@@ -466,7 +466,7 @@ const loadFollowers = async (targetId: string) => {
                 {pendingRequests.map((u) => (
                   <div key={u.id} className={styles.userCard}>
                     <img
-                      src={resolveApiUrl(u.avatar) || "/default-avatar.png"}
+                      src={resolveApiUrl()}
                       alt={u.firstname}
                       className={styles.userAvatar}
                     />
@@ -509,7 +509,7 @@ const loadFollowers = async (targetId: string) => {
                   style={{ cursor: "pointer" }}
                 >
                   <img
-                    src={resolveApiUrl(u.avatar) || "/default-avatar.png"}
+                  src={resolveApiUrl(`http://localhost:8080/${user.avatar_url}` )}
                     alt={u.firstname}
                     className={styles.userAvatar}
                   />
@@ -542,7 +542,7 @@ const loadFollowers = async (targetId: string) => {
                   style={{ cursor: "pointer" }}
                 >
                   <img
-                    src={resolveApiUrl(u.avatar) || "/default-avatar.png"}
+                    src={resolveApiUrl(u.avatar)  }
                     alt={u.firstname}
                     className={styles.userAvatar}
                   />

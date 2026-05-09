@@ -1,0 +1,416 @@
+
+/* ============ Header Base ============ */
+.header {
+    background: var(--gradient-header);
+    color: var(--text-main);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(6, 43, 209, 0.5);
+    border-bottom: 1px solid #0a2da1;
+}
+
+/* ============ Left Side ============ */
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.logo img {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--color-primary);
+}
+
+.platformName {
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    /* color: var(--color-primary); */
+    color: #fff;
+}
+
+/* ============ Mobile Toggle ============ */
+.menuToggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+}
+
+.menuToggle:hover {
+    background: rgba(255, 123, 0, 0.1);
+}
+
+/* ============ Header Buttons / Nav ============ */
+.headerButtons {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.navLink {
+    color: var(--ink-300);
+    text-decoration: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 20px;
+    background: transparent;
+    border: 1px solid #3a3f44;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.navLink:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #000;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-orange);
+}
+
+/* ============ Notifications ============ */
+.notifDropdownContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.notifBtn {
+    background: transparent;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+    position: relative;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notifBtn:hover {
+    background: #2a2e33;
+}
+
+.notifBadge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--danger);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border-radius: 50%;
+    padding: 2px 6px;
+    border: 2px solid var(--bg-header-start);
+    min-width: 18px;
+    text-align: center;
+}
+
+.notifDropdown {
+    position: absolute;
+    top: 50px;
+    right: -20px;
+    background: var(--bg-card);
+    border: 1px solid #3a1c06;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.notifHeader {
+    padding: 15px;
+    border-bottom: 1px solid #2f3336;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notifHeader strong {
+    color: var(--text-main);
+    font-size: 1.1rem;
+}
+
+.markAllBtn {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.markAllBtn:hover {
+    color: var(--color-primary-dark);
+}
+
+.notifList {
+    max-height: 350px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.notifItem {
+    padding: 12px 15px;
+    border-bottom: 1px solid #2f3336;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notifItem:hover {
+    background: #2a2e33;
+}
+
+.notifUnread {
+    background: rgba(255, 123, 0, 0.08);
+}
+
+.notifUnread:hover {
+    background: rgba(255, 123, 0, 0.15);
+}
+
+.notifItem p {
+    margin: 0 0 5px 0;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.notifItem span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.notifEmpty {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* ============ Profile Dropdown ============ */
+.profileDropdownContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.profileAvatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    object-fit: cover;
+    border: 2px solid #3a3f44;
+    transition: border 0.3s;
+}
+
+.profileAvatar:hover {
+    border-color: var(--color-primary);
+}
+
+.profileAvatarActive {
+    border-color: var(--color-primary);
+}
+
+.profileDropdown {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid #3a1c06;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    z-index: 1000;
+}
+
+.profileHeader {
+    padding: 10px;
+    border-bottom: 1px solid #2f3336;
+    margin-bottom: 8px;
+}
+
+.profileHeader strong {
+    color: var(--color-primary);
+    display: block;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+}
+
+.profileHeader span {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.profileLink {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    color: var(--text-main);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.profileLink:hover {
+    background: #2a2e33;
+}
+
+.profileLink img {
+    flex-shrink: 0;
+}
+
+.logoutBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+    font-size: 0.95rem;
+    transition: background 0.2s;
+}
+
+.logoutBtn:hover {
+    background: #b03040;
+}
+
+.logoutBtn img {
+    flex-shrink: 0;
+    filter: invert(1);
+}
+
+/* ============ Scrollbar ============ */
+.notifList::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notifList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.notifList::-webkit-scrollbar-thumb {
+    background: #3a3f44;
+    border-radius: 3px;
+}
+
+/* ============ Responsive ============ */
+@media (max-width: 768px) {
+    .menuToggle {
+        display: block;
+    }
+
+    .headerButtons {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--bg-card);
+        flex-direction: column;
+        padding: 1.5rem;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        border-bottom: 2px solid var(--color-primary);
+        gap: 15px;
+        z-index: 99;
+        align-items: stretch;
+    }
+
+    .headerButtons.active {
+        display: flex;
+    }
+
+    .navLink {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        margin: 0;
+        color: #333;
+    }
+    .notifBtn{
+        background-color: #333 !important;
+    }
+
+    .notifDropdownContainer,
+    .profileDropdownContainer {
+        margin: 0 auto;
+    }
+
+    .notifDropdown {
+        right: 50%;
+        transform: translateX(50%);
+        width: 90vw;
+        max-width: 320px;
+        color: #333 !important;
+    }
+
+    .profileDropdown {
+        right: 50%;
+        transform: translateX(50%);
+    }
+}
+.navLink:hover {
+        color: #fff !important;
+        font-weight: bold;
+    }
+@media (max-width: 480px) {
+    .header {
+        padding: 0.75rem 1rem;
+    }
+     .navLink:hover {
+        color: #fff !important;
+        font-weight: bold;
+    }
+
+    .platformName {
+        font-size: 1.4rem;
+    }
+
+    .logo img {
+        width: 38px;
+        height: 38px;
+    }
+
+    .notifDropdown {
+        width: 95vw;
+        color: #333;
+    }
+    .notifBtn {
+        color: #333;
+    }
+}

@@ -1,8 +1,8 @@
 
 import "../public/css/style.css";
-import "../public/css/login.css";
-import "../public/css/register.css";
-import "../public/css/chat.css";
+import "../public/css/login.module.css";
+import "../public/css/register.module.css";
+import "../public/css/chat.module.css";
 import "../public/css/toast.css";
 import type { Metadata } from "next";
 import { AuthProvider } from "../context/AuthContext";

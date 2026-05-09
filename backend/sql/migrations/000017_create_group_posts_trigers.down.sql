@@ -1,2 +1,0 @@
-DROP TRIGGER IF EXISTS increment_group_post_comments
-DROP TRIGGER IF EXISTS decrement_group_post_comments

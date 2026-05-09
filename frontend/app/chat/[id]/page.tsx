@@ -1,4 +1,3 @@
-// app/chat/[id]/page.tsx
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -6,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { fetchApi, resolveApiUrl } from "@/lib/api";
+import styles from "../../../public/css/chat.module.css";
 
 export default function ChatPage() {
   const { id: receiverId } = useParams();
@@ -116,55 +116,58 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "calc(100vh - 120px)", background: "var(--bg-card)", borderRadius: "var(--radius-lg)" }}>
-        <div style={{ color: "var(--text-muted)", fontSize: "1.2rem" }}>Loading chat... ⏳</div>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner} />
+        <span>Loading chat... ⏳</span>
       </div>
     );
   }
 
-  if (!talker) return <h2 style={{ color: "white", textAlign: "center", marginTop: "20px" }}>User not found</h2>;
+  if (!talker) {
+    return <h2 className={styles.notFound}>User not found</h2>;
+  }
 
-  const talkerName = talker.nickname;
+  const talkerName = talker.nickname || talker.Nickname || "Unknown";
   const talkerAvatar = resolveApiUrl(talker.avatar_url);
   const talkerOnline = talker.IsConnected ?? talker.is_connected ?? false;
 
   return (
-    <div className="chat-container" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 120px)", background: "var(--bg-card)", borderRadius: "var(--radius-lg)", boxShadow: "0 4px 12px rgba(0,0,0,0.2)", overflow: "hidden" }}>
+    <div className={styles.chatContainer}>
       
       {/* Header */}
-      <div className="chat-header" style={{ display: "flex", alignItems: "center", gap: "15px", padding: "15px 20px", background: "#FBF8F3", borderBottom: "1px solid #2f3336" }}>
-        <img src={talkerAvatar} alt="avatar" style={{ width: "45px", height: "45px", borderRadius: "50%", objectFit: "cover" }} />
-        <div>
-          <h3 style={{ margin: 0, color: "var(--text-main)" }}>{talkerName}</h3>
-          <span style={{ fontSize: "0.85rem", color: talkerOnline ? "var(--color-primary-blue)" : "var(--text-muted)" }}>
+      <div className={styles.chatHeader}>
+        <img src={talkerAvatar || "/default-avatar.png"} alt="avatar" className={styles.headerAvatar} />
+        <div className={styles.headerInfo}>
+          <h3>{talkerName}</h3>
+          <span className={talkerOnline ? styles.online : styles.offline}>
             {talkerOnline ? "🟢 Online" : "⚪ Offline"}
           </span>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="chat-history" style={{ flexGrow: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      <div className={styles.chatHistory}>
         {messages.length > 0 ? (
           messages.map((msg, idx) => {
             const senderID = msg.senderID || msg.SenderID;
             const isMe = senderID === myId;
-            const timeString = new Date( msg.createDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const timeString = new Date(msg.createDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return (
-              <div key={idx} style={{ maxWidth: "70%", padding: "10px 15px", borderRadius: "15px", marginBottom: "10px", display: "flex", flexDirection: "column", alignSelf: isMe ? "flex-end" : "flex-start", background: isMe ? "var(--color-primary-dark)" : "#343a40", color: "white", borderBottomRightRadius: isMe ? "4px" : "15px", borderBottomLeftRadius: isMe ? "15px" : "4px" }}>
-                <span style={{ fontSize: "0.95rem", lineHeight: 1.4, wordWrap: "break-word" }}>{msg.text || msg.Text || ""}</span>
-                <span style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", alignSelf: "flex-end", marginTop: "5px" }}>{timeString}</span>
+              <div key={idx} className={`${styles.message} ${isMe ? styles.messageMe : styles.messageOther}`}>
+                <span className={styles.messageText}>{msg.text || msg.Text || ""}</span>
+                <span className={styles.messageTime}>{timeString}</span>
               </div>
             );
           })
         ) : (
-          <div style={{ textAlign: "center", color: "var(--text-muted)", marginTop: "auto", marginBottom: "auto" }}>
+          <div className={styles.emptyState}>
             Say hello to {talkerName}! 👋
           </div>
         )}
         
         {isPeerTyping && (
-          <div className="typing-indicator" style={{ marginTop: "8px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+          <div className={styles.typingIndicator}>
             Typing... ✍️
           </div>
         )}
@@ -173,8 +176,8 @@ export default function ChatPage() {
       </div>
 
       {/* Input Area */}
-      <div className="chat-input-area" style={{ padding: "15px 20px", background: "#1a1d20", borderTop: "1px solid #2f3336" }}>
-        <form onSubmit={handleSendMessage} id="chat-form" style={{ display: "flex", gap: "10px" }}>
+      <div className={styles.chatInputArea}>
+        <form onSubmit={handleSendMessage} className={styles.inputForm}>
           <input 
             type="text" 
             name="message" 
@@ -183,10 +186,10 @@ export default function ChatPage() {
             required 
             value={text}
             onChange={handleInput}
-            style={{ flexGrow: 1, padding: "12px 5px", borderRadius: "25px", border: "none", background: "var(--color-input-bg)", color: "#fff", fontSize: "1rem", outline: "none" }}
+            className={styles.messageInput}
           />
-          <button type="submit" style={{ background: "var(--color-primary-blue)", color: "#000", border: "none", borderRadius: "50%", width: "45px", height: "45px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "white" }}>
+          <button type="submit" className={styles.sendBtn}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
             </svg>

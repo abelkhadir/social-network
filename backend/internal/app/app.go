@@ -12,11 +12,13 @@ import (
 	profilerepo "social/internal/repositories/profile"
 	"social/internal/repositories/sessions"
 	"social/internal/repositories/websocket"
-	dbschema "social/pkg/database/db"
+	dbschema "social/sql"
 	"social/pkg/utils"
 
-	// _ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/golang-migrate/migrate/v4"
+		"github.com/golang-migrate/migrate/v4"
+
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 type Application struct {
@@ -61,10 +63,7 @@ func NewApp() *Application {
 	if err := dbschema.EnsureSchema(db); err != nil {
 		log.Fatal("❌ Failed to ensure database schema:", err)
 	}
-
-	// RunMigration()
-	// ensureCommentVoteTable(db)
-	// ensureMessageTable(db)
+	RunMigration()
 	// Initialize repositories
 	userRepo := auth.NewUserRepository(db)
 	postRepo := post.NewPostRepository(db)

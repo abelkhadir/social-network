@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS post_shared_users,

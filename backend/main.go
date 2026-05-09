@@ -25,7 +25,7 @@ func main() {
 	routers.SetupRoutes(myApp)
 	root := middleware.CORSMiddleware(frontendOrigin)(http.DefaultServeMux)
 
-	log.Printf("✅ Server running on port %s\n", port)
+	log.Printf("[][] Server running on port %s\n", port)
 	if err := http.ListenAndServe(":"+port, root); err != nil {
 		log.Fatal(err)
 	}

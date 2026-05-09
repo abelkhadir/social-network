@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS post (
+			id TEXT PRIMARY KEY,
+			title TEXT NOT NULL,
+			description TEXT NOT NULL,
+			authorID TEXT NOT NULL,
+			Image TEXT,
+			Privecytype TEXT,
+			createDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (authorID) REFERENCES user(id) ON DELETE CASCADE
+		);
