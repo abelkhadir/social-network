@@ -29,6 +29,7 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 	file, header, err := r.FormFile("image")
 	if err!=nil{
 	fmt.Println("the file that the usdfdsfdsfsd ",err)
+	return 
 	}
 	fmt.Println("the file that the user sent ",file)
 	text := r.FormValue("text")
@@ -65,7 +66,6 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 		// fmt.Println("the comment all", groupcomments)
 		comment, err := app.GroupPostRepo.SaveGroupeComment(groupcomments, img)
 		if err != nil {
-			fmt.Println("i don't know ")
 			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
 			return
 		}

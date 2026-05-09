@@ -96,16 +96,23 @@ func (ur *UserRepository) GetUserByNickname(nickname string) (*models.User, erro
 }
 
 // Select All users
+// SelectAllUsers - Returns users that the current user follows OR who follow the current user (accepted)
 func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, error) {
 	var users []models.UserItem
 	rows, err := ur.db.Query(`
-	SELECT
+	SELECT DISTINCT
 		u.ID,
 		u.nickname,
 		COALESCE(u.avatarURL, '') AS avatar_url,
 		COALESCE(m.content, '') AS last_message,
 		COALESCE(m.createDate, '') AS last_message_time
 	FROM user u
+	-- Join followers: users I follow OR users who follow me (accepted status)
+	INNER JOIN followers f ON (
+		(u.ID = f.following_id AND f.follower_id = ? AND f.status = 'accepted')
+		OR
+		(u.ID = f.follower_id AND f.following_id = ? AND f.status = 'accepted')
+	)
 	LEFT JOIN (
 		SELECT
 			CASE
@@ -117,10 +124,16 @@ func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, erro
 		WHERE senderID = ? OR receiverID = ?
 		GROUP BY otherUserID
 	) latestMessages ON u.ID = latestMessages.otherUserID
-	LEFT JOIN message m ON (latestMessages.otherUserID = m.senderID OR latestMessages.otherUserID = m.receiverID) AND latestMessages.maxCreateDate = m.createDate
+	LEFT JOIN message m ON (
+		(latestMessages.otherUserID = m.senderID OR latestMessages.otherUserID = m.receiverID)
+		AND latestMessages.maxCreateDate = m.createDate
+	)
 	WHERE u.ID != ?
-	ORDER BY last_message_time DESC, u.nickname 
-	`, userID, userID, userID, userID, userID)
+	ORDER BY 
+		CASE WHEN last_message_time != '' THEN 0 ELSE 1 END,
+		last_message_time DESC,
+		u.nickname
+	`, userID, userID, userID, userID, userID, userID, userID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,7 +163,6 @@ func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, erro
 	}
 	return users, nil
 }
-
 func (ur *UserRepository) ListUsersExcept(userID string) ([]models.User, error) {
 	var users []models.User
 	rows, err := ur.db.Query("SELECT id, nickname, avatarURL FROM user WHERE id != ? ORDER BY nickname", userID)
