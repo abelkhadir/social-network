@@ -1,18 +1,46 @@
 // app/post/[id]/page.tsx
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { fetchApi, resolveApiUrl } from "../../../lib/api";
 import { useToast } from "../../../context/ToastContext";
+import styles from "../../../public/css/post.module.css";
+
+type Comment = {
+  id: string;
+  text: string;
+  image?: string;
+  authorName: string;
+  authorAvatar: string;
+  likes: number;
+  dislikes: number;
+  userVote: "like" | "dislike" | null;
+  createDate: string;
+  lastCreateDate?: string;
+};
+
+type Post = {
+  id: string;
+  title: string;
+  description: string;
+  image?: string;
+  authorName: string;
+  authorAvatar: string;
+  likes: number;
+  dislikes: number;
+  userVote: "like" | "dislike" | null;
+  createDate: string;
+  Comments: Comment[];
+};
 
 export default function SinglePostPage() {
   const { id } = useParams(); 
   const router = useRouter();
   const { showToast } = useToast();
 
-  const [postData, setPostData] = useState<any>(null);
-  const [comments, setComments] = useState<any[]>([]);
+  const [post, setPost] = useState<Post | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState("");
   const [commentImage, setCommentImage] = useState<File | null>(null);
@@ -20,108 +48,202 @@ export default function SinglePostPage() {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // =========================================
-  // 1. DATA FETCHING (POST & COMMENTS)
-  // =========================================
-  const loadData = async () => {
+
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await fetchApi(`/post/${id}`); 
-      console.log("the daata of the post",data.post.Comments)
-      setPostData(data.post || data); 
-      setComments(data.post?.Comments || data.Comments || []);
+      const data = await fetchApi(`/post/${id}`);
+      const postData = data.post || data;
+      setPost(postData);
+      setComments(postData.Comments || data.Comments || []);
     } catch (err) {
       console.error(err);
-      setPostData(null);
+      setPost(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     if (id) loadData();
-  }, [id]);
+  }, [id, loadData]);
 
-  // =========================================
-  // COMMENT IMAGE HANDLERS
-  // =========================================
+  const optimisticPostVote = (voteType: "like" | "dislike") => {
+    if (!post) return;
+    
+    const wasLike = post.userVote === "like";
+    const wasDislike = post.userVote === "dislike";
+    const isSameVote = post.userVote === voteType;
+
+    setPost(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        userVote: isSameVote ? null : voteType,
+        likes: voteType === "like" 
+          ? (isSameVote ? prev.likes - 1 : wasDislike ? prev.likes + 1 : prev.likes + 1)
+          : (wasLike ? prev.likes - 1 : prev.likes),
+        dislikes: voteType === "dislike"
+          ? (isSameVote ? prev.dislikes - 1 : wasLike ? prev.dislikes + 1 : prev.dislikes + 1)
+          : (wasDislike ? prev.dislikes - 1 : prev.dislikes),
+      };
+    });
+  };
+
+  const optimisticCommentVote = (commentId: string, voteType: "like" | "dislike") => {
+    setComments(prev => prev.map(c => {
+      if (c.id !== commentId) return c;
+      
+      const wasLike = c.userVote === "like";
+      const wasDislike = c.userVote === "dislike";
+      const isSameVote = c.userVote === voteType;
+
+      return {
+        ...c,
+        userVote: isSameVote ? null : voteType,
+        likes: voteType === "like"
+          ? (isSameVote ? c.likes - 1 : wasDislike ? c.likes + 1 : c.likes + 1)
+          : (wasLike ? c.likes - 1 : c.likes),
+        dislikes: voteType === "dislike"
+          ? (isSameVote ? c.dislikes - 1 : wasLike ? c.dislikes + 1 : c.dislikes + 1)
+          : (wasDislike ? c.dislikes - 1 : c.dislikes),
+      };
+    }));
+  };
+
+
+  const handleLikePost = async () => {
+    if (!post) return;
+    
+    // Optimistic update
+    const previousVote = post.userVote;
+    optimisticPostVote("like");
+
+    try {
+      const data = await fetchApi(`/post/${id}/like`, { method: "POST" });
+      
+      // Sync with server response if different
+      if (data.likes !== undefined) {
+        setPost(prev => prev ? { ...prev, likes: data.likes, dislikes: data.dislikes, userVote: data.userVote } : null);
+      }
+    } catch (err: any) {
+      // Rollback on error
+      setPost(prev => prev ? { ...prev, userVote: previousVote } : null);
+      showToast(err.message || "Failed to like post", "error");
+    }
+  };
+
+  const handleDislikePost = async () => {
+    if (!post) return;
+    
+    const previousVote = post.userVote;
+    optimisticPostVote("dislike");
+
+    try {
+      const data = await fetchApi(`/post/${id}/dislike`, { method: "POST" });
+      
+      if (data.likes !== undefined) {
+        setPost(prev => prev ? { ...prev, likes: data.likes, dislikes: data.dislikes, userVote: data.userVote } : null);
+      }
+    } catch (err: any) {
+      setPost(prev => prev ? { ...prev, userVote: previousVote } : null);
+      showToast(err.message || "Failed to dislike post", "error");
+    }
+  };
+
+
+  const handleLikeComment = async (commentId: string) => {
+    const comment = comments.find(c => c.id === commentId);
+    if (!comment) return;
+
+    const previousVote = comment.userVote;
+    optimisticCommentVote(commentId, "like");
+
+    try {
+      const data = await fetchApi(`/comment/${commentId}/like`, { method: "POST" });
+      
+      if (data.likes !== undefined) {
+        setComments(prev => prev.map(c => 
+          c.id === commentId ? { ...c, likes: data.likes, dislikes: data.dislikes, userVote: data.userVote } : c
+        ));
+      }
+    } catch (err: any) {
+      setComments(prev => prev.map(c => 
+        c.id === commentId ? { ...c, userVote: previousVote } : c
+      ));
+      showToast(err.message || "Failed to like comment", "error");
+    }
+  };
+
+  const handleDislikeComment = async (commentId: string) => {
+    const comment = comments.find(c => c.id === commentId);
+    if (!comment) return;
+
+    const previousVote = comment.userVote;
+    optimisticCommentVote(commentId, "dislike");
+
+    try {
+      const data = await fetchApi(`/comment/${commentId}/dislike`, { method: "POST" });
+      
+      if (data.likes !== undefined) {
+        setComments(prev => prev.map(c => 
+          c.id === commentId ? { ...c, likes: data.likes, dislikes: data.dislikes, userVote: data.userVote } : c
+        ));
+      }
+    } catch (err: any) {
+      setComments(prev => prev.map(c => 
+        c.id === commentId ? { ...c, userVote: previousVote } : c
+      ));
+      showToast(err.message || "Failed to dislike comment", "error");
+    }
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       showToast("Please select an image file", "error");
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       showToast("Image must be less than 5MB", "error");
       return;
     }
 
     setCommentImage(file);
-
-    // Create preview
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setCommentImagePreview(reader.result as string);
-    };
+    reader.onloadend = () => setCommentImagePreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
   const handleRemoveImage = () => {
     setCommentImage(null);
     setCommentImagePreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleTriggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
-  // =========================================
-  // ADD COMMENT (with optional image)
-  // =========================================
+  // ADD COMMENT
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim() && !commentImage) return;
 
     setIsSubmittingComment(true);
+    const formData = new FormData();
+    formData.append("text", commentText.trim());
+    formData.append("postID", String(id));
+    if (commentImage) formData.append("image", commentImage);
 
     try {
-      let response;
-      console.log("the text ",commentText)
-      console.log("the image ",commentImage)
-      const formData = new FormData();
-      formData.append("text", commentText.trim());
-      formData.append("postID", String(id));
-      if (commentImage) {
-        // Upload with image using FormData
-        formData.append("image", commentImage);
-
-        response = await fetchApi(`/comment/${id}`, {
-          method: "POST",
-          body: formData,
-          // Don't set Content-Type header - browser will set it with boundary for FormData
-          headers: {},
-        });
-      } else {
-        // Text-only comment (original behavior)
-              console.log("the text req",commentText)
-        response = await fetchApi(`/comment/${id}`, {
-          method: "POST",
-          body: formData,
-        });
-      }
-
+      await fetchApi(`/comment/${id}`, { method: "POST", body: formData });
       showToast("Comment posted successfully!", "success");
       setCommentText("");
       handleRemoveImage();
-      loadData(); 
+      
+      // Only fetch new comments, don't reload entire post
+      const data = await fetchApi(`/post/${id}`);
+      setComments(data.post?.Comments || data.Comments || []);
     } catch (err: any) {
       showToast(err.message || "Error posting comment", "error");
     } finally {
@@ -129,213 +251,111 @@ export default function SinglePostPage() {
     }
   };
 
-  //  POST ACTIONS (LIKE & DISLIKE)
-  const handleLikePost = async () => {
-    try {
-      await fetchApi(`/post/${id}/like`, { method: "POST" });
-      loadData();
-    } catch (err: any) {
-      showToast(err.message || "Failed to like post", "error");
-    }
-  };
-
-  const handleDislikePost = async () => {
-    try {
-      await fetchApi(`/post/${id}/dislike`, { method: "POST" });
-      loadData();
-    } catch (err: any) {
-      showToast(err.message || "Failed to dislike post", "error");
-    }
-  };
-
-  //  COMMENT ACTIONS (LIKE & DISLIKE)
-  const handleLikeComment = async (commentId: string) => {
-    try {
-      await fetchApi(`/comment/${commentId}/like`, { method: "POST" });
-      loadData();
-    } catch (err: any) {
-      showToast(err.message || "Failed to like comment", "error");
-    }
-  };
-
-  const handleDislikeComment = async (commentId: string) => {
-    try {
-      await fetchApi(`/comment/${commentId}/dislike`, { method: "POST" });
-      loadData();
-    } catch (err: any) {
-      showToast(err.message || "Failed to dislike comment", "error");
-    }
-  };
-
-  // HELPER FUNCTIONS & RENDER
+ 
   const formatDateTime = (value: string) => {
     if (!value) return "";
-    if (typeof value === "string" && value.toLowerCase().includes("invalid")) return "";
     const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return "";
-    if (d.getFullYear() <= 1) return "";
+    if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1) return "";
     return d.toDateString() + " at " + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  if (loading) {
-    return <div style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)", fontSize: "1.2rem" }}>Loading Post... ⏳</div>;
-  }
+  const getVoteButtonStyle = (voteType: "like" | "dislike", userVote: "like" | "dislike" | null) => {
+    const isActive = userVote === voteType;
+    return {
+      background: isActive ? (voteType === "like" ? "rgba(255, 183, 3, 0.15)" : "rgba(230, 57, 70, 0.15)") : "transparent",
+      color: isActive ? (voteType === "like" ? "var(--color-like)" : "var(--color-dislike)") : "var(--ink-600)",
+      border: `1px solid ${isActive ? (voteType === "like" ? "var(--color-like)" : "var(--color-dislike)") : "var(--border-default)"}`,
+    };
+  };
 
-  if (!postData) {
+
+  if (loading) {
     return (
-      <div style={{ textAlign: "center", background: "var(--bg-card)", padding: "3rem", borderRadius: "16px", border: "1px solid #2f3336", maxWidth: "600px", margin: "2rem auto" }}>
-        <h2 style={{ color: "var(--color-primary)", marginBottom: "15px" }}>Post not found or deleted ❌</h2>
-        <button onClick={() => router.push("/")} style={{ background: "transparent", color: "var(--text-main)", border: "1px solid #3a3f44", padding: "10px 20px", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" }}>
-          Go Home
-        </button>
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner} />
+        <span>Loading Post... ⏳</span>
       </div>
     );
   }
 
-  const p = postData;
-
+  if (!post) {
+    return (
+      <div className={styles.notFound}>
+        <h2>Post not found or deleted ❌</h2>
+        <button onClick={() => router.push("/")} className={styles.goHomeBtn}>Go Home</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="single-post-container" style={{ maxWidth: "800px", margin: "0 auto", paddingBottom: "40px" }}>
-
-      <div className="post full-post" style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "16px", border: "1px solid var(--color-primary)", boxShadow: "var(--shadow-orange)" }}>
-        <div className="post-header" style={{ display: "flex", alignItems: "center", gap: "15px", marginBottom: "20px" }}>
-          <img src={resolveApiUrl(p.authorAvatar)} alt="avatar" style={{ width: "45px", height: "45px", borderRadius: "50%", border: "2px solid #3a3f44", objectFit: "cover" }} />
+    <div className={styles.container}>
+      {/* POST */}
+      <div className={styles.postCard}>
+        <div className={styles.postHeader}>
+          <img src={resolveApiUrl(post.authorAvatar) || "/default-avatar.png"} alt="avatar" className={styles.authorAvatar} />
           <div>
-            <h3 style={{ margin: "0 0 5px 0", color: "var(--text-main)", fontSize: "1.1rem" }}>{p.authorName}</h3>
-            <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{formatDateTime(p.createDate)}</span>
+            <h3>{post.authorName}</h3>
+            <span>{formatDateTime(post.createDate)}</span>
           </div>
         </div>
 
-        <h1 className="post-title" style={{ color: "var(--color-primary)", fontSize: "1.8rem", marginBottom: "15px" }}>{p.title}</h1>
+        <h1 className={styles.postTitle}>{post.title}</h1>
+        <div className={styles.postContent}>{post.description}</div>
 
-        <div className="post-content" style={{ color: "var(--text-main)", fontSize: "1.1rem", lineHeight: "1.6", marginBottom: "20px", whiteSpace: "pre-wrap" }}>
-          {p.description}
-        </div>
-
-        {p.image && (
-          <img
-            src={resolveApiUrl(p.image)}
-            className="post-image"
-            alt="Post Image"
-            style={{ width: "100%", maxHeight: "400px", objectFit: "cover", borderRadius: "12px", marginBottom: "20px" }}
-          />
+        {post.image && (
+          <img src={resolveApiUrl(post.image)} className={styles.postImage} alt="Post" />
         )}
 
-        {/* POST LIKES */}
-        <div className="post-actions" style={{ display: "flex", gap: "15px", alignItems: "center", borderTop: "1px solid #2f3336", paddingTop: "15px", flexWrap: "wrap" }}>
-          <button onClick={handleLikePost} style={{ background: "transparent", color: "var(--text-main)", border: "1px solid #3a3f44", padding: "8px 15px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/like.svg" alt="Like" width={18} height={18} style={{ display: "block" }} /> {p.likes || 0} Like</span>
+        <div className={styles.postActions}>
+          <button 
+            onClick={handleLikePost} 
+            className={`${styles.voteBtn} ${post.userVote === "like" ? styles.likeActive : ""}`}
+          >
+            <span>👍 {post.likes || 0}</span>
           </button>
-          <button onClick={handleDislikePost} style={{ background: "transparent", color: "var(--text-main)", border: "1px solid #3a3f44", padding: "8px 15px", borderRadius: "20px", cursor: "pointer", fontWeight: "bold" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/dislike.svg" alt="Dislike" width={18} height={18} style={{ display: "block" }} /> {p.dislikes || 0} Dislike</span>
+          <button 
+            onClick={handleDislikePost} 
+            className={`${styles.voteBtn} ${post.userVote === "dislike" ? styles.dislikeActive : ""}`}
+          >
+            <span>👎 {post.dislikes || 0}</span>
           </button>
         </div>
       </div>
 
-      {/*  COMMENTS SECTION */}
-      <div className="comments-section" style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "16px", border: "1px solid #2f3336", marginTop: "20px" }}>
-        <h3 style={{ color: "var(--text-main)", marginBottom: "20px", fontSize: "1.3rem", display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} /> Comments ({comments.length})</h3>
+      {/* COMMENTS */}
+      <div className={styles.commentsSection}>
+        <h3 className={styles.commentsTitle}>💬 Comments ({comments.length})</h3>
 
         {/* Comment Form */}
-        <form onSubmit={handleAddComment} className="comment-form" style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "30px" }}>
+        <form onSubmit={handleAddComment} className={styles.commentForm}>
           <textarea 
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             placeholder="What are your thoughts?" 
             required={!commentImage}
-            style={{ width: "100%", padding: "15px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "12px", color: "#000", minHeight: "80px", resize: "vertical", outline: "none" }}
+            className={styles.commentInput}
           />
 
-          {/* Image Upload Section */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              style={{ display: "none" }}
-            />
-
-            {/* Add Image Button */}
+          <div className={styles.commentExtras}>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className={styles.hiddenInput} />
+            
             {!commentImagePreview && (
-              <button
-                type="button"
-                onClick={handleTriggerFileInput}
-                style={{
-                  background: "transparent",
-                  color: "var(--text-muted)",
-                  border: "1px dashed #3a3f44",
-                  padding: "8px 16px",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "0.9rem",
-                  fontWeight: "bold",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px"
-                }}
-              >
-                <span>📎</span> Add Image
+              <button type="button" onClick={() => fileInputRef.current?.click()} className={styles.addImageBtn}>
+                📎 Add Image
               </button>
             )}
 
-            {/* Image Preview */}
             {commentImagePreview && (
-              <div style={{ position: "relative", display: "inline-block" }}>
-                <img
-                  src={commentImagePreview}
-                  alt="Preview"
-                  style={{
-                    width: "120px",
-                    height: "120px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                    border: "1px solid #3a3f44"
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  style={{
-                    position: "absolute",
-                    top: "-8px",
-                    right: "-8px",
-                    background: "#ff4444",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "50%",
-                    width: "24px",
-                    height: "24px",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "bold",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}
-                >
-                  ✕
-                </button>
+              <div className={styles.imagePreview}>
+                <img src={commentImagePreview} alt="Preview" />
+                <button type="button" onClick={handleRemoveImage} className={styles.removeImg}>✕</button>
               </div>
             )}
-          </div>
 
-          <div style={{ textAlign: "right" }}>
             <button 
               type="submit" 
               disabled={isSubmittingComment || (!commentText.trim() && !commentImage)}
-              style={{ 
-                background: isSubmittingComment ? "#555" : "var(--color-primary)", 
-                color: "#000", 
-                border: "none", 
-                padding: "10px 25px", 
-                borderRadius: "20px", 
-                fontWeight: "bold", 
-                cursor: isSubmittingComment ? "not-allowed" : "pointer",
-                opacity: isSubmittingComment ? 0.7 : 1
-              }}
+              className={styles.submitComment}
             >
               {isSubmittingComment ? "Posting..." : "Post Comment ➤"}
             </button>
@@ -343,63 +363,39 @@ export default function SinglePostPage() {
         </form>
 
         {/* Comments List */}
-        <div className="comments-list" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-          {comments.length > 0 ? comments.map((c, idx) => (
-            <div key={idx} className="comment-item" style={{ display: "flex", gap: "15px", background: "var(--color-input-bg)", padding: "15px", borderRadius: "12px" }}>
-              <img src={resolveApiUrl(c.authorAvatar)} alt="avatar" style={{ width: "40px", height: "40px", borderRadius: "50%", border: "2px solid #3a3f44", objectFit: "cover" }} />
-              <div style={{ flex: 1 }}>
-
-                {/* Comment Info */}
-                <div className="comment-header" style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                  <span style={{ color: "var(--color-primary)", fontWeight: "bold" }}>{c.authorName || "Anonymous"}</span>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{formatDateTime(c.lastCreateDate || c.createDate)}</span>
+        <div className={styles.commentsList}>
+          {comments.length > 0 ? comments.map((c) => (
+            <div key={c.id} className={styles.commentItem}>
+              <img src={resolveApiUrl(c.authorAvatar) || "/default-avatar.png"} alt="avatar" className={styles.commentAvatar} />
+              <div className={styles.commentBody}>
+                <div className={styles.commentHeader}>
+                  <span className={styles.commentAuthor}>{c.authorName || "Anonymous"}</span>
+                  <span className={styles.commentDate}>{formatDateTime(c.lastCreateDate || c.createDate)}</span>
                 </div>
 
-                {/* Comment Text */}
-                {c.text && (
-                  <div style={{ color: "#2E2A22", lineHeight: "1.5", fontSize: "0.95rem", whiteSpace: "pre-wrap", marginBottom: "10px" }}>
-                    {c.text}
-                  </div>
-                )}
+                {c.text && <div className={styles.commentText}>{c.text}</div>}
+                {c.image && <img src={resolveApiUrl(c.image)} alt="Comment" className={styles.commentImage} />}
 
-                {/* Comment Image */}
-                {c.image && (
-                  <img
-                    src={resolveApiUrl(c.image)}
-                    alt="Comment Image"
-                    style={{
-                      width: "100%",
-                      maxHeight: "300px",
-                      objectFit: "cover",
-                      borderRadius: "8px",
-                      marginBottom: "10px",
-                      border: "1px solid #3a3f44"
-                    }}
-                  />
-                )}
-
-                <div className="comment-actions" style={{ display: "flex", gap: "12px", borderTop: "1px dashed #3a3f44", paddingTop: "8px" }}>
+                <div className={styles.commentActions}>
                   <button 
-                    onClick={() => handleLikeComment(c.id)} 
-                    style={{ background: "transparent", color: "var(--text-muted)", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
+                    onClick={() => handleLikeComment(c.id)}
+                    className={`${styles.voteBtn} ${c.userVote === "like" ? styles.likeActive : ""}`}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/like.svg" alt="Like" width={18} height={18} style={{ display: "block" }} /> {c.likes || 0} Like</span>
+                    👍 {c.likes || 0}
                   </button>
                   <button 
-                    onClick={() => handleDislikeComment(c.id)} 
-                    style={{ background: "transparent", color: "var(--text-muted)", border: "none", cursor: "pointer", fontSize: "0.85rem", fontWeight: "bold" }}
+                    onClick={() => handleDislikeComment(c.id)}
+                    className={`${styles.voteBtn} ${c.userVote === "dislike" ? styles.dislikeActive : ""}`}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}><img src="/icons/dislike.svg" alt="Dislike" width={18} height={18} style={{ display: "block" }} /> {c.dislikes || 0} Dislike</span>
+                    👎 {c.dislikes || 0}
                   </button>
                 </div>
-
               </div>
             </div>
           )) : (
-            <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "2rem 0" }}><span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>No comments yet. Be the first! <img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} /></span></p>
+            <p className={styles.emptyComments}>No comments yet. Be the first! 💬</p>
           )}
         </div>
-
       </div>
     </div>
   );
