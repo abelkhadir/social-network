@@ -28,7 +28,7 @@ type ProfileUser = {
   age?: number;
   gender?: string;
   aboutMe?: string;
-  avatarURL?: string;
+  avatar_url?: string;
 };
 
 type FollowUser = {
@@ -45,6 +45,7 @@ type BackendProfile = {
   myAccount: boolean;
   postsCount: number;
   posts: ProfilePost[];
+  avatar_url : string;
 };
 
 type ProfileResponse = {
@@ -328,7 +329,7 @@ const loadFollowers = async (targetId: string) => {
     return (
       <div className={styles.privateContainer}>
         <img
-          src={resolveApiUrl(limitedUser?.avatarURL) }
+          src={resolveApiUrl(limitedUser?.avatar_url) }
           alt="avatar"
           className={styles.avatar}
         />
@@ -356,7 +357,7 @@ const loadFollowers = async (targetId: string) => {
   const displayUser = profileData?.user;
   const avatarSrc =
     avatarPreview ||
-    resolveApiUrl(displayUser?.avatarURL ||user.avatar) ;
+    resolveApiUrl(displayUser?.avatar_url ||user.avatar_url) ;
 
   const followStatus = getFollowStatus();
 
