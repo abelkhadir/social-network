@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { resolveApiUrl } from "@/lib/api";
 import { getNotificationHref } from "@/lib/notifications";
+import { respondToGroupInvitation } from "@/lib/groups";
 import styles from "../../public/css/header.module.css";
 
 interface HeaderProps {
@@ -44,6 +45,23 @@ export default function Header({ toggleChat, isChatMode, isNotifOpen = false, to
     e.preventDefault();
     setIsProfileMenuOpen(false);
     await logout();
+  };
+
+  const [respondingInvite, setRespondingInvite] = useState<string | null>(null);
+
+  const handleInviteResponse = async (e: React.MouseEvent, notifId: string, groupId: string, decision: "accept" | "refuse") => {
+    e.stopPropagation();
+    setRespondingInvite(`${notifId}-${decision}`);
+    try {
+      await respondToGroupInvitation(groupId, decision);
+      await markRead(notifId);
+      refresh();
+      if (decision === "accept") router.push(`/groups/${groupId}`);
+    } catch {
+      // silent fail — user can retry
+    } finally {
+      setRespondingInvite(null);
+    }
   };
 
   useEffect(() => {
@@ -104,18 +122,46 @@ export default function Header({ toggleChat, isChatMode, isNotifOpen = false, to
                     {notifLoading ? (
                       <div className={styles.notifEmpty}>Loading notifications...</div>
                     ) : notifications.length > 0 ? notifications.map(notif => (
-                      <div 
-                        key={notif.id} 
-                        className={`${styles.notifItem} ${!notif.is_read ? styles.notifUnread : ""}`}
-                        onClick={() => {
-                          void markRead(notif.id);
-                          const href = getNotificationHref(notif);
-                          if (href) router.push(href);
-                        }}
-                      >
-                        <p>{notif.content}</p>
-                        <span>{timeAgo(notif.created_at)}</span>
-                      </div>
+                      notif.type === "group_invitation" ? (
+                        <div
+                          key={notif.id}
+                          className={`${styles.notifItem} ${!notif.is_read ? styles.notifUnread : ""}`}
+                        >
+                          <p>{notif.content}</p>
+                          <span>{timeAgo(notif.created_at)}</span>
+                          {!notif.is_read && (
+                            <div className={styles.notifActions}>
+                              <button
+                                className={styles.notifAcceptBtn}
+                                disabled={respondingInvite !== null}
+                                onClick={(e) => handleInviteResponse(e, notif.id, notif.entity_id ?? "", "accept")}
+                              >
+                                {respondingInvite === `${notif.id}-accept` ? "..." : "Accept"}
+                              </button>
+                              <button
+                                className={styles.notifRefuseBtn}
+                                disabled={respondingInvite !== null}
+                                onClick={(e) => handleInviteResponse(e, notif.id, notif.entity_id ?? "", "refuse")}
+                              >
+                                {respondingInvite === `${notif.id}-refuse` ? "..." : "Decline"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div
+                          key={notif.id}
+                          className={`${styles.notifItem} ${!notif.is_read ? styles.notifUnread : ""}`}
+                          onClick={() => {
+                            void markRead(notif.id);
+                            const href = getNotificationHref(notif);
+                            if (href) router.push(href);
+                          }}
+                        >
+                          <p>{notif.content}</p>
+                          <span>{timeAgo(notif.created_at)}</span>
+                        </div>
+                      )
                     )) : (
                       <div className={styles.notifEmpty}>No new notifications.</div>
                     )}

@@ -191,8 +191,9 @@ func (r *GroupRepository) GetGroup(groupID, userID string) (models.GroupIfo, *mo
 			Code:    http.StatusNotFound,
 		}
 	}
+
 	query := `
-		SELECT 
+		SELECT
 			g.id, g.title, g.description, g.created_at,
 			u.id, u.nickname, u.firstname, u.lastname, u.avatarURL,
 			(
@@ -205,7 +206,6 @@ func (r *GroupRepository) GetGroup(groupID, userID string) (models.GroupIfo, *mo
 
 	groupInfo := models.GroupIfo{}
 	var nickname sql.NullString
-	//
 	err = r.db.QueryRow(query, groupID).Scan(
 		&groupInfo.Group.ID,
 		&groupInfo.Group.Title,
@@ -300,6 +300,75 @@ func (r *GroupRepository) GetGroupNotifs(requestedID int) ([]*models.GroupReques
 	}
 
 	return groupNotifs, nil
+}
+
+// GetFollowersNotInGroup returns users connected to userID (followers or following)
+// who are not already group members and have no pending invitation.
+func (r *GroupRepository) GetFollowersNotInGroup(groupID, userID string) ([]*models.User, error) {
+	rows, err := r.db.Query(`
+		SELECT DISTINCT u.id, u.firstname, u.lastname, COALESCE(u.nickname,''), COALESCE(u.avatarURL,'')
+		FROM user u
+		WHERE u.id != ?
+		AND (
+			EXISTS (SELECT 1 FROM followers WHERE follower_id = ? AND following_id = u.id AND status = 'accepted')
+			OR
+			EXISTS (SELECT 1 FROM followers WHERE follower_id = u.id AND following_id = ? AND status = 'accepted')
+		)
+		AND u.id NOT IN (SELECT member_id  FROM group_members    WHERE group_id = ?)
+		AND u.id NOT IN (SELECT invitee_id FROM group_invitations WHERE group_id = ? AND status = 'pending')
+	`, userID, userID, userID, groupID, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		var u models.User
+		if err := rows.Scan(&u.ID, &u.Firstname, &u.Lastname, &u.Nickname, &u.Avatar); err != nil {
+			return nil, err
+		}
+		users = append(users, &u)
+	}
+	return users, rows.Err()
+}
+
+func (r *GroupRepository) SendGroupInvitation(groupID, inviterID, inviteeID string) error {
+	_, err := r.db.Exec(
+		`INSERT OR IGNORE INTO group_invitations (group_id, inviter_id, invitee_id) VALUES (?, ?, ?)`,
+		groupID, inviterID, inviteeID,
+	)
+	return err
+}
+
+func (r *GroupRepository) RespondGroupInvitation(groupID, inviteeID, decision string) error {
+	res, err := r.db.Exec(
+		`UPDATE group_invitations SET status = ? WHERE group_id = ? AND invitee_id = ? AND status = 'pending'`,
+		decision, groupID, inviteeID,
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("invitation not found or already answered")
+	}
+	if decision == "accept" {
+		_, err = r.db.Exec(
+			`INSERT OR IGNORE INTO group_members (group_id, member_id) VALUES (?, ?)`,
+			groupID, inviteeID,
+		)
+	}
+	return err
+}
+
+func (r *GroupRepository) GetGroupInviter(groupID, inviteeID string) (string, error) {
+	var inviterID string
+	err := r.db.QueryRow(
+		`SELECT inviter_id FROM group_invitations WHERE group_id = ? AND invitee_id = ? ORDER BY created_at DESC LIMIT 1`,
+		groupID, inviteeID,
+	).Scan(&inviterID)
+	return inviterID, err
 }
 
 func (r *GroupRepository) IsMember(GrpID string, sessionID string) (bool, error) {

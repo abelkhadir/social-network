@@ -47,8 +47,27 @@ func (repo *ProfileRepository) GetProfile(viewerID, profileID string) (*models.C
 		MyAccount: isMyAccount,
 	}
 
-	if err := repo.db.QueryRow(
-		"SELECT COUNT(*) FROM post WHERE authorID = ?", profileID,
+	if err := repo.db.QueryRow(`
+		SELECT COUNT(*) FROM post p
+		WHERE p.authorID = ?
+		AND (
+			p.Privecytype = 'public'
+			OR p.authorID = ?
+			OR (
+				p.Privecytype = 'almost_private'
+				AND EXISTS (
+					SELECT 1 FROM followers f
+					WHERE f.following_id = p.authorID AND f.follower_id = ? AND f.status = 'accepted'
+				)
+			)
+			OR (
+				p.Privecytype = 'private'
+				AND EXISTS (
+					SELECT 1 FROM post_shared_users pau
+					WHERE pau.post_id = p.id AND pau.user_id = ?
+				)
+			)
+		)`, profileID, viewerID, viewerID, viewerID,
 	).Scan(&profile.PostsCount); err != nil {
 		return nil, err
 	}
@@ -61,7 +80,7 @@ func (repo *ProfileRepository) GetProfile(viewerID, profileID string) (*models.C
 		return profile, nil
 	}
 
-	posts, err := repo.listProfilePosts(profileID)
+	posts, err := repo.listProfilePosts(viewerID, profileID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +89,8 @@ func (repo *ProfileRepository) GetProfile(viewerID, profileID string) (*models.C
 	return profile, nil
 }
 
-func (repo *ProfileRepository) GetProfilePosts(userID string) ([]models.ProfilePost, error) {
-	return repo.listProfilePosts(userID)
+func (repo *ProfileRepository) GetProfilePosts(viewerID, authorID string) ([]models.ProfilePost, error) {
+	return repo.listProfilePosts(viewerID, authorID)
 }
 
 func (repo *ProfileRepository) UpdateProfile(userID, nickname, aboutMe, avatarURL string, isPrivate int) error {
@@ -82,14 +101,33 @@ func (repo *ProfileRepository) UpdateProfile(userID, nickname, aboutMe, avatarUR
 	return err
 }
 
-func (repo *ProfileRepository) listProfilePosts(userID string) ([]models.ProfilePost, error) {
+func (repo *ProfileRepository) listProfilePosts(viewerID, authorID string) ([]models.ProfilePost, error) {
 	rows, err := repo.db.Query(`
 		SELECT p.id, p.title, p.description, p.createDate, COALESCE(p.Image, ''),
 			(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
 			(SELECT COUNT(*) FROM comment WHERE postID = p.id) AS comments
 		FROM post p
 		WHERE p.authorID = ?
-		ORDER BY p.createDate DESC`, userID)
+		AND (
+			p.Privecytype = 'public'
+			OR p.authorID = ?
+			OR (
+				p.Privecytype = 'almost_private'
+				AND EXISTS (
+					SELECT 1 FROM followers f
+					WHERE f.following_id = p.authorID AND f.follower_id = ? AND f.status = 'accepted'
+				)
+			)
+			OR (
+				p.Privecytype = 'private'
+				AND EXISTS (
+					SELECT 1 FROM post_shared_users pau
+					WHERE pau.post_id = p.id AND pau.user_id = ?
+				)
+			)
+		)
+		ORDER BY p.createDate DESC`,
+		authorID, viewerID, viewerID, viewerID)
 	if err != nil {
 		return nil, err
 	}

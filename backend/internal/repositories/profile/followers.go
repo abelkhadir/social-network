@@ -108,32 +108,61 @@ func (r *ProfileRepository) GetUserFollowersRepo(action string, userID string) (
 	switch action {
 
 	case "followers":
+		// People who follow me — compute my relationship toward them
 		query = `
-		SELECT 
+		SELECT
 			u.id,
 			u.firstname,
 			u.lastname,
 			u.nickname,
-			u.avatarURL
+			u.avatarURL,
+			u.is_private,
+			CASE
+				WHEN me.status = 'accepted' THEN 'mutual'
+				WHEN me.status = 'pending'  THEN 'requested'
+				ELSE 'follower'
+			END AS relationship
 		FROM followers f
 		JOIN user u ON u.id = f.follower_id
+		LEFT JOIN followers me
+			ON me.following_id = u.id AND me.follower_id = ?
 		WHERE f.following_id = ?
 		AND f.status = 'accepted';
 		`
+		rows, err = r.db.Query(query, userID, userID)
+		if err != nil {
+			return nil, models.FollowerError{Code: http.StatusInternalServerError, Message: "Internal server error"}
+		}
+		defer rows.Close()
+		flag = true
 
 	case "following":
+		// People I follow — compute the relationship
 		query = `
-		SELECT 
+		SELECT
 			u.id,
 			u.firstname,
 			u.lastname,
 			u.nickname,
-			u.avatarURL
+			u.avatarURL,
+			u.is_private,
+			CASE
+				WHEN them.status = 'accepted' THEN 'mutual'
+				ELSE 'following'
+			END AS relationship
 		FROM followers f
 		JOIN user u ON u.id = f.following_id
+		LEFT JOIN followers them
+			ON them.follower_id = u.id AND them.following_id = ?
 		WHERE f.follower_id = ?
 		AND f.status = 'accepted';
 		`
+		rows, err = r.db.Query(query, userID, userID)
+		if err != nil {
+			return nil, models.FollowerError{Code: http.StatusInternalServerError, Message: "Internal server error"}
+		}
+		defer rows.Close()
+		flag = true
 	case "discover":
 		query = `
 	SELECT 
@@ -210,7 +239,7 @@ WHERE u.id != ?;
 		var nickname sql.NullString
 		var avatar sql.NullString
 		var err error
-		if action == "discover" {
+		if action == "discover" || action == "followers" || action == "following" {
 			err = rows.Scan(
 				&user.ID,
 				&user.Firstname,

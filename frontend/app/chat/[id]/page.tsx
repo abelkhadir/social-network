@@ -15,6 +15,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [talker, setTalker] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
   const [text, setText] = useState("");
   const [isPeerTyping, setIsPeerTyping] = useState(false);
 
@@ -33,7 +34,8 @@ export default function ChatPage() {
         const data = await fetchApi(`/chat/messages/${receiverId}`);
         setMessages(data.messages || []);
         setTalker(data.talker || { Nickname: "Unknown", IsConnected: false });
-      } catch (error) {
+      } catch (error: any) {
+        if (error.message?.includes("follow")) setForbidden(true);
         console.error("Chat Error:", error);
       } finally {
         setLoading(false);
@@ -123,6 +125,10 @@ export default function ChatPage() {
     );
   }
 
+  if (forbidden) {
+    return <h2 className={styles.notFound}>You must follow each other to chat.</h2>;
+  }
+
   if (!talker) {
     return <h2 className={styles.notFound}>User not found</h2>;
   }
@@ -136,7 +142,7 @@ export default function ChatPage() {
       
       {/* Header */}
       <div className={styles.chatHeader}>
-        <img src={talkerAvatar || "/default-avatar.png"} alt="avatar" className={styles.headerAvatar} />
+        <img src={talkerAvatar || resolveApiUrl("/uploads/images/default-avatar.jpg")} alt="avatar" className={styles.headerAvatar} />
         <div className={styles.headerInfo}>
           <h3>{talkerName}</h3>
           <span className={talkerOnline ? styles.online : styles.offline}>
@@ -179,13 +185,14 @@ export default function ChatPage() {
       <div className={styles.chatInputArea}>
         <form onSubmit={handleSendMessage} className={styles.inputForm}>
           <input 
-            type="text" 
-            name="message" 
-            placeholder="Type a message..." 
-            autoComplete="off" 
-            required 
+            type="text"
+            name="message"
+            placeholder="Type a message..."
+            autoComplete="off"
+            required
             value={text}
             onChange={handleInput}
+            maxLength={1000}
             className={styles.messageInput}
           />
           <button type="submit" className={styles.sendBtn}>

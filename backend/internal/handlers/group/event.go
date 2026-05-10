@@ -39,6 +39,13 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 
 	event.UserID = userID
 
+	if len(event.Title) > 1000 || len(event.Description) > 1000 {
+		utils.SendJSONResponse(w, 400, map[string]any{
+			"error": "title and description must be under 1000 characters",
+		})
+		return
+	}
+
 	if event.EventDate.Before(time.Now()) {
 		utils.SendJSONResponse(w, 400, map[string]any{
 			"error": "event is before the current date",

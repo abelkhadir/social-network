@@ -93,7 +93,7 @@ func GetProfile(app *app.Application, res http.ResponseWriter, req *http.Request
 		}
 
 		//  Is following  load posts
-		posts, err := app.ProfileRepo.GetProfilePosts(profile.User.ID)
+		posts, err := app.ProfileRepo.GetProfilePosts(viewer.ID, profile.User.ID)
 		if err != nil {
 			utils.HandleError(res, http.StatusInternalServerError, "Failed to load posts")
 			return
@@ -111,7 +111,7 @@ func GetProfile(app *app.Application, res http.ResponseWriter, req *http.Request
 	}
 
 	if len(profile.Posts) == 0 && isOwner {
-		posts, err := app.ProfileRepo.GetProfilePosts(profile.User.ID)
+		posts, err := app.ProfileRepo.GetProfilePosts(viewer.ID, profile.User.ID)
 		if err != nil {
 			utils.HandleError(res, http.StatusInternalServerError, "Failed to load posts")
 			return
@@ -160,6 +160,10 @@ func UpdateProfile(app *app.Application, res http.ResponseWriter, req *http.Requ
 		}
 		if values, ok := req.MultipartForm.Value["aboutMe"]; ok && len(values) > 0 {
 			aboutMe = strings.TrimSpace(values[0])
+			if len(aboutMe) > 1000 {
+				utils.HandleError(res, http.StatusBadRequest, "About me must be under 1000 characters")
+				return
+			}
 		}
 		if values, ok := req.MultipartForm.Value["isPrivate"]; ok && len(values) > 0 {
 			if parsed, ok := parseBoolParam(values[0]); ok {
@@ -207,7 +211,7 @@ func UpdateProfile(app *app.Application, res http.ResponseWriter, req *http.Requ
 			case "image/gif":
 				ext = ".gif"
 			default:
-				utils.HandleError(res, http.StatusBadRequest, "Invalid avatar type. Only JPEG, PNG, GIF allowed")
+				utils.HandleError(res, http.StatusBadRequest, "Invalid image type. Only JPEG, PNG, GIF allowed")
 				return
 			}
 
@@ -258,6 +262,10 @@ func UpdateProfile(app *app.Application, res http.ResponseWriter, req *http.Requ
 		}
 		if payload.AboutMe != nil {
 			aboutMe = strings.TrimSpace(*payload.AboutMe)
+			if len(aboutMe) > 1000 {
+				utils.HandleError(res, http.StatusBadRequest, "About me must be under 1000 characters")
+				return
+			}
 		}
 		if payload.IsPrivate != nil {
 			if *payload.IsPrivate {

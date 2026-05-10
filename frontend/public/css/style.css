@@ -23,7 +23,7 @@
     --bg-header-end: #181a1b;
 
     --color-primary: #002fff;
-    --color-primary-dark: (--ink-300);
+    --color-primary-dark: var(--ink-300);
     --color-primary-darker: #994900;
     --color-highlight-yellow: #ff9d00;
 
@@ -571,9 +571,9 @@ header {
 @media (max-width: 950px) {
     .main-content {
         flex-direction: column;
+        padding-top: 200px;
     }
 
-    .sidebar-left,
     .sidebar-right,
     .nervna-router {
         width: 100%;
@@ -583,6 +583,19 @@ header {
 
     .sidebar-right {
         display: none;
+    }
+
+    .sidebar-left {
+        position: fixed;
+        top: 75px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 100%;
+        z-index: 99;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
     }
 
     .nervna-router {

@@ -126,6 +126,16 @@ func GetMessages(application *app.Application, res http.ResponseWriter, req *htt
 		return
 	}
 
+	canChat, err := application.ProfileRepo.CanChat(currentUser.ID, otherUserID)
+	if err != nil {
+		utils.HandleError(res, http.StatusInternalServerError, "Failed to check permissions")
+		return
+	}
+	if !canChat {
+		utils.HandleError(res, http.StatusForbidden, "You must follow each other to chat")
+		return
+	}
+
 	messages, err := application.MessageRepo.GetMessagesBetween(currentUser.ID, otherUserID)
 	if err != nil {
 		utils.HandleError(res, http.StatusInternalServerError, "Failed to fetch messages")
@@ -175,6 +185,20 @@ func SendChatMessage(application *app.Application, res http.ResponseWriter, req 
 	payload.Text = strings.TrimSpace(payload.Text)
 	if payload.ReceiverID == "" || payload.Text == "" {
 		utils.HandleError(res, http.StatusBadRequest, "Missing receiver or message text")
+		return
+	}
+	if len(payload.Text) > 1000 {
+		utils.HandleError(res, http.StatusBadRequest, "Message must be under 1000 characters")
+		return
+	}
+
+	canChat, err := application.ProfileRepo.CanChat(currentUser.ID, payload.ReceiverID)
+	if err != nil {
+		utils.HandleError(res, http.StatusInternalServerError, "Failed to check permissions")
+		return
+	}
+	if !canChat {
+		utils.HandleError(res, http.StatusForbidden, "You must follow each other to chat")
 		return
 	}
 

@@ -69,7 +69,7 @@ func RatePostHandler(application *app.Application, res http.ResponseWriter, req 
 	}
 
 	if action == "like" && (!hasExistingVote || existingVote != 1) {
-		post, postErr := application.PostRepo.GetPostByID(postID)
+		post, postErr := application.PostRepo.GetPostByID(postID, userInSession.ID)
 		if postErr == nil && post != nil && post.AuthorID != "" && post.AuthorID != userInSession.ID {
 			notification := models.Notification{
 				UserID:     post.AuthorID,

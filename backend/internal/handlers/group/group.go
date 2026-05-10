@@ -41,6 +41,13 @@ func CreateGroupHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	if len(group.Title) > 1000 || len(group.Description) > 1000 {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+			"error": "title and description must be under 1000 characters",
+		})
+		return
+	}
+
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok {
 		utils.SendJSONResponse(w, http.StatusUnauthorized, map[string]any{

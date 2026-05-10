@@ -18,8 +18,8 @@ func NewRateLimiter(window time.Duration) *RateLimiter {
 	return &RateLimiter{
 		WindowDuration: window,
 		Limits: map[string]int{
-			"api":  3000,
-			"auth": 100,
+			"api":  10000,
+			"auth": 300,
 		},
 		Requests: make(map[string][]time.Time),
 	}

@@ -233,17 +233,22 @@ func SetupRoutes(a *app.Application) {
 		),
 	)
 
+	// Group user invitations
+	http.Handle("/groups/invite-user/followers/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.GetInvitableFollowersHandler(a, w, r)
+	}))))
+	http.Handle("/groups/invite-user/respond", rateLimiter.Wrap("api", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.RespondGroupInvitationHandler(a, w, r)
+	})))
+	http.Handle("/groups/invite-user", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		groupshandler.SendGroupUserInvitationHandler(a, w, r)
+	}))))
+
 	// WebSocket
 	http.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		websockethandler.HandleWebSocket(a, w, r)
 	}))
-	// follow
-	http.Handle("/followuserhome", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		profile.NewFollowHandler(a).FollowUser(w,r)
-	}))
-
 	http.Handle("/fetchUsers", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		profile.NewFollowHandler(a).GetContactHandler(a, w, r)
 	}))
-	// http.HandleFunc("/unfollow", profile.UnfollowUser)
 }

@@ -1,16 +1,21 @@
 package authandler
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"social/internal/app"
 	websockethandler "social/internal/handlers/websocket"
 	"social/internal/models"
@@ -44,9 +49,58 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		user.AboutMe = req.FormValue("about")
 
 		// Handle avatar file upload
-		avatarURL := utils.UploadImage(req, "avatar")
-		if avatarURL != "" {
-			user.AvatarURL = avatarURL
+		file, header, fileErr := req.FormFile("avatar")
+		if fileErr == nil {
+			defer file.Close()
+			buf := make([]byte, 512)
+			n, err := file.Read(buf)
+			if err != nil && err != io.EOF {
+				utils.HandleError(res, http.StatusBadRequest, "Failed to read avatar")
+				return
+			}
+			mimeType := http.DetectContentType(buf[:n])
+			ext := ""
+			switch mimeType {
+			case "image/jpeg":
+				ext = ".jpg"
+			case "image/png":
+				ext = ".png"
+			case "image/gif":
+				ext = ".gif"
+			default:
+				utils.HandleError(res, http.StatusBadRequest, "Invalid image type. Only JPEG, PNG, GIF allowed")
+				return
+			}
+			if header.Size > 5<<20 {
+				utils.HandleError(res, http.StatusBadRequest, "Avatar must be under 5MB")
+				return
+			}
+			if err := os.MkdirAll("./uploads/avatars", 0o755); err != nil {
+				utils.HandleError(res, http.StatusInternalServerError, "Failed to prepare uploads directory")
+				return
+			}
+			imageID, err := uuid.NewV4()
+			if err != nil {
+				utils.HandleError(res, http.StatusInternalServerError, "Failed to generate avatar id")
+				return
+			}
+			filename := imageID.String() + ext
+			dstPath := filepath.Join("./uploads/avatars", filename)
+			dstFile, err := os.Create(dstPath)
+			if err != nil {
+				utils.HandleError(res, http.StatusInternalServerError, "Failed to save avatar")
+				return
+			}
+			defer dstFile.Close()
+			reader := io.MultiReader(bytes.NewReader(buf[:n]), file)
+			if _, err := io.Copy(dstFile, reader); err != nil {
+				utils.HandleError(res, http.StatusInternalServerError, "Failed to write avatar")
+				return
+			}
+			user.AvatarURL = "/uploads/avatars/" + filename
+		} else if fileErr != http.ErrMissingFile {
+			utils.HandleError(res, http.StatusBadRequest, "Invalid avatar upload")
+			return
 		}
 
 	} else {
@@ -265,6 +319,9 @@ func validateSignUpInput(user *models.User) error {
 	}
 	if !nameRegex.MatchString(user.Lastname) {
 		return errors.New("invalid last name format must contain only letters")
+	}
+	if len(user.AboutMe) > 1000 {
+		return errors.New("about me must be under 1000 characters")
 	}
 	user.Nickname = html.EscapeString(user.Nickname)
 	user.Email = html.EscapeString(user.Email)

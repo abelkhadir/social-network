@@ -84,6 +84,9 @@ func HandleWebSocket(a *app.Application, res http.ResponseWriter, req *http.Requ
 			if msg.GroupID == "" || msg.Message == "" {
 				continue
 			}
+			if len(msg.Message) > 1000 {
+				continue
+			}
 
 			if _, err := a.GroupPostRepo.SaveMessagesGrpRepo(msg.GroupID, senderID, msg.Message); err != nil {
 				log.Println("Error saving group message:", err)

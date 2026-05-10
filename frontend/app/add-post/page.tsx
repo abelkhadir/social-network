@@ -130,7 +130,7 @@ export default function AddPostPage() {
               id="title"
               placeholder="Give your post a title"
               required
-              maxLength={255}
+              maxLength={1000}
               className={styles.input}
             />
           </div>
@@ -143,7 +143,7 @@ export default function AddPostPage() {
               rows={5}
               placeholder="What's on your mind?"
               required
-              maxLength={500}
+              maxLength={1000}
               className={styles.textarea}
             />
           </div>
@@ -206,7 +206,7 @@ export default function AddPostPage() {
                   {followers.map((f) => (
                     <li key={f.id} className={styles.followerItem}>
                       <img
-                        src={resolveApiUrl(f.avatar) || "/default-avatar.png"}
+                        src={resolveApiUrl(f.avatar) || resolveApiUrl("/uploads/images/default-avatar.jpg")}
                         alt={`${f.firstname} ${f.lastname}`}
                         className={styles.followerAvatar}
                       />

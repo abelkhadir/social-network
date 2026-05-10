@@ -39,12 +39,21 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	title := r.FormValue("title")
+	content := r.FormValue("content")
+	if len(title) > 1000 || len(content) > 1000 {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+			"message": "title and content must be under 1000 characters",
+		})
+		return
+	}
+
 	post := &models.GroupPost{
 		GroupId: groupIdstr,
 		Post: models.Post{
 			AuthorID:    string(userId),
-			Title:       r.FormValue("title"),
-			Description: r.FormValue("content"),
+			Title:       title,
+			Description: content,
 		},
 	}
 
@@ -55,8 +64,14 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 			ImgHeader:  header,
 			ImgContent: file,
 		}
-
 		defer file.Close()
+
+		if err := utils.CheckImage(img); err != nil {
+			utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+				"message": "Invalid image type. Only JPEG, PNG, GIF allowed",
+			})
+			return
+		}
 	}
 
 	_, ErrSavePost := app.GroupPostRepo.SaveGroupPostRepo(r.Context(), post, img)

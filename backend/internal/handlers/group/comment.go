@@ -41,6 +41,12 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 		})
 		return
 	}
+	if len(text) > 1000 {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+			"message": "comment must be under 1000 characters",
+		})
+		return
+	}
 	fmt.Println("the text", text)
 	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
 	var img *models.Image // nil unless file is provided
@@ -92,6 +98,12 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 			}
 
 			defer file.Close()
+			if err := utils.CheckImage(img); err != nil {
+				utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+					"message": "Invalid image type. Only JPEG, PNG, GIF allowed",
+				})
+				return
+			}
 		}
 
 		pathParts := strings.Split(r.URL.Path, "/")
@@ -137,6 +149,12 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 			}
 
 			defer file.Close()
+			if err := utils.CheckImage(img); err != nil {
+				utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+					"message": "Invalid image type. Only JPEG, PNG, GIF allowed",
+				})
+				return
+			}
 		}
 
 		pathParts := strings.Split(r.URL.Path, "/")

@@ -201,12 +201,13 @@ export default function RegisterPage() {
           <div className={styles.formGroup}>
             <label htmlFor="about" className={styles.label}>About <span className={styles.optional}>(optional)</span></label>
             <input 
-              type="text" 
-              id="about" 
-              name="about" 
-              value={formData.about} 
-              onChange={handleChange} 
-              placeholder="Tell us about yourself!" 
+              type="text"
+              id="about"
+              name="about"
+              value={formData.about}
+              onChange={handleChange}
+              placeholder="Tell us about yourself!"
+              maxLength={1000}
               className={styles.input}
             />
           </div>

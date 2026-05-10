@@ -210,6 +210,40 @@
     color: var(--text-muted);
 }
 
+.notifActions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.notifAcceptBtn,
+.notifRefuseBtn {
+    flex: 1;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.notifAcceptBtn {
+    background: var(--accent);
+    color: #fff;
+}
+
+.notifRefuseBtn {
+    background: var(--bg-card, #e5e7eb);
+    color: var(--text-main);
+}
+
+.notifAcceptBtn:disabled,
+.notifRefuseBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* ============ Profile Dropdown ============ */
 .profileDropdownContainer {
     position: relative;

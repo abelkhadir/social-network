@@ -51,6 +51,8 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
   const [unreadByUser, setUnreadByUser] = useState<Record<string, number>>({});
   const [unreadByGroup, setUnreadByGroup] = useState<Record<string, number>>({});
   const activeGroupChatIdRef = useRef("");
+  const recentlyLeftChatUserIdRef = useRef("");
+  const recentlyLeftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const activeChatUserId = getActiveChatUserId(pathname);
   const lastFetchedAtRef = useRef(0);
@@ -157,6 +159,24 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
     void markThreadRead(activeChatUserId);
   }, [activeChatUserId, markThreadRead, unreadByUser]);
 
+  // Grace period: absorb WS notifications that arrive just after the user navigates
+  // away from a chat so they don't incorrectly increment the badge.
+  useEffect(() => {
+    if (!activeChatUserId) return;
+    // Cancel any stale grace period if user re-enters the same chat
+    if (recentlyLeftChatUserIdRef.current === activeChatUserId) {
+      if (recentlyLeftTimerRef.current) clearTimeout(recentlyLeftTimerRef.current);
+      recentlyLeftChatUserIdRef.current = "";
+    }
+    return () => {
+      recentlyLeftChatUserIdRef.current = activeChatUserId;
+      if (recentlyLeftTimerRef.current) clearTimeout(recentlyLeftTimerRef.current);
+      recentlyLeftTimerRef.current = setTimeout(() => {
+        recentlyLeftChatUserIdRef.current = "";
+      }, 1000);
+    };
+  }, [activeChatUserId]);
+
   useEffect(() => {
     if (!latestNotification || !user) return;
 
@@ -170,7 +190,7 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
     }
 
     if (latestNotification.type === "message" && actorId) {
-      if (actorId === activeChatUserId) {
+      if (actorId === activeChatUserId || actorId === recentlyLeftChatUserIdRef.current) {
         void markThreadRead(actorId);
         return;
       }

@@ -2,6 +2,7 @@ package posthandler
 
 import (
 	"bytes"
+	"database/sql"
 	"errors"
 	"fmt"
 	"html"
@@ -14,8 +15,6 @@ import (
 	"social/internal/app"
 	"social/internal/models"
 	"social/pkg/utils"
-
-	// "errors"
 
 	uuid "github.com/gofrs/uuid"
 )
@@ -172,9 +171,14 @@ func GetPost(application *app.Application, res http.ResponseWriter, req *http.Re
 				utils.SendJSONResponse(res, http.StatusOK, map[string]any{"message": "post retrieved successfully", "post": post})
 				return
 			}
-			post, err := application.PostRepo.GetPostByID(postid)
+			userInSession, _ := application.SessionRepo.GetUserFromSession(req)
+			post, err := application.PostRepo.GetPostByID(postid, userInSession.ID)
 			if err != nil {
-				utils.HandleError(res, http.StatusInternalServerError, err.Error())
+				if errors.Is(err, sql.ErrNoRows) {
+					utils.HandleError(res, http.StatusNotFound, "Post not found")
+				} else {
+					utils.HandleError(res, http.StatusInternalServerError, err.Error())
+				}
 				return
 			}
 
@@ -215,8 +219,8 @@ func validatePostInput(post *models.PostCreation) error {
 	if post.Title == "" || post.Description == "" {
 		return errors.New("the title or Description shouldn't be emty ")
 	}
-	if len(post.Title) >= 500 || len(post.Description) >= 500 {
-		return errors.New("you have entere a  long Title or Description ")
+	if len(post.Title) > 1000 || len(post.Description) > 1000 {
+		return errors.New("title and description must be under 1000 characters")
 	}
 	post.Title = html.EscapeString(post.Title)
 	post.Description = html.EscapeString(post.Description)

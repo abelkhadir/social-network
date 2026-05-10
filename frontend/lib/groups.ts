@@ -366,6 +366,40 @@ export async function createGroupPost(groupId: string | number, formData: FormDa
   );
 }
 
+export interface InvitableUser {
+  id: string;
+  nickname: string;
+  firstname: string;
+  lastname: string;
+  avatar: string;
+}
+
+export async function fetchInvitableFollowers(groupId: string): Promise<InvitableUser[]> {
+  const response = await requestWithFallback<any>([`/groups/invite-user/followers/${groupId}`]);
+  const users = Array.isArray(response?.users) ? response.users : [];
+  return users.map((u: any) => ({
+    id: toString(pick(u, ["id", "ID"], "")),
+    nickname: toString(pick(u, ["nickname", "Nickname"], "")),
+    firstname: toString(pick(u, ["firstname", "Firstname", "first_name"], "")),
+    lastname: toString(pick(u, ["lastname", "Lastname", "last_name"], "")),
+    avatar: toString(pick(u, ["avatar", "Avatar", "avatarURL", "AvatarURL"], "")),
+  }));
+}
+
+export async function sendGroupUserInvitation(groupId: string, userId: string) {
+  return requestWithFallback<any>(["/groups/invite-user"], {
+    method: "POST",
+    body: JSON.stringify({ group_id: groupId, user_id: userId }),
+  });
+}
+
+export async function respondToGroupInvitation(groupId: string, decision: "accept" | "refuse") {
+  return requestWithFallback<any>(["/groups/invite-user/respond"], {
+    method: "POST",
+    body: JSON.stringify({ group_id: groupId, decision }),
+  });
+}
+
 //the flow of request:
 // Frontend (createGroup)
 //         ↓

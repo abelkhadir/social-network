@@ -67,7 +67,7 @@ func (pr *PostRepository) CreatePost(post *models.PostCreation) error {
 }
 
 // Get a post by ID from the database
-func (pr *PostRepository) GetPostByID(postID string) (*models.CompletePost, error) {
+func (pr *PostRepository) GetPostByID(postID, viewerID string) (*models.CompletePost, error) {
 	var post models.CompletePost
 	row := pr.db.QueryRow(`
   SELECT
@@ -83,7 +83,25 @@ func (pr *PostRepository) GetPostByID(postID string) (*models.CompletePost, erro
     (SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes
 FROM post p
 JOIN user u ON u.id = p.authorID
-WHERE p.id = ?`, postID)
+WHERE p.id = ?
+AND (
+    p.Privecytype = 'public'
+    OR p.authorID = ?
+    OR (
+        p.Privecytype = 'almost_private'
+        AND EXISTS (
+            SELECT 1 FROM followers f
+            WHERE f.following_id = p.authorID AND f.follower_id = ? AND f.status = 'accepted'
+        )
+    )
+    OR (
+        p.Privecytype = 'private'
+        AND EXISTS (
+            SELECT 1 FROM post_shared_users pau
+            WHERE pau.post_id = p.id AND pau.user_id = ?
+        )
+    )
+)`, postID, viewerID, viewerID, viewerID)
 	err := row.Scan(
 		&post.ID,
 		&post.Title,

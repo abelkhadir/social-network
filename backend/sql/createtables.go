@@ -111,7 +111,7 @@ func EnsureSchema(db *sql.DB) error {
 
 		// Groups (FIXED: TEXT IDs + correct FK)
 		`CREATE TABLE IF NOT EXISTS groups (
-			id TEXT  PRIMARY KEY ,
+			id TEXT PRIMARY KEY,
 			user_id TEXT NOT NULL,
 			title TEXT NOT NULL,
 			description TEXT NOT NULL,
@@ -193,6 +193,19 @@ func EnsureSchema(db *sql.DB) error {
 			FOREIGN KEY (group_post_id) REFERENCES group_posts(id) ON DELETE CASCADE,
 			FOREIGN KEY (member_id) REFERENCES user(id) ON DELETE CASCADE
 		)`,
+		`CREATE TABLE IF NOT EXISTS group_invitations (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			group_id TEXT NOT NULL,
+			inviter_id TEXT NOT NULL,
+			invitee_id TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(group_id, invitee_id),
+			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+			FOREIGN KEY (inviter_id) REFERENCES user(id) ON DELETE CASCADE,
+			FOREIGN KEY (invitee_id) REFERENCES user(id) ON DELETE CASCADE
+		)`,
+
 		`CREATE TABLE IF NOT EXISTS followers (
 	follower_id TEXT NOT NULL,
 	following_id TEXT NOT NULL,

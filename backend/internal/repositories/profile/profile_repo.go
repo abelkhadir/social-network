@@ -31,12 +31,41 @@ func (r *ProfileRepository) FollowUser(followerID, followingID string) error {
 }
 
 func (r *ProfileRepository) UnfollowUser(followerID, followingID string) error {
-	_, err := r.db.Exec(`
+	result, err := r.db.Exec(`
 		DELETE FROM followers
 		WHERE follower_id = ? AND following_id = ?`,
 		followerID, followingID,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errors.New("not following")
+	}
+	return nil
+}
+
+// CanChat returns true if there is an accepted follow in either direction.
+func (r *ProfileRepository) CanChat(userA, userB string) (bool, error) {
+	var exists int
+	err := r.db.QueryRow(`
+		SELECT 1 FROM followers
+		WHERE status = 'accepted'
+		  AND (
+		        (follower_id = ? AND following_id = ?)
+		     OR (follower_id = ? AND following_id = ?)
+		  )
+		LIMIT 1`,
+		userA, userB, userB, userA,
+	).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
 }
 
 func (r *ProfileRepository) IsFollowing(followerID, followingID string) (bool, error) {

@@ -15,7 +15,7 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
   const [suggestedGroups, setSuggestedGroups] = useState<GroupSummary[]>([]);
   const [lastMessages, setLastMessages] = useState<{ [key: string]: { text: string; time: string } }>({});
   const [loading, setLoading] = useState(true);
-  const { latestMessage } = useSocket();
+  const { latestMessage, userStatus } = useSocket();
   const { unreadByUser, totalUnread, totalGroupUnread, markThreadRead } = useChatNotifications();
 
   const [activeTab] = useState<"users" | "groups">("users");
@@ -36,6 +36,17 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
         .finally(() => setLoading(false));
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!userStatus?.userID) return;
+    setUsers((prev) =>
+      prev.map((u) => {
+        const id = u.ID || u.id;
+        if (id !== userStatus.userID) return u;
+        return { ...u, IsConnected: userStatus.online, is_connected: userStatus.online };
+      })
+    );
+  }, [userStatus]);
 
   useEffect(() => {
     if (!latestMessage || !user) return;

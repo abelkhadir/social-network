@@ -16,10 +16,13 @@ import {
   fetchGroupMembers,
   fetchGroupPending,
   fetchGroupPosts,
+  fetchInvitableFollowers,
+  sendGroupUserInvitation,
   GroupDetails,
   GroupEvent,
   GroupMember,
   GroupPost,
+  InvitableUser,
   PendingMembers,
   respondGroupRequest,
   voteOnGroupEvent,
@@ -67,6 +70,11 @@ export default function SingleGroupPage() {
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [votingId, setVotingId] = useState<string | null>(null);
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [invitableUsers, setInvitableUsers] = useState<InvitableUser[]>([]);
+  const [loadingInvitable, setLoadingInvitable] = useState(false);
+  const [sendingInviteId, setSendingInviteId] = useState<string | null>(null);
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
   const [postForm, setPostForm] = useState({
     title: "",
     content: "",
@@ -124,7 +132,7 @@ export default function SingleGroupPage() {
       "events",
       "members",
       "chat",
-      ...(isOwner ? ["pending"] : []),
+      ...(isOwner ? ["pending" as GroupTab] : []),
     ];
 
     if (allowedTabs.includes(nextTab)) {
@@ -236,6 +244,34 @@ export default function SingleGroupPage() {
     }
   };
 
+  const handleOpenInviteModal = async () => {
+    if (!id) return;
+    setInviteModalOpen(true);
+    setLoadingInvitable(true);
+    try {
+      const users = await fetchInvitableFollowers(id);
+      setInvitableUsers(users);
+    } catch {
+      showToast("Failed to load users", "error");
+    } finally {
+      setLoadingInvitable(false);
+    }
+  };
+
+  const handleSendInvite = async (userId: string) => {
+    if (!id) return;
+    setSendingInviteId(userId);
+    try {
+      await sendGroupUserInvitation(id, userId);
+      setInvitedIds((prev) => new Set(prev).add(userId));
+      showToast("Invitation sent!", "success");
+    } catch (err: any) {
+      showToast(err.message || "Failed to send invitation", "error");
+    } finally {
+      setSendingInviteId(null);
+    }
+  };
+
   if (loading) return <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading group...</div>;
 
   if (!groupInfo) {
@@ -258,10 +294,23 @@ export default function SingleGroupPage() {
         <div style={{ padding: "20px" }}>
           <h1 style={{ margin: "0 0 8px 0", color: "var(--color-primary)" }}>{groupInfo.group.title}</h1>
           <p style={{ color: "var(--text-muted)", margin: "0 0 15px 0", lineHeight: "1.6" }}>{groupInfo.group.description}</p>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", color: "var(--text-muted)", fontSize: "0.92rem" }}>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", color: "var(--text-muted)", fontSize: "0.92rem" }}>
             <span>{groupInfo.totalMembers} members</span>
             <span>Created {timeAgo(groupInfo.group.createdAt)}</span>
             <span>Owner: {displayName(groupInfo.author)}</span>
+            <div style={{ marginLeft: "auto", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <button
+                onClick={handleOpenInviteModal}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  padding: "6px 14px", background: "transparent",
+                  color: "var(--color-primary)", border: "1px solid var(--color-primary)",
+                  borderRadius: "999px", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                ✉️ Invite Members
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -289,8 +338,8 @@ export default function SingleGroupPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <form onSubmit={handleCreatePost} style={{ background: "var(--bg-card)", padding: "18px", borderRadius: "12px", border: "1px solid #2f3336" }}>
             <h3 style={{ color: "var(--text-main)", marginTop: 0 }}>Create a group post</h3>
-            <input type="text" value={postForm.title} onChange={(e) => setPostForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Post title" style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "#000", marginBottom: "10px" }} />
-            <textarea value={postForm.content} onChange={(e) => setPostForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Write something..." style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "#000", resize: "vertical", minHeight: "90px", marginBottom: "10px" }} />
+            <input type="text" value={postForm.title} onChange={(e) => setPostForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Post title" maxLength={1000} style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "#000", marginBottom: "10px" }} />
+            <textarea value={postForm.content} onChange={(e) => setPostForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Write something..." maxLength={1000} style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "#000", resize: "vertical", minHeight: "90px", marginBottom: "10px" }} />
             <input type="file" accept="image/*" onChange={(e) => setPostForm((prev) => ({ ...prev, image: e.target.files?.[0] || null }))} style={{ color: "var(--text-muted)", marginBottom: "10px" }} />
             <div style={{ textAlign: "right" }}><button type="submit" disabled={posting} style={{ background: "var(--color-primary)", color: "#000", border: "none", padding: "10px 20px", borderRadius: "20px", fontWeight: "bold", cursor: posting ? "not-allowed" : "pointer", opacity: posting ? 0.7 : 1 }}>{posting ? "Posting..." : "Post"}</button></div>
           </form>
@@ -448,12 +497,14 @@ export default function SingleGroupPage() {
               value={eventForm.title}
               onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))}
               placeholder="Event title"
+              maxLength={1000}
               style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", marginBottom: "10px" }}
             />
             <textarea
               value={eventForm.description}
               onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="What is this event about?"
+              maxLength={1000}
               style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", minHeight: "90px", resize: "vertical", marginBottom: "10px" }}
             />
             <input
@@ -570,6 +621,81 @@ export default function SingleGroupPage() {
           ) : (
             <div style={{ color: "var(--text-muted)", textAlign: "center" }}>No pending members found.</div>
           )}
+        </div>
+      )}
+
+      {/* Invite Members Modal */}
+      {inviteModalOpen && (
+        <div
+          onClick={() => setInviteModalOpen(false)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+            zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--bg-card)", borderRadius: "16px", padding: "24px",
+              width: "100%", maxWidth: "440px", maxHeight: "80vh", display: "flex", flexDirection: "column",
+              border: "1px solid var(--border-subtle)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, color: "var(--text-main)", fontSize: "1.1rem" }}>Invite Members</h3>
+              <button
+                onClick={() => setInviteModalOpen(false)}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted)", fontSize: "1.3rem", cursor: "pointer", lineHeight: 1 }}
+              >✕</button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
+              {loadingInvitable ? (
+                <p style={{ color: "var(--text-muted)", textAlign: "center", margin: "20px 0" }}>Loading...</p>
+              ) : invitableUsers.length === 0 ? (
+                <p style={{ color: "var(--text-muted)", textAlign: "center", margin: "20px 0" }}>
+                  No one left to invite. All your connections are already members or have a pending invitation.
+                </p>
+              ) : invitableUsers.map((u) => {
+                const name = u.nickname || [u.firstname, u.lastname].filter(Boolean).join(" ") || "User";
+                const alreadyInvited = invitedIds.has(u.id);
+                return (
+                  <div
+                    key={u.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      padding: "10px", borderRadius: "10px",
+                      background: "var(--bg-body)", border: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    <img
+                      src={resolveApiUrl(u.avatar) || resolveApiUrl("/uploads/images/default-avatar.jpg")}
+                      alt={name}
+                      style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                      onError={(e) => { e.currentTarget.src = resolveApiUrl("/uploads/images/default-avatar.jpg"); }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                      {u.nickname && <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>@{u.nickname}</div>}
+                    </div>
+                    <button
+                      disabled={alreadyInvited || sendingInviteId === u.id}
+                      onClick={() => handleSendInvite(u.id)}
+                      style={{
+                        padding: "6px 14px", borderRadius: "999px", border: "none", fontWeight: 600, fontSize: "0.85rem",
+                        cursor: alreadyInvited || sendingInviteId === u.id ? "not-allowed" : "pointer",
+                        background: alreadyInvited ? "var(--text-muted)" : "var(--color-primary)",
+                        color: "#fff", flexShrink: 0,
+                        opacity: sendingInviteId === u.id ? 0.7 : 1,
+                      }}
+                    >
+                      {alreadyInvited ? "Invited ✓" : sendingInviteId === u.id ? "..." : "Invite"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

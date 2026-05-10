@@ -229,6 +229,7 @@ const loadFollowers = async (targetId: string) => {
       });
       showToast("Unfollowed", "success");
       await loadProfile();
+      await loadFollowers(profileId);
     } catch (err: any) {
       showToast(err.message || "Failed to unfollow", "error");
     }
@@ -466,7 +467,7 @@ const loadFollowers = async (targetId: string) => {
                 {pendingRequests.map((u) => (
                   <div key={u.id} className={styles.userCard}>
                     <img
-                      src={resolveApiUrl()}
+                      src={resolveApiUrl(u.avatar)}
                       alt={u.firstname}
                       className={styles.userAvatar}
                     />
@@ -600,6 +601,7 @@ const loadFollowers = async (targetId: string) => {
                 onChange={(e) => setEditAboutMe(e.target.value)}
                 placeholder="Tell us about yourself..."
                 rows={4}
+                maxLength={1000}
               />
             </div>
 

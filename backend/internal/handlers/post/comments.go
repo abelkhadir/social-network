@@ -180,6 +180,12 @@ func AddpostComment(app *app.Application, w http.ResponseWriter, r *http.Request
 		})
 		return
 	}
+	if len(text) > 1000 {
+		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+			"message": "comment must be under 1000 characters",
+		})
+		return
+	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 	var img *models.Image
 	if text != "" && err != nil {
@@ -207,7 +213,6 @@ func AddpostComment(app *app.Application, w http.ResponseWriter, r *http.Request
 			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
 			return // 	return
 		}
-		fmt.Println("the comments ", comment)
 		utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 			"message": "comment created successfully (group post)",
 			"comment": comment,
@@ -231,6 +236,12 @@ func AddpostComment(app *app.Application, w http.ResponseWriter, r *http.Request
 			}
 
 			defer file.Close()
+			if err := utils.CheckImage(img); err != nil {
+				utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+					"message": "Invalid image type. Only JPEG, PNG, GIF allowed",
+				})
+				return
+			}
 		}
 
 		pathParts := strings.Split(r.URL.Path, "/")
@@ -248,13 +259,11 @@ func AddpostComment(app *app.Application, w http.ResponseWriter, r *http.Request
 		}
 
 		groupcomments.AuthorID = userId
-		// fmt.Println("the comment all", groupcomments)
 		comment, err := app.CommentRepo.CreateComment(&groupcomments, img)
 		if err != nil {
 			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
 			return // 	return
 		}
-		fmt.Println("the comments ", comment)
 		utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 			"message": "comment created successfully (group post)",
 			"comment": comment,
@@ -262,7 +271,6 @@ func AddpostComment(app *app.Application, w http.ResponseWriter, r *http.Request
 		return
 	}
 	if text != "" && err == nil {
-		fmt.Println("the post and the text ")
 		err = r.ParseMultipartForm(maxUploadSize)
 		if err != nil {
 			utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
@@ -278,6 +286,12 @@ func AddpostComment(app *app.Application, w http.ResponseWriter, r *http.Request
 			}
 
 			defer file.Close()
+			if err := utils.CheckImage(img); err != nil {
+				utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{
+					"message": "Invalid image type. Only JPEG, PNG, GIF allowed",
+				})
+				return
+			}
 		}
 
 		pathParts := strings.Split(r.URL.Path, "/")
@@ -303,7 +317,6 @@ func AddpostComment(app *app.Application, w http.ResponseWriter, r *http.Request
 			utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"message": err.Error()})
 			return // 	return
 		}
-		fmt.Println("the comments ", comment)
 		utils.SendJSONResponse(w, http.StatusOK, map[string]any{
 			"message": "comment created successfully (group post)",
 			"comment": comment,

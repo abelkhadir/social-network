@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS group_requests (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			group_id TEXT NOT NULL,
+			sender_id TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(group_id, sender_id),
+			FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+			FOREIGN KEY (sender_id) REFERENCES user(id) ON DELETE CASCADE
+		);

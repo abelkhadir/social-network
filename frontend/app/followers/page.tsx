@@ -73,23 +73,21 @@ export default function FollowersPage() {
     ));
 
     try {
-      const res = await fetch(`http://localhost:8080/followuserhome?following_id=${userId}`, {
-        method: "POST",
-        credentials: "include",
+      const isUnfollow = currentRel === "following" || currentRel === "mutual" || currentRel === "requested";
+      const data = await fetchApi(`/${isUnfollow ? "unfollow" : "follow"}?following_id=${userId}`, {
+        method: isUnfollow ? "DELETE" : "POST",
       });
-      const resData = await res.json();
-      
-      if (!res.ok) throw new Error(resData.message || "Action failed");
-      
-      showToast(
-        nextRel === "none" ? "Unfollowed successfully" : 
-        nextRel === "requested" ? "Follow request sent" : 
-        "Now following!", 
-        "success"
-      );
+
+      const toastMsg =
+        isUnfollow ? "Unfollowed" :
+        data?.isPending ? "Follow request sent" :
+        "Now following!";
+      showToast(toastMsg, "success");
+
+      await loadUsers(activeTab);
     } catch (err: any) {
-      // Rollback on error
-      setUsers(prev => prev.map(user => 
+      // Rollback optimistic update on error
+      setUsers(prev => prev.map(user =>
         user.id === userId ? { ...user, relationship: currentRel as User["relationship"] } : user
       ));
       showToast(err.message || "Action failed", "error");
@@ -156,7 +154,7 @@ export default function FollowersPage() {
             <div key={u.id} className={styles.userCard}>
               <Link href={`/profile/${u.id}`} className={styles.userInfo}>
                 <img 
-                  src={resolveApiUrl(u.avatar) || "/default-avatar.png"} 
+                  src={resolveApiUrl(u.avatar) || resolveApiUrl("/uploads/images/default-avatar.jpg")} 
                   alt={u.name} 
                   className={styles.userAvatar} 
                 />

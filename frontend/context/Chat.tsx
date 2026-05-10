@@ -109,7 +109,7 @@ export default function GroupChat({ groupId }: GroupChatProps) {
               <div
                 style={{
                   background: isMe ? "var(--color-primary-dark)" : "#343a40",
-                  color: "white",
+                  color: isMe ? "var(--text-main)" : "white",
                   padding: "10px 14px",
                   borderRadius: "14px",
                   borderBottomRightRadius: isMe ? "4px" : "14px",
@@ -143,6 +143,7 @@ export default function GroupChat({ groupId }: GroupChatProps) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a message to the group..."
           autoComplete="off"
+          maxLength={1000}
           style={{
             flexGrow: 1,
             padding: "12px 15px",

@@ -292,7 +292,7 @@ export default function SinglePostPage() {
       {/* POST */}
       <div className={styles.postCard}>
         <div className={styles.postHeader}>
-          <img src={resolveApiUrl(post.authorAvatar) || "/default-avatar.png"} alt="avatar" className={styles.authorAvatar} />
+          <img src={resolveApiUrl(post.authorAvatar) || resolveApiUrl("/uploads/images/default-avatar.jpg")} alt="avatar" className={styles.authorAvatar} />
           <div>
             <h3>{post.authorName}</h3>
             <span>{formatDateTime(post.createDate)}</span>
@@ -328,11 +328,12 @@ export default function SinglePostPage() {
 
         {/* Comment Form */}
         <form onSubmit={handleAddComment} className={styles.commentForm}>
-          <textarea 
+          <textarea
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            placeholder="What are your thoughts?" 
+            placeholder="What are your thoughts?"
             required={!commentImage}
+            maxLength={1000}
             className={styles.commentInput}
           />
 
@@ -366,7 +367,7 @@ export default function SinglePostPage() {
         <div className={styles.commentsList}>
           {comments.length > 0 ? comments.map((c) => (
             <div key={c.id} className={styles.commentItem}>
-              <img src={resolveApiUrl(c.authorAvatar) || "/default-avatar.png"} alt="avatar" className={styles.commentAvatar} />
+              <img src={resolveApiUrl(c.authorAvatar) || resolveApiUrl("/uploads/images/default-avatar.jpg")} alt="avatar" className={styles.commentAvatar} />
               <div className={styles.commentBody}>
                 <div className={styles.commentHeader}>
                   <span className={styles.commentAuthor}>{c.authorName || "Anonymous"}</span>

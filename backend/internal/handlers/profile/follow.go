@@ -25,7 +25,6 @@ func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	viewer, err := h.app.SessionRepo.GetUserFromSession(r)
 	if err != nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -53,7 +52,7 @@ func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
 
 	err = h.app.ProfileRepo.FollowUser(followerID, followingID)
 	if err != nil {
-		utils.HandleError(w,  http.StatusInternalServerError,err.Error())
+		utils.HandleError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -323,15 +322,14 @@ func (h *FollowHandler) GetContactHandler(application *app.Application, w http.R
 	action := r.URL.Query().Get("action")
 	user, err := application.SessionRepo.GetUserFromSession(r)
 	if err != nil {
-		fmt.Println("get user inf err:", err)
+		fmt.Println("get user info err:", err)
 		return
-		//
 	}
 	data, errorr := h.app.ProfileRepo.GetUserFollowersRepo(action, user.ID)
 	if errorr.Code != 200 {
 		http.Error(w, errorr.Message, errorr.Code)
 		return
 	}
-	fmt.Println(data, "²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²")
+
 	json.NewEncoder(w).Encode(data)
 }
