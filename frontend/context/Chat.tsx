@@ -10,6 +10,8 @@ interface GroupChatProps {
   groupId: string;
 }
 
+const QUICK_EMOJIS = ["😀", "😂", "❤️"];
+
 export default function GroupChat({ groupId }: GroupChatProps) {
   const { user } = useAuth();
   const { socket, latestMessage } = useSocket();
@@ -62,9 +64,8 @@ export default function GroupChat({ groupId }: GroupChatProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!text.trim() || !socket || socket.readyState !== WebSocket.OPEN) return;
+  const sendMessage = (messageText: string) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
     socket.send(
       JSON.stringify({
@@ -72,12 +73,23 @@ export default function GroupChat({ groupId }: GroupChatProps) {
         data: {
           group_id: groupId,
           senderNickname: user?.nickname || user?.Nickname || "Me",
-          message: text.trim(),
+          message: messageText,
           createDate: new Date().toISOString(),
         },
       })
     );
+  };
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+
+    sendMessage(text.trim());
     setText("");
+  };
+
+  const handleEmojiClick = (emoji: string) => {
+    sendMessage(emoji);
   };
 
   return (
@@ -130,6 +142,48 @@ export default function GroupChat({ groupId }: GroupChatProps) {
           );
         })}
         <div ref={messagesEndRef} />
+      </div>
+
+      {/* Emoji Quick Picker */}
+      <div
+        style={{
+          padding: "8px 15px 0",
+          borderTop: "1px solid #2f3336",
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+        }}
+      >
+        <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>Quick send:</span>
+        {QUICK_EMOJIS.map((emoji) => (
+          <button
+            key={emoji}
+            onClick={() => handleEmojiClick(emoji)}
+            title={`Send ${emoji}`}
+            style={{
+              background: "transparent",
+              border: "1px solid #3a3f44",
+              borderRadius: "8px",
+              padding: "4px 8px",
+              fontSize: "1.3rem",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              lineHeight: 1,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--color-primary-dark)";
+              e.currentTarget.style.borderColor = "var(--color-primary)";
+              e.currentTarget.style.transform = "scale(1.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.borderColor = "#3a3f44";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
+            {emoji}
+          </button>
+        ))}
       </div>
 
       {/* Input */}
