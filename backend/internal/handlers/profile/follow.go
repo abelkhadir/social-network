@@ -59,6 +59,8 @@ func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
 	actorName := viewer.ID
 	if viewer.Nickname != "" {
 		actorName = viewer.Nickname
+	}else{
+		actorName=viewer.Firstname
 	}
 
 	if !targetProfile.IsPrivate {

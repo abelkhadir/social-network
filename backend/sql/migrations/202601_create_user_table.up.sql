@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS user (
 			id TEXT PRIMARY KEY,
-			nickname TEXT UNIQUE NOT NULL,
+			nickname TEXT UNIQUE ,
 			firstname TEXT,
 			lastname TEXT,
 			age INTEGER,

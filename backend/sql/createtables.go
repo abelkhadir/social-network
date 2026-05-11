@@ -17,7 +17,7 @@ func EnsureSchema(db *sql.DB) error {
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS user (
 			id TEXT PRIMARY KEY,
-			nickname TEXT UNIQUE NOT NULL,
+			nickname TEXT ,
 			firstname TEXT,
 			lastname TEXT,
 			age INTEGER,
