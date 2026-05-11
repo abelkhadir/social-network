@@ -110,7 +110,7 @@ func (sb *SessionRepository) GetUserFromSession(req *http.Request) (*models.User
 		return nil, errors.New("session expired")
 	}
 
-	// ✅ Use injected UserRepo to fetch user
+	// ✅z Use injected UserRepo to fetch user
 	user, err := sb.UserRepo.GetUserByID(userID)
 	if err != nil {
 		return nil, err

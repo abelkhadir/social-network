@@ -36,8 +36,9 @@ func (ur *UserRepository) CreateUser(user *models.User) error {
 	if user.AvatarURL == "" {
 		user.AvatarURL = DEFAULT_AVATAR
 	}
+	//daba nickname sahaaa 
 	if user.Nickname==""{
-		
+		user.Nickname=string(user.Firstname[0]) + user.Lastname
 	}
 	_, err = ur.db.Exec("INSERT INTO user (id, nickname, firstname, lastname, age, gender, email, password, avatarURL, about_me, is_private) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		user.ID,
