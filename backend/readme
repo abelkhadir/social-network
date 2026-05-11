@@ -1,1 +1,661 @@
-we should make readme file to let the backend understandebale 
+# Backend API Documentation
+
+This document describes all available API endpoints, request/response formats, and how to interact with the backend service.
+
+**Base URL:** `http://localhost:8080`
+
+---
+
+## Table of Contents
+
+- [Getting Started](#getting-started)
+- [Authentication](#authentication)
+- [API Endpoints](#api-endpoints)
+  - [Users](#users)
+  - [Posts](#posts)
+  - [Uploads](#uploads)
+- [Error Handling](#error-handling)
+- [Rate Limiting](#rate-limiting)
+- [Testing the API](#testing-the-api)
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- The backend service must be running (see [Docker Setup Guide](./DOCKER_GUIDE.md))
+- Default port: `8080`
+
+### Health Check
+
+Verify the backend is running:
+
+```bash
+curl http://localhost:8080/health
+```
+
+**Expected Response:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-05-11T12:00:00Z"
+}
+```
+
+---
+
+## Authentication
+
+> **Note:** Update this section based on your actual auth implementation (JWT, API Key, Session, etc.)
+
+### JWT Authentication
+
+Include the token in the `Authorization` header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
+
+### API Key Authentication
+
+Include the key in the header:
+
+```
+X-API-Key: <your-api-key>
+```
+
+---
+
+## API Endpoints
+
+### Users
+
+#### 1. Get All Users
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **URL** | `/api/users` |
+| **Auth** | Required |
+
+**Request:**
+```bash
+curl -X GET http://localhost:8080/api/users   -H "Authorization: Bearer <token>"
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | integer | No | Page number (default: 1) |
+| `limit` | integer | No | Items per page (default: 10) |
+| `search` | string | No | Search by name or email |
+
+**Success Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "created_at": "2026-05-01T10:00:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "total_pages": 10
+  }
+}
+```
+
+---
+
+#### 2. Get User by ID
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **URL** | `/api/users/:id` |
+| **Auth** | Required |
+
+**Request:**
+```bash
+curl -X GET http://localhost:8080/api/users/1   -H "Authorization: Bearer <token>"
+```
+
+**URL Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | integer | Yes | User ID |
+
+**Success Response (200 OK):**
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "avatar": "uploads/avatars/john.jpg",
+  "created_at": "2026-05-01T10:00:00Z",
+  "updated_at": "2026-05-10T14:30:00Z"
+}
+```
+
+**Error Response (404 Not Found):**
+```json
+{
+  "error": "User not found",
+  "code": "USER_NOT_FOUND",
+  "status": 404
+}
+```
+
+---
+
+#### 3. Create User
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/users` |
+| **Auth** | Required |
+| **Content-Type** | `application/json` |
+
+**Request:**
+```bash
+curl -X POST http://localhost:8080/api/users   -H "Content-Type: application/json"   -H "Authorization: Bearer <token>"   -d '{
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "password": "securepassword123"
+  }'
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Full name (3-100 chars) |
+| `email` | string | Yes | Valid email address |
+| `password` | string | Yes | Min 8 characters |
+
+**Success Response (201 Created):**
+```json
+{
+  "id": 2,
+  "name": "Jane Smith",
+  "email": "jane@example.com",
+  "created_at": "2026-05-11T12:00:00Z"
+}
+```
+
+**Error Response (422 Unprocessable Entity):**
+```json
+{
+  "error": "Validation failed",
+  "code": "VALIDATION_ERROR",
+  "status": 422,
+  "details": {
+    "email": ["Email is already taken"],
+    "password": ["Password must be at least 8 characters"]
+  }
+}
+```
+
+---
+
+#### 4. Update User
+
+| | |
+|---|---|
+| **Method** | `PUT` |
+| **URL** | `/api/users/:id` |
+| **Auth** | Required |
+| **Content-Type** | `application/json` |
+
+**Request:**
+```bash
+curl -X PUT http://localhost:8080/api/users/1   -H "Content-Type: application/json"   -H "Authorization: Bearer <token>"   -d '{
+    "name": "John Updated",
+    "email": "john.new@example.com"
+  }'
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "id": 1,
+  "name": "John Updated",
+  "email": "john.new@example.com",
+  "updated_at": "2026-05-11T12:30:00Z"
+}
+```
+
+---
+
+#### 5. Delete User
+
+| | |
+|---|---|
+| **Method** | `DELETE` |
+| **URL** | `/api/users/:id` |
+| **Auth** | Required |
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:8080/api/users/1   -H "Authorization: Bearer <token>"
+```
+
+**Success Response (204 No Content)**
+
+*(Empty body)*
+
+---
+
+### Posts
+
+#### 6. Get All Posts
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **URL** | `/api/posts` |
+| **Auth** | Optional / Public |
+
+**Request:**
+```bash
+curl -X GET "http://localhost:8080/api/posts?page=1&limit=20&sort=created_at:desc"
+```
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `page` | integer | No | Page number (default: 1) |
+| `limit` | integer | No | Items per page (default: 20, max: 100) |
+| `sort` | string | No | Sort field and order, e.g. `created_at:desc` |
+| `author_id` | integer | No | Filter by author |
+| `status` | string | No | Filter by status: `draft`, `published`, `archived` |
+
+**Success Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Getting Started with Our API",
+      "content": "This is the post content...",
+      "author": {
+        "id": 1,
+        "name": "John Doe"
+      },
+      "status": "published",
+      "created_at": "2026-05-10T10:00:00Z",
+      "updated_at": "2026-05-10T10:00:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 50,
+    "total_pages": 3
+  }
+}
+```
+
+---
+
+#### 7. Get Post by ID
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **URL** | `/api/posts/:id` |
+| **Auth** | Optional / Public |
+
+**Request:**
+```bash
+curl -X GET http://localhost:8080/api/posts/1
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "id": 1,
+  "title": "Getting Started with Our API",
+  "content": "This is the post content...",
+  "author": {
+    "id": 1,
+    "name": "John Doe",
+    "email": "john@example.com"
+  },
+  "status": "published",
+  "tags": ["api", "tutorial"],
+  "created_at": "2026-05-10T10:00:00Z"
+}
+```
+
+---
+
+#### 8. Create Post
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/posts` |
+| **Auth** | Required |
+| **Content-Type** | `application/json` |
+
+**Request:**
+```bash
+curl -X POST http://localhost:8080/api/posts   -H "Content-Type: application/json"   -H "Authorization: Bearer <token>"   -d '{
+    "title": "My New Post",
+    "content": "This is the content of my post...",
+    "status": "published",
+    "tags": ["tutorial", "guide"]
+  }'
+```
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | Yes | Post title (5-200 chars) |
+| `content` | string | Yes | Post content (min 10 chars) |
+| `status` | string | No | `draft` or `published` (default: `draft`) |
+| `tags` | array | No | Array of tag strings |
+
+**Success Response (201 Created):**
+```json
+{
+  "id": 2,
+  "title": "My New Post",
+  "content": "This is the content of my post...",
+  "author_id": 1,
+  "status": "published",
+  "tags": ["tutorial", "guide"],
+  "created_at": "2026-05-11T12:00:00Z"
+}
+```
+
+---
+
+#### 9. Update Post
+
+| | |
+|---|---|
+| **Method** | `PUT` |
+| **URL** | `/api/posts/:id` |
+| **Auth** | Required (Owner or Admin) |
+| **Content-Type** | `application/json` |
+
+**Request:**
+```bash
+curl -X PUT http://localhost:8080/api/posts/2   -H "Content-Type: application/json"   -H "Authorization: Bearer <token>"   -d '{
+    "title": "Updated Post Title",
+    "status": "published"
+  }'
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "id": 2,
+  "title": "Updated Post Title",
+  "status": "published",
+  "updated_at": "2026-05-11T12:30:00Z"
+}
+```
+
+---
+
+#### 10. Delete Post
+
+| | |
+|---|---|
+| **Method** | `DELETE` |
+| **URL** | `/api/posts/:id` |
+| **Auth** | Required (Owner or Admin) |
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:8080/api/posts/2   -H "Authorization: Bearer <token>"
+```
+
+**Success Response (204 No Content)**
+
+---
+
+### Uploads
+
+#### 11. Upload File
+
+| | |
+|---|---|
+| **Method** | `POST` |
+| **URL** | `/api/uploads` |
+| **Auth** | Required |
+| **Content-Type** | `multipart/form-data` |
+
+**Request:**
+```bash
+curl -X POST http://localhost:8080/api/uploads   -H "Authorization: Bearer <token>"   -F "file=@/path/to/your/image.jpg"   -F "folder=avatars"
+```
+
+**Form Data:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | file | Yes | File to upload (max 10MB) |
+| `folder` | string | No | Target folder: `avatars`, `posts`, `general` |
+
+**Success Response (201 Created):**
+```json
+{
+  "id": 1,
+  "filename": "image.jpg",
+  "original_name": "my-photo.jpg",
+  "url": "http://localhost:8080/uploads/general/image.jpg",
+  "size": 245760,
+  "mime_type": "image/jpeg",
+  "folder": "general",
+  "uploaded_at": "2026-05-11T12:00:00Z"
+}
+```
+
+**Error Response (413 Payload Too Large):**
+```json
+{
+  "error": "File too large",
+  "code": "FILE_TOO_LARGE",
+  "status": 413,
+  "max_size": "10MB"
+}
+```
+
+---
+
+#### 12. Get Upload by ID
+
+| | |
+|---|---|
+| **Method** | `GET` |
+| **URL** | `/api/uploads/:id` |
+| **Auth** | Required |
+
+**Request:**
+```bash
+curl -X GET http://localhost:8080/api/uploads/1   -H "Authorization: Bearer <token>"
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "id": 1,
+  "filename": "image.jpg",
+  "url": "http://localhost:8080/uploads/general/image.jpg",
+  "size": 245760,
+  "mime_type": "image/jpeg",
+  "uploaded_at": "2026-05-11T12:00:00Z"
+}
+```
+
+---
+
+#### 13. Delete Upload
+
+| | |
+|---|---|
+| **Method** | `DELETE` |
+| **URL** | `/api/uploads/:id` |
+| **Auth** | Required |
+
+**Request:**
+```bash
+curl -X DELETE http://localhost:8080/api/uploads/1   -H "Authorization: Bearer <token>"
+```
+
+**Success Response (204 No Content)**
+
+---
+
+## Error Handling
+
+All errors follow this consistent format:
+
+```json
+{
+  "error": "Human-readable error message",
+  "code": "ERROR_CODE",
+  "status": 400,
+  "details": {},
+  "timestamp": "2026-05-11T12:00:00Z",
+  "request_id": "req_abc123"
+}
+```
+
+### Common HTTP Status Codes
+
+| Code | Meaning | When It Happens |
+|------|---------|-----------------|
+| `200` | OK | Request succeeded |
+| `201` | Created | Resource created successfully |
+| `204` | No Content | Resource deleted successfully |
+| `400` | Bad Request | Invalid request format |
+| `401` | Unauthorized | Missing or invalid authentication |
+| `403` | Forbidden | Valid auth but no permission |
+| `404` | Not Found | Resource doesn't exist |
+| `422` | Unprocessable Entity | Validation failed |
+| `429` | Too Many Requests | Rate limit exceeded |
+| `500` | Internal Server Error | Server-side error |
+
+---
+
+## Rate Limiting
+
+API requests are rate-limited to prevent abuse:
+
+| Tier | Limit |
+|------|-------|
+| Authenticated | 1000 requests / hour |
+| Unauthenticated | 100 requests / hour |
+
+Rate limit headers are included in every response:
+
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1715431200
+```
+
+When exceeded, you'll receive:
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "code": "RATE_LIMIT_EXCEEDED",
+  "status": 429,
+  "retry_after": 3600
+}
+```
+
+---
+
+## Testing the API
+
+### Using cURL
+
+```bash
+# Health check
+curl http://localhost:8080/
+
+# Get all users (with auth)
+curl -H "Authorization: Bearer <token>" http://localhost:8080/api/users
+
+# Create a user
+curl -X POST http://localhost:8080/api/users   -H "Content-Type: application/json"   -d '{"name":"Test","email":"test@example.com","password":"password123"}'
+```
+
+### Using Postman / Insomnia
+
+1. Import the collection: `postman_collection.json` (if available)
+2. Set environment variable `base_url` to `http://localhost:8080`
+3. Set `auth_token` after logging in
+
+### Using the Frontend
+
+The Next.js frontend at `http://localhost:3000` consumes these APIs automatically. Check the browser's Network tab to see live API calls.
+
+---
+
+## Data Persistence
+
+The backend uses two persistent volumes mounted from the host:
+
+| Volume | Container Path | Description |
+|--------|---------------|-------------|
+| `./backend/database` | `/app/database` | SQLite / database files |
+| `./backend/uploads` | `/app/uploads` | Uploaded files (avatars, images, etc.) |
+
+> **Note:** These folders are created automatically on first run and persist across container restarts.
+
+---
+
+## Contributing
+
+When adding new endpoints:
+
+1. Document the endpoint in this file following the existing format
+2. Include request/response examples with real data
+3. Document all query parameters and error cases
+4. Update the [API Change Log](#) if applicable
+
+---
+
+## Quick Reference
+
+### All Endpoints
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/health` | No | Health check |
+| GET | `/api/users` | Yes | List all users |
+| GET | `/api/users/:id` | Yes | Get single user |
+| POST | `/api/users` | Yes | Create user |
+| PUT | `/api/users/:id` | Yes | Update user |
+| DELETE | `/api/users/:id` | Yes | Delete user |
+| GET | `/api/posts` | No | List all posts |
+| GET | `/api/posts/:id` | No | Get single post |
+| POST | `/api/posts` | Yes | Create post |
+| PUT | `/api/posts/:id` | Yes | Update post |
+| DELETE | `/api/posts/:id` | Yes | Delete post |
+| POST | `/api/uploads` | Yes | Upload file |
+| GET | `/api/uploads/:id` | Yes | Get upload info |
+| DELETE | `/api/uploads/:id` | Yes | Delete upload |
+
+---
+
+*Last updated: 2026-05-11*

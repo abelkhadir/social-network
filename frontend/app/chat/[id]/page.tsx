@@ -98,6 +98,7 @@ export default function ChatPage() {
     } catch (err) {
       console.error(err);
       alert("Failed to send message");
+      
     }
   };
 

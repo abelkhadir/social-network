@@ -47,10 +47,10 @@ For Docker:
 
 ### Backend
 
-The backend uses [backend/.env](/home/abelkhadir/social-network/backend/.env) and stores data in `backend/database/socialdb.db`.
+The backend uses [backend/.env](social-network/backend/.env) and stores data in `backend/database/socialdb.db`.
 
 ```bash
-cd /home/abelkhadir/social-network/backend
+cd social-network/backend
 go mod download
 go run .
 ```
@@ -58,7 +58,7 @@ go run .
 ### Frontend
 
 ```bash
-cd /home/abelkhadir/social-network/frontend
+cd social-network/frontend
 npm install
 npm run dev
 ```
@@ -74,14 +74,14 @@ http://localhost:3000
 ### Backend
 
 ```bash
-cd /home/abelkhadir/social-network/backend
-go build ./...
+cd backend
+go build ./
 ```
 
 ### Frontend
 
 ```bash
-cd /home/abelkhadir/social-network/frontend
+cd social-network/frontend
 npm run build
 ```
 
@@ -92,7 +92,7 @@ From the project root:
 ### Newer Docker Compose syntax
 
 ```bash
-cd /home/abelkhadir/social-network
+cd social-network
 docker compose up --build
 ```
 
@@ -185,13 +185,13 @@ docker-compose up --build
 ### Frontend build check
 
 ```bash
-cd /home/abelkhadir/social-network/frontend
+cd social-network/frontend
 npm run build
 ```
 
 ### Backend build check
 
 ```bash
-cd /home/abelkhadir/social-network/backend
+cd social-network/backend
 go build ./...
 ```
