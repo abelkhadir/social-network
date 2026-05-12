@@ -26,7 +26,7 @@ func NewSessionRepository(db *sql.DB, userRepo *auth.UserRepository) *SessionRep
 	}
 }
 
-const SessionExpiry = 2 * time.Hour
+const SessionExpiry = 24 * time.Hour
 
 // 🔹 Create New Session
 func (sb *SessionRepository) NewSessionToken(res http.ResponseWriter, userID string) error {
