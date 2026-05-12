@@ -40,8 +40,7 @@ export default function AddPostPage() {
       .then((data) => {
         setFollowers(data?.followers || []);
       })
-      .catch((err) => {
-        console.error("Failed to load followers", err);
+      .catch(() => {
         showToast("Failed to load followers", "error");
       })
       .finally(() => setLoadingFollowers(false));

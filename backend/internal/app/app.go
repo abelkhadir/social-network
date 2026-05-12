@@ -13,9 +13,8 @@ import (
 	"social/internal/repositories/sessions"
 	"social/internal/repositories/websocket"
 	dbschema "social/sql"
-	"social/pkg/utils"
 
-		"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4"
 
 	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -37,12 +36,7 @@ type Application struct {
 }
 
 // NewApp initializes the database and repositories
-func NewApp() *Application {
-	utils.LoadEnv(".env")
-	databaseURL := os.Getenv("DATABASE")
-	if databaseURL == "" {
-		log.Fatal("❌ DATABASE environment variable is not set")
-	}
+func NewApp(databaseURL string) *Application {
 	if _, err := os.Stat(databaseURL); os.IsNotExist(err) {
 		file, err := os.Create(databaseURL)
 		if err != nil {

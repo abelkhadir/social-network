@@ -154,14 +154,15 @@ func GetPost(application *app.Application, res http.ResponseWriter, req *http.Re
 			pathPart := strings.Split(path, "/")
 			postid := pathPart[2]
 			// fmt.Println("the post id",postid)
+			userInSession, _ := application.SessionRepo.GetUserFromSession(req)
 			exict, err := application.GroupPostRepo.PostExistsInGroup(postid)
 			if exict {
-				post, err := application.GroupPostRepo.GetPostdetails(postid)
+				post, err := application.GroupPostRepo.GetPostdetails(postid, userInSession.ID)
 				if err != nil {
 					utils.HandleError(res, http.StatusInternalServerError, err.Error())
 					return
 				}
-				comments, err := application.GroupPostRepo.GetGroupPostComments(post.ID)
+				comments, err := application.GroupPostRepo.GetGroupPostComments(post.ID, userInSession.ID)
 				if err != nil {
 					utils.HandleError(res, http.StatusInternalServerError, err.Error())
 					return
@@ -171,7 +172,6 @@ func GetPost(application *app.Application, res http.ResponseWriter, req *http.Re
 				utils.SendJSONResponse(res, http.StatusOK, map[string]any{"message": "post retrieved successfully", "post": post})
 				return
 			}
-			userInSession, _ := application.SessionRepo.GetUserFromSession(req)
 			post, err := application.PostRepo.GetPostByID(postid, userInSession.ID)
 			if err != nil {
 				if errors.Is(err, sql.ErrNoRows) {
@@ -182,7 +182,7 @@ func GetPost(application *app.Application, res http.ResponseWriter, req *http.Re
 				return
 			}
 
-			comments, err := application.CommentRepo.GetCommentsOfPost(post.ID)
+			comments, err := application.CommentRepo.GetCommentsOfPost(post.ID, userInSession.ID)
 			if err != nil {
 				utils.HandleError(res, http.StatusInternalServerError, err.Error())
 				return

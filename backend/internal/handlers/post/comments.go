@@ -128,7 +128,8 @@ func GetComments(application *app.Application, res http.ResponseWriter, req *htt
 			path := req.URL.Path
 			pathPart := strings.Split(path, "/")
 			postID := pathPart[2]
-			comments, err := application.CommentRepo.GetCommentsOfPost(postID)
+			userInSession, _ := application.SessionRepo.GetUserFromSession(req)
+			comments, err := application.CommentRepo.GetCommentsOfPost(postID, userInSession.ID)
 			if err != nil {
 				utils.HandleError(res, http.StatusNotFound, err.Error())
 				return

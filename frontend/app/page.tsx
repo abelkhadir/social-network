@@ -22,8 +22,8 @@ export default function HomePage() {
       try {
         const postsData = await fetchApi("/posts");
         setPosts(postsData.posts || []);
-      } catch (err) {
-        console.error("Error fetching data:", err);
+      } catch {
+        // ignore
       } finally {
         setLoading(false);
       }

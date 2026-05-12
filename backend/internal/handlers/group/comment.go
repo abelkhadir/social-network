@@ -27,11 +27,9 @@ func AddGroupComment(app *app.Application, w http.ResponseWriter, r *http.Reques
 	}
 	userId := r.Context().Value(middleware.UserIDKey).(string)
 	file, header, err := r.FormFile("image")
-	if err!=nil{
-	fmt.Println("the file that the usdfdsfdsfsd ",err)
-	return 
+	if err != nil {
+		fmt.Println("no image provided:", err)
 	}
-	fmt.Println("the file that the user sent ",file)
 	text := r.FormValue("text")
 
 	// fmt.Println("the text", text)

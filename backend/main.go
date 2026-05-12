@@ -3,30 +3,23 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"social/internal/app"
 	"social/internal/routers"
+	"social/pkg/config"
 	"social/pkg/middleware"
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-	frontendOrigin := os.Getenv("FRONTEND_ORIGIN")
-	if frontendOrigin == "" {
-		frontendOrigin = "http://localhost:3000"
-	}
-	myApp := app.NewApp()
+	cfg := config.Load("conf.json")
+	myApp := app.NewApp(cfg.Database)
 	go myApp.SessionRepo.DeleteExpiredSessions()
 
 	routers.SetupRoutes(myApp)
-	root := middleware.CORSMiddleware(frontendOrigin)(http.DefaultServeMux)
+	root := middleware.CORSMiddleware(cfg.FrontendOrigin)(http.DefaultServeMux)
 
-	log.Printf("[][] Server running on port %s\n", port)
-	if err := http.ListenAndServe(":"+port, root); err != nil {
+	log.Printf("[][] Server running on port %s\n", cfg.Port)
+	if err := http.ListenAndServe(":"+cfg.Port, root); err != nil {
 		log.Fatal(err)
 	}
 }

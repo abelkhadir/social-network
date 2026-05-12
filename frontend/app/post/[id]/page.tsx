@@ -57,7 +57,6 @@ export default function SinglePostPage() {
       setPost(postData);
       setComments(postData.Comments || data.Comments || []);
     } catch (err) {
-      console.error(err);
       setPost(null);
     } finally {
       setLoading(false);
@@ -114,39 +113,40 @@ export default function SinglePostPage() {
 
   const handleLikePost = async () => {
     if (!post) return;
-    
-    // Optimistic update
+
     const previousVote = post.userVote;
+    const previousLikes = post.likes;
+    const previousDislikes = post.dislikes;
     optimisticPostVote("like");
 
     try {
       const data = await fetchApi(`/post/${id}/like`, { method: "POST" });
-      
-      // Sync with server response if different
+
       if (data.likes !== undefined) {
         setPost(prev => prev ? { ...prev, likes: data.likes, dislikes: data.dislikes, userVote: data.userVote } : null);
       }
     } catch (err: any) {
-      // Rollback on error
-      setPost(prev => prev ? { ...prev, userVote: previousVote } : null);
+      setPost(prev => prev ? { ...prev, userVote: previousVote, likes: previousLikes, dislikes: previousDislikes } : null);
       showToast(err.message || "Failed to like post", "error");
     }
   };
 
   const handleDislikePost = async () => {
     if (!post) return;
-    
+
     const previousVote = post.userVote;
+    const previousLikes = post.likes;
+    const previousDislikes = post.dislikes;
     optimisticPostVote("dislike");
 
     try {
       const data = await fetchApi(`/post/${id}/dislike`, { method: "POST" });
-      
+
       if (data.likes !== undefined) {
         setPost(prev => prev ? { ...prev, likes: data.likes, dislikes: data.dislikes, userVote: data.userVote } : null);
       }
     } catch (err: any) {
-      setPost(prev => prev ? { ...prev, userVote: previousVote } : null);
+      setPost(prev => prev ? { ...prev, userVote: previousVote, likes: previousLikes, dislikes: previousDislikes } : null);
       showToast(err.message || "Failed to dislike post", "error");
     }
   };
@@ -157,19 +157,21 @@ export default function SinglePostPage() {
     if (!comment) return;
 
     const previousVote = comment.userVote;
+    const previousLikes = comment.likes;
+    const previousDislikes = comment.dislikes;
     optimisticCommentVote(commentId, "like");
 
     try {
       const data = await fetchApi(`/comment/${commentId}/like`, { method: "POST" });
-      
+
       if (data.likes !== undefined) {
-        setComments(prev => prev.map(c => 
+        setComments(prev => prev.map(c =>
           c.id === commentId ? { ...c, likes: data.likes, dislikes: data.dislikes, userVote: data.userVote } : c
         ));
       }
     } catch (err: any) {
-      setComments(prev => prev.map(c => 
-        c.id === commentId ? { ...c, userVote: previousVote } : c
+      setComments(prev => prev.map(c =>
+        c.id === commentId ? { ...c, userVote: previousVote, likes: previousLikes, dislikes: previousDislikes } : c
       ));
       showToast(err.message || "Failed to like comment", "error");
     }
@@ -180,19 +182,21 @@ export default function SinglePostPage() {
     if (!comment) return;
 
     const previousVote = comment.userVote;
+    const previousLikes = comment.likes;
+    const previousDislikes = comment.dislikes;
     optimisticCommentVote(commentId, "dislike");
 
     try {
       const data = await fetchApi(`/comment/${commentId}/dislike`, { method: "POST" });
-      
+
       if (data.likes !== undefined) {
-        setComments(prev => prev.map(c => 
+        setComments(prev => prev.map(c =>
           c.id === commentId ? { ...c, likes: data.likes, dislikes: data.dislikes, userVote: data.userVote } : c
         ));
       }
     } catch (err: any) {
-      setComments(prev => prev.map(c => 
-        c.id === commentId ? { ...c, userVote: previousVote } : c
+      setComments(prev => prev.map(c =>
+        c.id === commentId ? { ...c, userVote: previousVote, likes: previousLikes, dislikes: previousDislikes } : c
       ));
       showToast(err.message || "Failed to dislike comment", "error");
     }
@@ -259,14 +263,6 @@ export default function SinglePostPage() {
     return d.toDateString() + " at " + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const getVoteButtonStyle = (voteType: "like" | "dislike", userVote: "like" | "dislike" | null) => {
-    const isActive = userVote === voteType;
-    return {
-      background: isActive ? (voteType === "like" ? "rgba(255, 183, 3, 0.15)" : "rgba(230, 57, 70, 0.15)") : "transparent",
-      color: isActive ? (voteType === "like" ? "var(--color-like)" : "var(--color-dislike)") : "var(--ink-600)",
-      border: `1px solid ${isActive ? (voteType === "like" ? "var(--color-like)" : "var(--color-dislike)") : "var(--border-default)"}`,
-    };
-  };
 
 
   if (loading) {

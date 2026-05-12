@@ -10,7 +10,13 @@ interface GroupChatProps {
   groupId: string;
 }
 
-const QUICK_EMOJIS = ["😀", "😂", "❤️"];
+const EMOJIS = [
+  "😀","😂","😍","😎","😢","😡","🥰","😇","🤔","😴",
+  "👍","👎","👏","🙌","🤝","🙏","💪","✌️","🤞","👌",
+  "❤️","🧡","💛","💚","💙","💜","🖤","💔","💯","🔥",
+  "🎉","🎊","🎁","🎂","🏆","⭐","✨","🌟","💫","🌈",
+  "😅","😆","🤣","😊","😋","😜","🤪","😝","🤗","🤭",
+];
 
 export default function GroupChat({ groupId }: GroupChatProps) {
   const { user } = useAuth();
@@ -19,7 +25,10 @@ export default function GroupChat({ groupId }: GroupChatProps) {
 
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const myId = user?.id || user?.ID || "me";
 
@@ -27,7 +36,7 @@ export default function GroupChat({ groupId }: GroupChatProps) {
     if (!groupId) return;
     fetchApi(`/chat/messages/group/${groupId}`)
       .then((data) => setMessages(data.messages || []))
-      .catch(() => console.error("Failed to load group chat history"));
+      .catch(() => {});
 
     void markGroupRead(groupId);
   }, [groupId, markGroupRead]);
@@ -64,6 +73,16 @@ export default function GroupChat({ groupId }: GroupChatProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    if (showEmojiPicker) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showEmojiPicker]);
+
   const sendMessage = (messageText: string) => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
@@ -86,10 +105,6 @@ export default function GroupChat({ groupId }: GroupChatProps) {
 
     sendMessage(text.trim());
     setText("");
-  };
-
-  const handleEmojiClick = (emoji: string) => {
-    sendMessage(emoji);
   };
 
   return (
@@ -144,81 +159,100 @@ export default function GroupChat({ groupId }: GroupChatProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Emoji Quick Picker */}
-      <div
-        style={{
-          padding: "8px 15px 0",
-          borderTop: "1px solid #2f3336",
-          display: "flex",
-          gap: "8px",
-          alignItems: "center",
-        }}
-      >
-        <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>Quick send:</span>
-        {QUICK_EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            onClick={() => handleEmojiClick(emoji)}
-            title={`Send ${emoji}`}
-            style={{
-              background: "transparent",
-              border: "1px solid #3a3f44",
-              borderRadius: "8px",
-              padding: "4px 8px",
-              fontSize: "1.3rem",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              lineHeight: 1,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--color-primary-dark)";
-              e.currentTarget.style.borderColor = "var(--color-primary)";
-              e.currentTarget.style.transform = "scale(1.15)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.borderColor = "#3a3f44";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-
       {/* Input */}
-      <form
-        onSubmit={handleSend}
-        style={{ padding: "15px", borderTop: "1px solid #2f3336", display: "flex", gap: "10px" }}
-      >
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message to the group..."
-          autoComplete="off"
-          maxLength={1000}
-          style={{
-            flexGrow: 1,
-            padding: "12px 15px",
-            borderRadius: "25px",
-            background: "var(--color-input-bg)",
-            color: "white",
-            border: "none",
-            outline: "none",
-            fontSize: "1rem",
-          }}
-        />
-        <button
-          type="submit"
-          style={{ background: "var(--color-primary)", color: "#000", border: "none", borderRadius: "50%", width: "45px", height: "45px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
-      </form>
+      <div style={{ padding: "15px", borderTop: "1px solid #2f3336" }}>
+        <div ref={emojiPickerRef} style={{ position: "relative" }}>
+          {showEmojiPicker && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 8px)",
+              left: 0,
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "12px",
+              padding: "10px",
+              display: "grid",
+              gridTemplateColumns: "repeat(10, 1fr)",
+              gap: "4px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+              zIndex: 100,
+            }}>
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => setText((prev) => prev + emoji)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "1.3rem",
+                    cursor: "pointer",
+                    padding: "4px",
+                    lineHeight: 1,
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-sunken)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+          <form onSubmit={handleSend} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-default)",
+                borderRadius: "50%",
+                width: "44px",
+                height: "44px",
+                fontSize: "1.3rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                transition: "all 0.2s",
+                color: showEmojiPicker ? "var(--color-primary)" : "var(--text-muted)",
+                borderColor: showEmojiPicker ? "var(--color-primary)" : "var(--border-default)",
+              }}
+            >
+              😊
+            </button>
+            <input
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Type a message to the group..."
+              autoComplete="off"
+              maxLength={1000}
+              style={{
+                flexGrow: 1,
+                padding: "12px 15px",
+                borderRadius: "25px",
+                background: "var(--color-input-bg)",
+                color: "white",
+                border: "none",
+                outline: "none",
+                fontSize: "1rem",
+              }}
+            />
+            <button
+              type="submit"
+              style={{ background: "var(--color-primary)", color: "#000", border: "none", borderRadius: "50%", width: "45px", height: "45px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

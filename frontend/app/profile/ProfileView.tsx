@@ -7,6 +7,7 @@ import { useToast } from "@/context/ToastContext";
 import { fetchApi, resolveApiUrl } from "@/lib/api";
 // import styles from "../../public/css/profile.css";
 import styles from "../../public/css/profile.module.css";
+import { profile } from "node:console";
 
 // ============ Types ============
 type ProfilePost = {
@@ -116,19 +117,14 @@ export default function ProfileView({ profileId }: ProfileViewProps) {
   }, [isMyProfile, searchParams]);
 
   const loadProfile = async () => {
-    console.log("🔄 LOADING PROFILE...");
     setLoadingProfile(true);
-  
+
     try {
       const endpoint = profileId
         ? `/profile?id=${encodeURIComponent(profileId)}`
         : "/profile";
-  
-      console.log("📡 PROFILE ENDPOINT:", endpoint);
-  
+
       const data = await fetchApi(endpoint);
-  
-      console.log("👤 PROFILE DATA:", data);
   
       setProfileRes(data);
 
@@ -163,13 +159,10 @@ const loadFollowers = async (targetId: string) => {
       fetchApi(`/following?user_id=${targetId}`),
     ]);
 
-    console.log("👥 FOLLOWERS RESPONSE:", followersData);
-    console.log("➡️ FOLLOWING RESPONSE:", followingData);
-
     setFollowers(followersData?.followers || []);
     setFollowing(followingData?.followers || []);
-  } catch (err) {
-    console.error("Failed to load followers:", err);
+  } catch {
+    // ignore
   } finally {
     setLoadingFollow(false);
   }
@@ -180,8 +173,8 @@ const loadFollowers = async (targetId: string) => {
       const data = await fetchApi("/follow/pending");
 
       setPendingRequests(data?.pendingRequests?.followers || []);
-    } catch (err) {
-      console.error("Failed to load pending:", err);
+    } catch {
+      // ignore
     }
   };
 
@@ -202,23 +195,15 @@ const loadFollowers = async (targetId: string) => {
   const handleFollow = async () => {
     if (!profileId) return;
   
-    console.log("👉 CLICKED FOLLOW BUTTON");
-    console.log("➡️ following_id:", profileId);
-  
     try {
       const data = await fetchApi(`/follow?following_id=${profileId}`, {
         method: "POST",
       });
-  
-      console.log("✅ FOLLOW RESPONSE FROM BACKEND:", data);
-  
+
       showToast(data.message || "Done", "success");
-  
-      console.log("🔄 Reloading profile after follow...");
       await loadProfile();
-  
+
     } catch (err: any) {
-      console.log("❌ FOLLOW ERROR:", err);
       showToast(err.message || "Failed to follow", "error");
     }
   };
@@ -242,10 +227,7 @@ const loadFollowers = async (targetId: string) => {
       await fetchApi(`/follow/accept?follower_id=${followerId}`, {
         method: "PUT",
       });
-      console.log("hi");
-      
       showToast("Accepted!", "success");
-      console.log("hi");
       
       loadPending();
       loadFollowers(user?.id || "");
@@ -278,7 +260,7 @@ const loadFollowers = async (targetId: string) => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      let updateRes;
+      let updateRes: any;
 
       if (avatarFile) {
         const form = new FormData();
@@ -329,7 +311,7 @@ const loadFollowers = async (targetId: string) => {
     return (
       <div className={styles.privateContainer}>
         <img
-          src={resolveApiUrl(limitedUser?.avatar_url) }
+          src={resolveApiUrl(limitedUser.avatarURL)}
           alt="avatar"
           className={styles.avatar}
         />

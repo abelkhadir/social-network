@@ -6,6 +6,15 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { fetchApi, resolveApiUrl } from "@/lib/api";
 import styles from "../../../public/css/chat.module.css";
+import { useToast } from "../../../context/ToastContext";
+
+const EMOJIS = [
+  "😀","😂","😍","😎","😢","😡","🥰","😇","🤔","😴",
+  "👍","👎","👏","🙌","🤝","🙏","💪","✌️","🤞","👌",
+  "❤️","🧡","💛","💚","💙","💜","🖤","💔","💯","🔥",
+  "🎉","🎊","🎁","🎂","🏆","⭐","✨","🌟","💫","🌈",
+  "😅","😆","🤣","😊","😋","😜","🤪","😝","🤗","🤭",
+];
 
 export default function ChatPage() {
   const { id: receiverId } = useParams();
@@ -19,15 +28,30 @@ export default function ChatPage() {
   const [text, setText] = useState("");
   const [isPeerTyping, setIsPeerTyping] = useState(false);
 
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<NodeJS.Timeout | null>(null);
   const didSendTyping = useRef(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    if (showEmojiPicker) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showEmojiPicker]);
 
   const myId = user?.ID || user?.id || "me";
 
   useEffect(() => {
+    
     if (!receiverId) return;
-
+    
     const loadChat = async () => {
       setLoading(true);
       try {
@@ -36,7 +60,6 @@ export default function ChatPage() {
         setTalker(data.talker || { Nickname: "Unknown", IsConnected: false });
       } catch (error: any) {
         if (error.message?.includes("follow")) setForbidden(true);
-        console.error("Chat Error:", error);
       } finally {
         setLoading(false);
       }
@@ -95,9 +118,9 @@ export default function ChatPage() {
       didSendTyping.current = false;
       if (typingTimer.current) clearTimeout(typingTimer.current);
 
-    } catch (err) {
-      console.error(err);
-      alert("Failed to send message");
+    } catch (err: any) {
+      showToast(err.message || "Failed to send message", "error");
+      window.location.reload();
       
     }
   };
@@ -184,25 +207,87 @@ export default function ChatPage() {
 
       {/* Input Area */}
       <div className={styles.chatInputArea}>
-        <form onSubmit={handleSendMessage} className={styles.inputForm}>
-          <input 
-            type="text"
-            name="message"
-            placeholder="Type a message..."
-            autoComplete="off"
-            required
-            value={text}
-            onChange={handleInput}
-            maxLength={1000}
-            className={styles.messageInput}
-          />
-          <button type="submit" className={styles.sendBtn}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </form>
+        <div ref={emojiPickerRef} style={{ position: "relative" }}>
+          {showEmojiPicker && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 8px)",
+              left: 0,
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "12px",
+              padding: "10px",
+              display: "grid",
+              gridTemplateColumns: "repeat(10, 1fr)",
+              gap: "4px",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+              zIndex: 100,
+            }}>
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => setText((prev) => prev + emoji)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "1.3rem",
+                    cursor: "pointer",
+                    padding: "4px",
+                    lineHeight: 1,
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--bg-sunken)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+          <form onSubmit={handleSendMessage} className={styles.inputForm}>
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border-default)",
+                borderRadius: "50%",
+                width: "44px",
+                height: "44px",
+                fontSize: "1.3rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                transition: "all 0.2s",
+                color: showEmojiPicker ? "var(--color-primary)" : "var(--text-muted)",
+                borderColor: showEmojiPicker ? "var(--color-primary)" : "var(--border-default)",
+              }}
+            >
+              😊
+            </button>
+            <input
+              type="text"
+              name="message"
+              placeholder="Type a message..."
+              autoComplete="off"
+              required
+              value={text}
+              onChange={handleInput}
+              maxLength={1000}
+              className={styles.messageInput}
+            />
+            <button type="submit" className={styles.sendBtn}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

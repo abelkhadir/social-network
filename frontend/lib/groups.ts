@@ -201,8 +201,6 @@ export async function fetchJoinedGroups() {
     "/groups/joined",
     "/groups/joined",
   ]);
-  console.log("the joined group response  ", response)
-
   const groups = Array.isArray(response?.data) ? response.data : Array.isArray(response) ? response : [];
   return groups.map(normalizeGroup);
 }
@@ -224,7 +222,6 @@ export async function createGroup(payload: { title: string; description: string 
       body: JSON.stringify(payload),
     }
   );
-  console.log("that is the response from our backend ", response)
   if (response == null) {
     return
   }
@@ -311,7 +308,6 @@ export async function fetchGroupPending(groupId: string | number) {
   ? response.members
   : [];
   
-  console.log(members)
   return members.map(normalizeMember);
 }
 

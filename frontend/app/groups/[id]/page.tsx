@@ -1,224 +1,701 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
 import { useChatNotifications } from "@/context/ChatNotificationContext";
-import { useSocket } from "@/context/SocketContext";
-import { fetchApi } from "@/lib/api";
+import { useToast } from "@/context/ToastContext";
+import { resolveApiUrl } from "@/lib/api";
+import GroupChat from "@/context/Chat";
+import { timeAgo } from "@/lib/time";
+import {
+  createGroupEvent,
+  createGroupPost,
+  fetchGroupDetails,
+  fetchGroupEvents,
+  fetchGroupMembers,
+  fetchGroupPending,
+  fetchGroupPosts,
+  fetchInvitableFollowers,
+  sendGroupUserInvitation,
+  GroupDetails,
+  GroupEvent,
+  GroupMember,
+  GroupPost,
+  InvitableUser,
+  PendingMembers,
+  respondGroupRequest,
+  voteOnGroupEvent,
+} from "@/lib/groups";
+import { useAuth } from "@/context/AuthContext";
 
-interface GroupChatProps {
-  groupId: string;
+type GroupTab = "feed" | "events" | "members" | "pending" | "chat";
+
+function formatEventDate(value: string) {
+  if (!value) return "Date pending";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-const QUICK_EMOJIS = ["😀", "😂", "❤️"];
+function displayName(user: GroupMember | GroupDetails["author"]) {
+  return user.nickname || [user.firstname, user.lastname].filter(Boolean).join(" ") || "Unknown member";
+}
 
-export default function GroupChat({ groupId }: GroupChatProps) {
+export default function SingleGroupPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const { showToast } = useToast();
+  const { unreadByGroup, markGroupRead } = useChatNotifications();
   const { user } = useAuth();
-  const { socket, latestMessage } = useSocket();
-  const { markGroupRead, setActiveGroupChat } = useChatNotifications();
 
-  const [messages, setMessages] = useState<any[]>([]);
-  const [text, setText] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const myId = user?.id || user?.ID || "me";
+  const [activeTab, setActiveTab] = useState<GroupTab>("feed");
+  const [groupInfo, setGroupInfo] = useState<GroupDetails | null>(null);
+  const [events, setEvents] = useState<GroupEvent[]>([]);
+  const [members, setMembers] = useState<GroupMember[]>([]);
+  const [pending, setPending] = useState<PendingMembers[]>([]);
+  const [posts, setPosts] = useState<GroupPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [creatingEvent, setCreatingEvent] = useState(false);
+  const [votingId, setVotingId] = useState<string | null>(null);
+  const [actioningId, setActioningId] = useState<string | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [invitableUsers, setInvitableUsers] = useState<InvitableUser[]>([]);
+  const [loadingInvitable, setLoadingInvitable] = useState(false);
+  const [sendingInviteId, setSendingInviteId] = useState<string | null>(null);
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
+  const [postForm, setPostForm] = useState({
+    title: "",
+    content: "",
+    image: null as File | null,
+  });
+  const [eventForm, setEventForm] = useState({
+    title: "",
+    description: "",
+    eventDate: "",
+  });
+  const currentUserId = user?.id || user?.ID;
+  const isOwner = !!groupInfo && currentUserId === groupInfo.author.id;
 
-  useEffect(() => {
-    if (!groupId) return;
-    fetchApi(`/chat/messages/group/${groupId}`)
-      .then((data) => setMessages(data.messages || []))
-      .catch(() => console.error("Failed to load group chat history"));
+  const tabs: GroupTab[] = [
+    "feed",
+    "events",
+    "members",
+    ...(isOwner ? ["pending" as GroupTab] : []),
+    "chat",
+  ];
 
-    void markGroupRead(groupId);
-  }, [groupId, markGroupRead]);
-
-  useEffect(() => {
-    if (!groupId) return;
-
-    setActiveGroupChat(groupId);
-    return () => {
-      setActiveGroupChat(null);
-    };
-  }, [groupId, setActiveGroupChat]);
-
-  useEffect(() => {
-    if (!latestMessage) return;
-    const msgGroupId = latestMessage.groupId || latestMessage.GroupID || latestMessage.group_id;
-    if (String(msgGroupId) === String(groupId)) {
-      const messageID = latestMessage.id || latestMessage.ID;
-      setMessages((prev) => {
-        if (messageID && prev.some((msg) => (msg.id || msg.ID) === messageID)) {
-          return prev;
-        }
-        return [...prev, latestMessage];
-      });
-
-      const senderId = latestMessage.senderID || latestMessage.SenderID || latestMessage.sender_id;
-      if (senderId && senderId !== myId) {
-        void markGroupRead(groupId);
-      }
+  const loadGroupPage = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      setPageError("");
+      const [details, eventList, memberList, postList] = await Promise.all([
+        fetchGroupDetails(id),
+        fetchGroupEvents(id).catch(() => []),
+        fetchGroupMembers(id).catch(() => []),
+        fetchGroupPosts(id).catch(() => []),
+      ]);
+      setGroupInfo(details);
+      setEvents(eventList);
+      setMembers(memberList);
+      setPosts(postList);
+    } catch (error: any) {
+      setPageError(error.message || "Failed to load this group");
+    } finally {
+      setLoading(false);
     }
-  }, [groupId, latestMessage, markGroupRead, myId]);
+  };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    loadGroupPage();
+  }, [id]);
 
-  const sendMessage = (messageText: string) => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+    if (!requestedTab) return;
 
-    socket.send(
-      JSON.stringify({
-        type: "group_message",
-        data: {
-          group_id: groupId,
-          senderNickname: user?.nickname || user?.Nickname || "Me",
-          message: messageText,
-          createDate: new Date().toISOString(),
-        },
-      })
-    );
-  };
+    const nextTab = requestedTab as GroupTab;
+    const allowedTabs: GroupTab[] = [
+      "feed",
+      "events",
+      "members",
+      "chat",
+      ...(isOwner ? ["pending" as GroupTab] : []),
+    ];
 
-  const handleSend = (e: React.FormEvent) => {
+    if (allowedTabs.includes(nextTab)) {
+      setActiveTab(nextTab);
+    }
+  }, [isOwner, searchParams]);
+
+  useEffect(() => {
+    if (!id || activeTab !== "chat") return;
+    if (!unreadByGroup[id]) return;
+    void markGroupRead(id);
+  }, [activeTab, id, markGroupRead, unreadByGroup]);
+
+  useEffect(() => {
+    if (!id || activeTab !== "pending" || !isOwner) return;
+    fetchGroupPending(id).then(setPending).catch(() => setPending([]));
+  }, [activeTab, id, isOwner]);
+
+  //handlers
+  const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
-
-    sendMessage(text.trim());
-    setText("");
+    if (!id) return;
+    if (!postForm.title.trim() || !postForm.content.trim()) {
+      showToast("Post title and content are required", "error");
+      return;
+    }
+    try {
+      setPosting(true);
+      const formData = new FormData();
+      formData.append("title", postForm.title);
+      formData.append("content", postForm.content);
+      if (postForm.image) formData.append("image", postForm.image);
+      await createGroupPost(id, formData);
+      setPostForm({ title: "", content: "", image: null });
+      await loadGroupPage();
+      showToast("Group post created", "success");
+    } catch (error: any) {
+      showToast(error.message || "Failed to create group post", "error");
+    } finally {
+      setPosting(false);
+    }
   };
 
-  const handleEmojiClick = (emoji: string) => {
-    sendMessage(emoji);
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    if (!eventForm.title.trim() || !eventForm.description.trim() || !eventForm.eventDate) {
+      showToast("Fill in the event title, description, and date", "error");
+      return;
+    }
+    try {
+      setCreatingEvent(true);
+      await createGroupEvent(id, {
+        title: eventForm.title,
+        description: eventForm.description,
+        event_date: new Date(eventForm.eventDate).toISOString(),
+      });
+      setEventForm({ title: "", description: "", eventDate: "" });
+      await loadGroupPage();
+      showToast("Event created successfully", "success");
+    } catch (error: any) {
+      showToast(error.message || "Failed to create event", "error");
+    } finally {
+      setCreatingEvent(false);
+    }
   };
+
+  const handleVote = async (event: GroupEvent, nextVote: "going" | "not going") => {
+    if (!id) return;
+    const payload = event.vote === nextVote ? "remove" : nextVote;
+    try {
+      setVotingId(event.id);
+      await voteOnGroupEvent(id, event.id, payload);
+      const refreshedEvents = await fetchGroupEvents(id);
+      setEvents(refreshedEvents);
+      showToast(payload === "remove" ? "Vote removed" : "Vote saved", "success");
+    } catch (error: any) {
+      showToast(error.message || "Failed to update vote", "error");
+    } finally {
+      setVotingId(null);
+    }
+  };
+
+  const handleAccept = async (userId: string) => {
+    if (!id) return;
+    try {
+      setActioningId(userId);
+      await respondGroupRequest(id, userId, "accept");
+      setPending((prev) => prev.filter((m) => m.id !== userId));
+      showToast("Member accepted", "success");
+    } catch (error: any) {
+      showToast(error.message || "Failed to accept request", "error");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleReject = async (userId: string) => {
+    if (!id) return;
+    try {
+      setActioningId(userId);
+      await respondGroupRequest(id, userId, "reject");
+      setPending((prev) => prev.filter((m) => m.id !== userId));
+      showToast("Request rejected", "success");
+    } catch (error: any) {
+      showToast(error.message || "Failed to reject request", "error");
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleOpenInviteModal = async () => {
+    if (!id) return;
+    setInviteModalOpen(true);
+    setLoadingInvitable(true);
+    try {
+      const users = await fetchInvitableFollowers(id);
+      setInvitableUsers(users);
+    } catch {
+      showToast("Failed to load users", "error");
+    } finally {
+      setLoadingInvitable(false);
+    }
+  };
+
+  const handleSendInvite = async (userId: string) => {
+    if (!id) return;
+    setSendingInviteId(userId);
+    try {
+      await sendGroupUserInvitation(id, userId);
+      setInvitedIds((prev) => new Set(prev).add(userId));
+      showToast("Invitation sent!", "success");
+    } catch (err: any) {
+      showToast(err.message || "Failed to send invitation", "error");
+    } finally {
+      setSendingInviteId(null);
+    }
+  };
+
+  if (loading) return <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>Loading group...</div>;
+
+  if (!groupInfo) {
+    return (
+      <div style={{ maxWidth: "760px", margin: "0 auto", background: "var(--bg-card)", padding: "30px", borderRadius: "16px", border: "1px solid #2f3336", textAlign: "center" }}>
+        <h2 style={{ color: "var(--color-primary)", marginTop: 0 }}>Group unavailable</h2>
+        <p style={{ color: "var(--text-muted)" }}>{pageError || "This group could not be opened."}</p>
+        <Link href="/groups" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: "bold" }}>Back to groups</Link>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ background: "var(--bg-card)", borderRadius: "12px", border: "1px solid #2f3336", height: "500px", display: "flex", flexDirection: "column" }}>
-      {/* Messages */}
-      <div style={{ flex: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
-        {messages.length === 0 && (
-          <p style={{ textAlign: "center", color: "var(--text-muted)", marginTop: "auto", marginBottom: "auto" }}>
-            No messages yet. Say hello! 👋
-          </p>
-        )}
-        {messages.map((msg, i) => {
-          const senderId = msg.senderID || msg.SenderID || msg.sender_id;
-          const isMe = senderId === myId;
-          const rawDate = msg.createDate || msg.CreateDate || msg.sent_at || msg.SentAt;
-          const timeString = rawDate
-            ? new Date(rawDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-            : "";
-          const senderName =
-            msg.senderNickname || msg.SenderNickname || msg.fullname || msg.FullName || "User";
-
-          return (
-            <div key={i} style={{ alignSelf: isMe ? "flex-end" : "flex-start", maxWidth: "80%" }}>
-              {!isMe && (
-                <small style={{ color: "var(--color-primary)", display: "block", marginBottom: "2px" }}>
-                  {senderName}
-                </small>
-              )}
-              <div
+    <div style={{ maxWidth: "840px", margin: "0 auto", paddingBottom: "40px" }}>
+      {/* Group Info Header */}
+      <div style={{ background: "var(--bg-card)", borderRadius: "16px", overflow: "hidden", border: "1px solid #2f3336", marginBottom: "20px" }}>
+        <div style={{ height: "150px", width: "100%", background: "linear-gradient(135deg, rgba(255,123,0,0.28), rgba(255,123,0,0.06), rgba(0,0,0,0.2))" }} />
+        <div style={{ padding: "20px" }}>
+          <h1 style={{ margin: "0 0 8px 0", color: "var(--color-primary)" }}>{groupInfo.group.title}</h1>
+          <p style={{ color: "var(--text-muted)", margin: "0 0 15px 0", lineHeight: "1.6" }}>{groupInfo.group.description}</p>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center", color: "var(--text-muted)", fontSize: "0.92rem" }}>
+            <span>{groupInfo.totalMembers} members</span>
+            <span>Created {timeAgo(groupInfo.group.createdAt)}</span>
+            <span>Owner: {displayName(groupInfo.author)}</span>
+            <div style={{ marginLeft: "auto", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <button
+                onClick={handleOpenInviteModal}
                 style={{
-                  background: isMe ? "var(--color-primary-dark)" : "#343a40",
-                  color: isMe ? "var(--text-main)" : "white",
-                  padding: "10px 14px",
-                  borderRadius: "14px",
-                  borderBottomRightRadius: isMe ? "4px" : "14px",
-                  borderBottomLeftRadius: isMe ? "14px" : "4px",
-                  fontSize: "0.95rem",
-                  lineHeight: 1.4,
-                  wordWrap: "break-word",
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  padding: "6px 14px", background: "transparent",
+                  color: "var(--color-primary)", border: "1px solid var(--color-primary)",
+                  borderRadius: "999px", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
                 }}
               >
-                {msg.message || msg.text || msg.Text || msg.content || ""}
-              </div>
-              {timeString && (
-                <small style={{ color: "var(--text-muted)", display: "block", marginTop: "2px", textAlign: isMe ? "right" : "left" }}>
-                  {timeString}
-                </small>
-              )}
+                ✉️ Invite Members
+              </button>
             </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
+          </div>
+        </div>
       </div>
 
-      {/* Emoji Quick Picker */}
-      <div
-        style={{
-          padding: "8px 15px 0",
-          borderTop: "1px solid #2f3336",
-          display: "flex",
-          gap: "8px",
-          alignItems: "center",
-        }}
-      >
-        <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>Quick send:</span>
-        {QUICK_EMOJIS.map((emoji) => (
+      {/* Tabs */}
+      <div style={{ display: "flex", borderBottom: "1px solid #2f3336", marginBottom: "20px" }}>
+        {tabs.map((tab) => (
           <button
-            key={emoji}
-            onClick={() => handleEmojiClick(emoji)}
-            title={`Send ${emoji}`}
-            style={{
-              background: "transparent",
-              border: "1px solid #3a3f44",
-              borderRadius: "8px",
-              padding: "4px 8px",
-              fontSize: "1.3rem",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              lineHeight: 1,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--color-primary-dark)";
-              e.currentTarget.style.borderColor = "var(--color-primary)";
-              e.currentTarget.style.transform = "scale(1.15)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.borderColor = "#3a3f44";
-              e.currentTarget.style.transform = "scale(1)";
-            }}
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{ flex: 1, padding: "15px", background: "transparent", border: "none", fontSize: "1rem", fontWeight: "bold", cursor: "pointer", textTransform: "capitalize", color: activeTab === tab ? "var(--color-primary)" : "var(--text-muted)", borderBottom: activeTab === tab ? "3px solid var(--color-primary)" : "3px solid transparent" }}
           >
-            {emoji}
+            {tab}
+            {tab === "chat" && id && (unreadByGroup[id] || 0) > 0 && activeTab !== "chat" && (
+              <span style={{ marginLeft: "8px", background: "#e63946", color: "white", borderRadius: "999px", minWidth: "18px", height: "18px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 5px", fontSize: "0.7rem", fontWeight: "bold", verticalAlign: "middle" }}>
+                {unreadByGroup[id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* Input */}
-      <form
-        onSubmit={handleSend}
-        style={{ padding: "15px", borderTop: "1px solid #2f3336", display: "flex", gap: "10px" }}
-      >
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Type a message to the group..."
-          autoComplete="off"
-          maxLength={1000}
+      {/* FEED TAB */}
+      {activeTab === "feed" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleCreatePost} style={{ background: "var(--bg-card)", padding: "18px", borderRadius: "12px", border: "1px solid #2f3336" }}>
+            <h3 style={{ color: "var(--text-main)", marginTop: 0 }}>Create a group post</h3>
+            <input type="text" value={postForm.title} onChange={(e) => setPostForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Post title" maxLength={1000} style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "#000", marginBottom: "10px" }} />
+            <textarea value={postForm.content} onChange={(e) => setPostForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Write something..." maxLength={1000} style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "#000", resize: "vertical", minHeight: "90px", marginBottom: "10px" }} />
+            <input type="file" accept="image/*" onChange={(e) => setPostForm((prev) => ({ ...prev, image: e.target.files?.[0] || null }))} style={{ color: "var(--text-muted)", marginBottom: "10px" }} />
+            <div style={{ textAlign: "right" }}><button type="submit" disabled={posting} style={{ background: "var(--color-primary)", color: "#000", border: "none", padding: "10px 20px", borderRadius: "20px", fontWeight: "bold", cursor: posting ? "not-allowed" : "pointer", opacity: posting ? 0.7 : 1 }}>{posting ? "Posting..." : "Post"}</button></div>
+          </form>
+
+          {posts.length > 0 ? (
+            posts.map((post) => {
+              const imageSrc = post.image;
+
+              return (
+                <div
+                  key={post.id}
+                  style={{
+                    background: "var(--bg-card)",
+                    padding: "18px",
+                    borderRadius: "12px",
+                    border: "1px solid #2f3336",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "16px",
+                      marginBottom: "12px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <strong
+                        style={{
+                          color: "var(--text-main)",
+                          display: "block",
+                        }}
+                      >
+                        {displayName(post.author)}
+                      </strong>
+                      <span
+                        style={{
+                          color: "var(--text-muted)",
+                          fontSize: "0.82rem",
+                        }}
+                      >
+                        {timeAgo(post.createDate)}
+                      </span>
+                    </div>
+
+                    <span
+                      style={{
+                        color: "var(--text-muted)",
+                        fontSize: "0.82rem",
+                      }}
+                    >
+                      {(post.numberOfComments ?? post.totalComments ?? 0)} comments
+                    </span>
+                  </div>
+
+                  <h3
+                    style={{
+                      margin: "0 0 10px 0",
+                      color: "var(--color-primary)",
+                    }}
+                  >
+                    {post.title || "Untitled post"}
+                  </h3>
+
+                  <p
+                    style={{
+                      color: "var(--text-main)",
+                      margin: "0 0 12px 0",
+                      whiteSpace: "pre-wrap",
+                      lineHeight: "1.6",
+                    }}
+                  >
+                    {post.description}
+                  </p>
+
+                  {imageSrc && (
+                    <img
+                      src={resolveApiUrl(imageSrc)}
+                      style={{
+                        width: "100%",
+                        maxHeight: "420px",
+                        objectFit: "cover",
+                        borderRadius: "12px",
+                        marginTop: "8px",
+                      }}
+                    />
+                  )}
+
+                  <div style={{ display: "flex", gap: "15px", marginTop: "10px" }}>
+                    <span
+                      style={{
+                        color: "var(--text-main)",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      <img src="/icons/like.svg" alt="Like" width={18} height={18} style={{ display: "block" }} />
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {post.likes ?? 0}
+                      </span>
+                    </span>
+
+                    <span
+                      style={{
+                        color: "var(--text-main)",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                      }}
+                    >
+                      <img src="/icons/comments.svg" alt="Comments" width={18} height={18} style={{ display: "block" }} />
+                      <span style={{ color: "var(--text-muted)" }}>
+                        {post.numberOfComments ?? 0}
+                      </span>
+                    </span>
+                  </div>
+
+                  <Link
+                    href={`/post/${post.id}`}
+                    style={{
+                      color: "var(--color-primary)",
+                      textDecoration: "none",
+                      fontWeight: "bold",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      marginTop: "10px",
+                    }}
+                  >
+                    View Discussion ➔
+                  </Link>
+                </div>
+              );
+            })
+          ) : (
+            <div style={{ background: "var(--bg-card)", padding: "28px", borderRadius: "12px", border: "1px solid #2f3336", color: "var(--text-muted)", textAlign: "center" }}>No group posts yet.</div>
+          )}
+        </div>
+      )}
+
+      {/* CHAT TAB */}
+      {activeTab === "chat" && <GroupChat groupId={id} />}
+
+      {/* EVENTS TAB */}
+      {activeTab === "events" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <form onSubmit={handleCreateEvent} style={{ background: "var(--bg-card)", padding: "18px", borderRadius: "12px", border: "1px solid #2f3336" }}>
+            <h3 style={{ marginTop: 0, color: "var(--text-main)" }}>Create an event</h3>
+            <input
+              type="text"
+              value={eventForm.title}
+              onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))}
+              placeholder="Event title"
+              maxLength={1000}
+              style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", marginBottom: "10px" }}
+            />
+            <textarea
+              value={eventForm.description}
+              onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))}
+              placeholder="What is this event about?"
+              maxLength={1000}
+              style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", minHeight: "90px", resize: "vertical", marginBottom: "10px" }}
+            />
+            <input
+              type="datetime-local"
+              value={eventForm.eventDate}
+              min="1900-01-01T00:00"
+              max="9999-12-31T23:59"
+              onChange={(e) => setEventForm((prev) => ({ ...prev, eventDate: e.target.value }))}
+              style={{ width: "100%", padding: "10px", background: "var(--color-input-bg)", border: "1px solid #3a3f44", borderRadius: "8px", color: "white", marginBottom: "12px" }}
+            />
+            <div style={{ textAlign: "right" }}>
+              <button type="submit" disabled={creatingEvent} style={{ background: "var(--color-primary)", color: "#000", border: "none", padding: "10px 20px", borderRadius: "20px", fontWeight: "bold", cursor: creatingEvent ? "not-allowed" : "pointer", opacity: creatingEvent ? 0.7 : 1 }}>
+                {creatingEvent ? "Creating..." : "Create event"}
+              </button>
+            </div>
+          </form>
+
+          {events.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+              {events.map((event) => (
+                <div key={event.id} style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "12px", border: "1px solid #2f3336" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", marginBottom: "10px", flexWrap: "wrap" }}>
+                    <div>
+                      <h3 style={{ color: "var(--text-main)", margin: 0 }}>{event.title}</h3>
+                      <div style={{ color: "var(--text-muted)", fontSize: "0.82rem", marginTop: "6px" }}>
+                        By {displayName(event.author)}
+                      </div>
+                    </div>
+                    <span style={{ background: "rgba(255, 123, 0, 0.1)", color: "var(--color-primary)", padding: "4px 10px", borderRadius: "15px", fontSize: "0.85rem", fontWeight: "bold", height: "fit-content" }}>
+                      {formatEventDate(event.eventDate)}
+                    </span>
+                  </div>
+
+                  <p style={{ color: "var(--text-muted)", marginBottom: "15px", lineHeight: "1.6" }}>{event.description}</p>
+
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center", borderTop: "1px solid #2f3336", paddingTop: "15px" }}>
+                    <button
+                      onClick={() => handleVote(event, "going")}
+                      disabled={votingId === event.id}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", fontWeight: "bold", cursor: votingId === event.id ? "not-allowed" : "pointer", border: "none", background: event.vote === "going" ? "#2ecc71" : "#343a40", color: "white", opacity: votingId === event.id ? 0.7 : 1 }}
+                    >
+                      I will participate ({event.totalGoing})
+                    </button>
+                    <button
+                      onClick={() => handleVote(event, "not going")}
+                      disabled={votingId === event.id}
+                      style={{ flex: 1, padding: "10px", borderRadius: "8px", fontWeight: "bold", cursor: votingId === event.id ? "not-allowed" : "pointer", border: "none", background: event.vote === "not going" ? "#e63946" : "#343a40", color: "white", opacity: votingId === event.id ? 0.7 : 1 }}
+                    >
+                      I couldn't participate ({event.totalNotGoing})
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ background: "var(--bg-card)", padding: "28px", borderRadius: "12px", border: "1px solid #2f3336", color: "var(--text-muted)", textAlign: "center" }}>
+              No events yet.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MEMBERS TAB */}
+      {activeTab === "members" && (
+        <div style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "12px", border: "1px solid #2f3336" }}>
+          {members.length > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
+              {members.map((member) => (
+                <div key={member.id} style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--color-input-bg)", padding: "12px", borderRadius: "10px" }}>
+                  <img src={resolveApiUrl(member.avatar)} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover" }} />
+                  <div><div style={{ color: "var(--text-main)", fontWeight: "bold" }}>{displayName(member)}</div><div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{member.firstname || "Member"}</div></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: "var(--text-muted)", textAlign: "center" }}>No members found.</div>
+          )}
+        </div>
+      )}
+
+
+
+      {/* pending TAB */}
+      {activeTab === "pending" && isOwner && (
+        <div style={{ background: "var(--bg-card)", padding: "20px", borderRadius: "12px", border: "1px solid #2f3336" }}>
+          {pending.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {pending.map((member) => (
+                <div key={member.id} style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--color-input-bg)", padding: "12px", borderRadius: "10px" }}>
+                  <img src={resolveApiUrl(member.avatar)} style={{ width: "42px", height: "42px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: "var(--text-main)", fontWeight: "bold" }}>{displayName(member)}</div>
+                    <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>{member.firstname || "Member"}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                    <button
+                      disabled={actioningId === member.id}
+                      onClick={() => handleAccept(member.id)}
+                      style={{ padding: "6px 14px", borderRadius: "20px", border: "none", background: "#2ecc71", color: "#000", fontWeight: "bold", cursor: actioningId === member.id ? "not-allowed" : "pointer", opacity: actioningId === member.id ? 0.6 : 1 }}
+                    >
+                      Accept
+                    </button>
+                    <button
+                      disabled={actioningId === member.id}
+                      onClick={() => handleReject(member.id)}
+                      style={{ padding: "6px 14px", borderRadius: "20px", border: "none", background: "#e63946", color: "#fff", fontWeight: "bold", cursor: actioningId === member.id ? "not-allowed" : "pointer", opacity: actioningId === member.id ? 0.6 : 1 }}
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ color: "var(--text-muted)", textAlign: "center" }}>No pending members found.</div>
+          )}
+        </div>
+      )}
+
+      {/* Invite Members Modal */}
+      {inviteModalOpen && (
+        <div
+          onClick={() => setInviteModalOpen(false)}
           style={{
-            flexGrow: 1,
-            padding: "12px 15px",
-            borderRadius: "25px",
-            background: "var(--color-input-bg)",
-            color: "white",
-            border: "none",
-            outline: "none",
-            fontSize: "1rem",
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+            zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px",
           }}
-        />
-        <button
-          type="submit"
-          style={{ background: "var(--color-primary)", color: "#000", border: "none", borderRadius: "50%", width: "45px", height: "45px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
-      </form>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--bg-card)", borderRadius: "16px", padding: "24px",
+              width: "100%", maxWidth: "440px", maxHeight: "80vh", display: "flex", flexDirection: "column",
+              border: "1px solid var(--border-subtle)", boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0, color: "var(--text-main)", fontSize: "1.1rem" }}>Invite Members</h3>
+              <button
+                onClick={() => setInviteModalOpen(false)}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted)", fontSize: "1.3rem", cursor: "pointer", lineHeight: 1 }}
+              >✕</button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
+              {loadingInvitable ? (
+                <p style={{ color: "var(--text-muted)", textAlign: "center", margin: "20px 0" }}>Loading...</p>
+              ) : invitableUsers.length === 0 ? (
+                <p style={{ color: "var(--text-muted)", textAlign: "center", margin: "20px 0" }}>
+                  No one left to invite. All your connections are already members or have a pending invitation.
+                </p>
+              ) : invitableUsers.map((u) => {
+                const name = u.nickname || [u.firstname, u.lastname].filter(Boolean).join(" ") || "User";
+                const alreadyInvited = invitedIds.has(u.id);
+                return (
+                  <div
+                    key={u.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: "12px",
+                      padding: "10px", borderRadius: "10px",
+                      background: "var(--bg-body)", border: "1px solid var(--border-subtle)",
+                    }}
+                  >
+                    <img
+                      src={resolveApiUrl(u.avatar) || resolveApiUrl("/uploads/images/default-avatar.jpg")}
+                      alt={name}
+                      style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                      onError={(e) => { e.currentTarget.src = resolveApiUrl("/uploads/images/default-avatar.jpg"); }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: "var(--text-main)", fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                      {u.nickname && <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>@{u.nickname}</div>}
+                    </div>
+                    <button
+                      disabled={alreadyInvited || sendingInviteId === u.id}
+                      onClick={() => handleSendInvite(u.id)}
+                      style={{
+                        padding: "6px 14px", borderRadius: "999px", border: "none", fontWeight: 600, fontSize: "0.85rem",
+                        cursor: alreadyInvited || sendingInviteId === u.id ? "not-allowed" : "pointer",
+                        background: alreadyInvited ? "var(--text-muted)" : "var(--color-primary)",
+                        color: "#fff", flexShrink: 0,
+                        opacity: sendingInviteId === u.id ? 0.7 : 1,
+                      }}
+                    >
+                      {alreadyInvited ? "Invited ✓" : sendingInviteId === u.id ? "..." : "Invite"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

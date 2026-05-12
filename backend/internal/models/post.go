@@ -17,6 +17,7 @@ type PostItem struct {
 type CompletePost struct {
 	Post
 	Comments []*CommentItem
+	UserVote *string `json:"userVote"`
 }
 
 type ComentPaginationRequest struct {
@@ -39,7 +40,7 @@ type Post struct {
 	Image         string `json:"image"`
 	AllowedUsres  []int  `json:"omitempty"` // if the post is private
 	Author        User   `json:"author"`
-	TotalComments int    `json:"total_comments"`
+	TotalComments int    `json:"numberOfComments"`
 	Privecytype string `json:"privecy"`
 }
 

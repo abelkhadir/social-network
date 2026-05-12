@@ -19,7 +19,8 @@ type CommentItem struct {
 	AuthorName     string `json:"authorName"`
 	AuthorAvatar   string `json:"authorAvatar"`
 	LastCreateDate string `json:"lastCreateDate"`
-	Likes          int    `json:"likes"`
-	Dislikes       int    `json:"dislikes"`
+	Likes          int     `json:"likes"`
+	Dislikes       int     `json:"dislikes"`
 	Image          string  `json:"image"`
+	UserVote       *string `json:"userVote"`
 }

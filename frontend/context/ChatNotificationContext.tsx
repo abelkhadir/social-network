@@ -53,10 +53,57 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
   const activeGroupChatIdRef = useRef("");
   const recentlyLeftChatUserIdRef = useRef("");
   const recentlyLeftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const otherTabsActiveChatRef = useRef<Set<string>>(new Set());
 
   const activeChatUserId = getActiveChatUserId(pathname);
   const lastFetchedAtRef = useRef(0);
   const pendingRefreshRef = useRef<Promise<void> | null>(null);
+
+  useEffect(() => {
+    const channel = new BroadcastChannel("chat_notifications");
+    channelRef.current = channel;
+
+    channel.onmessage = (event) => {
+      const msg = event.data;
+      if (msg.type === "active_chat") {
+        if (msg.userId) otherTabsActiveChatRef.current.add(msg.userId);
+      } else if (msg.type === "inactive_chat") {
+        if (msg.userId) otherTabsActiveChatRef.current.delete(msg.userId);
+      } else if (msg.type === "thread_read") {
+        setUnreadByUser((prev) => {
+          if (!prev[msg.userId]) return prev;
+          const next = { ...prev };
+          delete next[msg.userId];
+          return next;
+        });
+      } else if (msg.type === "group_read") {
+        setUnreadByGroup((prev) => {
+          if (!prev[msg.groupId]) return prev;
+          const next = { ...prev };
+          delete next[msg.groupId];
+          return next;
+        });
+      }
+    };
+
+    return () => {
+      channel.close();
+      channelRef.current = null;
+    };
+  }, []);
+
+  // Broadcast this tab's active chat to other tabs
+  useEffect(() => {
+    if (activeChatUserId) {
+      channelRef.current?.postMessage({ type: "active_chat", userId: activeChatUserId });
+    }
+    return () => {
+      if (activeChatUserId) {
+        channelRef.current?.postMessage({ type: "inactive_chat", userId: activeChatUserId });
+      }
+    };
+  }, [activeChatUserId]);
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -84,8 +131,8 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
         setUnreadByUser(chatData.counts || {});
         setUnreadByGroup(groupData.counts || {});
         lastFetchedAtRef.current = Date.now();
-      } catch (err) {
-        console.error("Failed to load notification counts", err);
+      } catch {
+        // ignore
       } finally {
         pendingRefreshRef.current = null;
       }
@@ -105,14 +152,14 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
         delete next[userId];
         return next;
       });
+      channelRef.current?.postMessage({ type: "thread_read", userId });
 
       try {
         await fetchApi("/notifications/chat/read", {
           method: "POST",
           body: JSON.stringify({ actor_id: userId }),
         });
-      } catch (err) {
-        console.error("Failed to mark chat notifications", err);
+      } catch {
         lastFetchedAtRef.current = 0;
         await refresh();
       }
@@ -130,14 +177,14 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
         delete next[groupId];
         return next;
       });
+      channelRef.current?.postMessage({ type: "group_read", groupId });
 
       try {
         await fetchApi("/notifications/groups/read", {
           method: "POST",
           body: JSON.stringify({ group_id: groupId }),
         });
-      } catch (err) {
-        console.error("Failed to mark group notifications", err);
+      } catch {
         lastFetchedAtRef.current = 0;
         await refresh();
       }
@@ -190,7 +237,11 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
     }
 
     if (latestNotification.type === "message" && actorId) {
-      if (actorId === activeChatUserId || actorId === recentlyLeftChatUserIdRef.current) {
+      if (
+        actorId === activeChatUserId ||
+        actorId === recentlyLeftChatUserIdRef.current ||
+        otherTabsActiveChatRef.current.has(actorId)
+      ) {
         void markThreadRead(actorId);
         return;
       }

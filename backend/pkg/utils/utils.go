@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -44,25 +43,6 @@ func RedirectToPreviousURL(res http.ResponseWriter, req *http.Request) {
 
 	// Perform the redirection
 	http.Redirect(res, req, previousPage, http.StatusSeeOther)
-}
-
-func LoadEnv(path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		log.Println("🚨 " + err.Error())
-	}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) != 2 {
-			log.Println("🚨 Your env file must be set")
-		}
-		key := parts[0]
-		value := parts[1]
-		os.Setenv(key, value)
-	}
-	return scanner.Err()
 }
 
 func RedirectToHTTPS(next http.Handler) http.Handler {

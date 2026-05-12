@@ -95,7 +95,6 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         if (data.type === "message" || data.type === "group_message") {
           const msg = normalizeSocketMessage(data);
           if (!msg || !msg.text) {
-            console.warn("Missing message payload:", data);
             return;
           }
 
@@ -113,8 +112,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         } else if (data.type === "typing") {
           setTypingStatus(data);
         }
-      } catch (err) {
-        console.error("WebSocket message parsing error", err);
+      } catch {
+        // ignore malformed ws message
       }
     };
 

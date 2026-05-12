@@ -80,7 +80,9 @@ func (pr *PostRepository) GetPostByID(postID, viewerID string) (*models.Complete
     p.createDate,
     COALESCE(p.Image, ''),
     (SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
-    (SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes
+    (SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes,
+    (SELECT CASE WHEN vote = 1 THEN 'like' WHEN vote = 0 THEN 'dislike' END
+     FROM post_vote WHERE post_id = p.id AND user_id = ?) AS user_vote
 FROM post p
 JOIN user u ON u.id = p.authorID
 WHERE p.id = ?
@@ -101,7 +103,8 @@ AND (
             WHERE pau.post_id = p.id AND pau.user_id = ?
         )
     )
-)`, postID, viewerID, viewerID, viewerID)
+)`, viewerID, postID, viewerID, viewerID, viewerID)
+	var userVote sql.NullString
 	err := row.Scan(
 		&post.ID,
 		&post.Title,
@@ -113,12 +116,16 @@ AND (
 		&post.Image,
 		&post.Likes,
 		&post.Dislikes,
+		&userVote,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, err // Post not found
+			return nil, err
 		}
 		return nil, err
+	}
+	if userVote.Valid {
+		post.UserVote = &userVote.String
 	}
 	if post.Image != "" {
 		post.Image = "/uploads/images/" + post.Image

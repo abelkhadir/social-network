@@ -38,13 +38,10 @@ export default function GroupsPage() {
   const loadGroups = async () => {
     try {
       setLoading(true);
-      // const respinsegroup=await fetchJoinedGroups()
-      // console.log("that is the respose of the group joined ",respinsegroup)
       const [joined, suggested] = await Promise.all([
         fetchJoinedGroups(),
         fetchSuggestedGroups(),
       ]);
-      // console.log("GROUPS:", visibleGroups);
       setJoinedGroups(joined);
       setSuggestedGroups(suggested);
 
@@ -56,12 +53,10 @@ export default function GroupsPage() {
   };
 
   useEffect(() => {
-    console.log("visibleGroups:", visibleGroups);
     loadGroups();
   }, []);
 
   const handleCreateGroup = async (e: React.FormEvent) => {
-    console.log("we try now to create group")
     e.preventDefault();
     if (!form.title.trim() || !form.description.trim()) {
       showToast("Group title and description are required", "error");
@@ -91,8 +86,7 @@ export default function GroupsPage() {
 
     try {
       setJoiningId(group.id);
-      const datafromback = await createJoinRequest(group.id, group.userId);
-      console.log("that what heppen on the backend", datafromback)
+      await createJoinRequest(group.id, group.userId);
       setSuggestedGroups((prev) =>
         prev.map((item) =>
           item.id === group.id ? { ...item, requestId: 1 } : item

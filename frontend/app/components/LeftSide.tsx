@@ -32,7 +32,7 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
           setJoinedGroups(joined);
           setSuggestedGroups(suggested);
         })
-        .catch((err) => console.error("Error fetching sidebar data:", err))
+        .catch(() => {})
         .finally(() => setLoading(false));
     }
   }, [user]);

@@ -155,6 +155,16 @@ func (h *FollowHandler) AcceptFollow(w http.ResponseWriter, r *http.Request) {
 
 	followingID := viewer.ID
 
+	isPending, err := h.app.ProfileRepo.IsPending(followerID, followingID)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to check request status")
+		return
+	}
+	if !isPending {
+		utils.HandleError(w, http.StatusConflict, "No pending follow request from this user")
+		return
+	}
+
 	err = h.app.ProfileRepo.AcceptFollow(followerID, followingID)
 	if err != nil {
 		utils.HandleError(w, http.StatusInternalServerError, "Failed to accept follow request")
@@ -200,6 +210,16 @@ func (h *FollowHandler) DeclineFollow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	followingID := viewer.ID
+
+	isPending, err := h.app.ProfileRepo.IsPending(followerID, followingID)
+	if err != nil {
+		utils.HandleError(w, http.StatusInternalServerError, "Failed to check request status")
+		return
+	}
+	if !isPending {
+		utils.HandleError(w, http.StatusConflict, "No pending follow request from this user")
+		return
+	}
 
 	err = h.app.ProfileRepo.UnfollowUser(followerID, followingID)
 	if err != nil {

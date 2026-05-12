@@ -75,17 +75,19 @@ func (cr *CommentRepository) GetCommentByID(id string) (models.CommentItem, erro
 	return comment, nil
 }
 
-func (cr *CommentRepository) GetCommentsOfPost(postID string) ([]*models.CommentItem, error) {
+func (cr *CommentRepository) GetCommentsOfPost(postID string, viewerID string) ([]*models.CommentItem, error) {
 	var comments []*models.CommentItem
 	rows, err := cr.db.Query(`
-		SELECT 
+		SELECT
 			c.id, c.text, c.authorID, c.createDate, c.image, u.nickname, u.avatarURL,
 			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 1) AS likes,
-			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 0) AS dislikes
-		FROM comment c 
-		LEFT JOIN user u ON c.authorID = u.id 
-		WHERE c.PostID = ? 
-		ORDER BY createDate DESC`, postID)
+			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 0) AS dislikes,
+			(SELECT CASE WHEN vote = 1 THEN 'like' WHEN vote = 0 THEN 'dislike' END
+			 FROM comment_vote WHERE comment_id = c.id AND user_id = ?) AS user_vote
+		FROM comment c
+		LEFT JOIN user u ON c.authorID = u.id
+		WHERE c.PostID = ?
+		ORDER BY createDate DESC`, viewerID, postID)
 	if err != nil {
 		return nil, err
 	}
@@ -93,12 +95,15 @@ func (cr *CommentRepository) GetCommentsOfPost(postID string) ([]*models.Comment
 
 	for rows.Next() {
 		var comment models.CommentItem
-		err := rows.Scan(&comment.ID, &comment.Text, &comment.AuthorID, &comment.LastCreateDate, &comment.Image, &comment.AuthorName, &comment.AuthorAvatar, &comment.Likes, &comment.Dislikes)
+		var userVote sql.NullString
+		err := rows.Scan(&comment.ID, &comment.Text, &comment.AuthorID, &comment.LastCreateDate, &comment.Image, &comment.AuthorName, &comment.AuthorAvatar, &comment.Likes, &comment.Dislikes, &userVote)
 		if err != nil {
 			return nil, err
 		}
+		if userVote.Valid {
+			comment.UserVote = &userVote.String
+		}
 		comments = append(comments, &comment)
-		// fmt.Println("maaar3aaftch ", err)
 	}
 
 	if err := rows.Err(); err != nil {

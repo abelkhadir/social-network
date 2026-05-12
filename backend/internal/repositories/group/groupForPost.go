@@ -96,18 +96,20 @@ func (r *GroupRepository) SaveGroupePost(ctx context.Context, group *models.Grou
 
 func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid string) ([]models.Post, models.GroupError) {
 	GetQuery := `
-	SELECT 
+	SELECT
 		p.id,
 		p.title,
 		p.member_id,
 		p.content,
 		p.image,
-		p.comments,
+		(SELECT COUNT(*) FROM group_comments WHERE group_post_id = p.id) AS comments,
 		p.created_at,
 		u.firstname,
 		u.lastname,
 		u.nickname,
-		u.avatarURL
+		u.avatarURL,
+		(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 1) AS likes,
+		(SELECT COUNT(*) FROM post_vote WHERE post_id = p.id AND vote = 0) AS dislikes
 	FROM group_posts p
 	JOIN user u ON u.id = p.member_id
 	WHERE p.group_id = ?
@@ -147,6 +149,8 @@ func (r *GroupRepository) GetGroupPosts(reg models.PaginationRequest, groupid st
 			&post.Author.Lastname,
 			&post.Author.Nickname,
 			&post.Author.AvatarURL,
+			&post.Likes,
+			&post.Dislikes,
 		); err != nil {
 			fmt.Println(err)
 

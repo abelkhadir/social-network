@@ -72,8 +72,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         const data = await fetchApi(`/notifications?limit=${NOTIFICATION_FETCH_LIMIT}`);
         setNotifications(filterBellNotifications<NotificationItem>(data.notifications));
         lastFetchedAtRef.current = Date.now();
-      } catch (err) {
-        console.error("Failed to load notifications", err);
+      } catch {
+        // ignore
       } finally {
         pendingRefreshRef.current = null;
         setLoading(false);
@@ -109,8 +109,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         body: JSON.stringify({ all: true }),
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    } catch (err) {
-      console.error("Failed to mark notifications", err);
+    } catch {
+      // ignore
     }
   }, [user]);
 
@@ -123,8 +123,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
           body: JSON.stringify({ id }),
         });
         setNotifications((prev) => prev.filter((n) => n.id !== id));
-      } catch (err) {
-        console.error("Failed to mark notification", err);
+      } catch {
+        // ignore
       }
     },
     [user]

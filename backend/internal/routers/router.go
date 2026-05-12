@@ -54,7 +54,7 @@ func SetupRoutes(a *app.Application) {
 		authandler.Logout(a, res, req)
 	})))
 
-	//================== Profile routes =======================///
+	// Profile routes
 	http.Handle("/profile", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		profile.Profile(a, res, req)
 	})))
@@ -62,33 +62,27 @@ func SetupRoutes(a *app.Application) {
 		profile.Profile(a, res, req)
 	})))
 
+	// Follow routes
 	http.Handle("/follow/accept", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.AcceptFollow)))        // PUT
 	http.Handle("/follow/decline", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.DeclineFollow)))      // DELETE
 	http.Handle("/follow/pending", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.GetPendingRequests))) // GET
-
-	// ========== Follow main ==========
-	http.Handle("/follow", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.FollowUser)))     // POST
-	http.Handle("/unfollow", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.UnfollowUser))) // DELETE
-
-	// ========== Followers / Following ==========
-	http.Handle("/followers", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.GetFollowers))) // GET
-	http.Handle("/following", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.GetFollowing))) // GET
+	http.Handle("/follow", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.FollowUser)))                 // POST
+	http.Handle("/unfollow", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.UnfollowUser)))             // DELETE
+	http.Handle("/followers", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.GetFollowers)))            // GET
+	http.Handle("/following", rateLimiter.Wrap("api", http.HandlerFunc(followHandler.GetFollowing)))            // GET
 
 	// Post Handlers
 	http.Handle("/post", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		posthandler.CreatePost(a, res, req)
 	})))
-	http.Handle("/post/", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	http.Handle("/post/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		posthandler.GetPost(a, res, req)
-	}))
-	http.Handle("/posts", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	})))
+	http.Handle("/posts", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		posthandler.GetAllPosts(a, res, req)
-	}))
+	})))
 
-	// http.Handle("/comment/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-	// 	posthandler.CreateComment(a, res, req)
-
-	// })))
+	// Comment routes
 	http.Handle("/comment/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
@@ -99,11 +93,7 @@ func SetupRoutes(a *app.Application) {
 		),
 	)
 
-	// comment for grouup
-	// http.Handle("/grouup/comment/", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-	// 	groupshandler.AddGroupComment(a, res, req)
-	// })))
-	// Notifications
+	// Notification routes
 	http.Handle("/notifications", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		notificationshandler.ListNotifications(a, res, req)
 	})))
@@ -123,12 +113,10 @@ func SetupRoutes(a *app.Application) {
 		notificationshandler.MarkGroupNotificationsRead(a, res, req)
 	})))
 
-	// Chat Handlers
+	// Chat routes
 	http.Handle("/chat/users", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.GetUsers(a, res, req)
 	})))
-
-	// Chat Handlers
 	http.Handle("/users", rateLimiter.Wrap("api", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		websockethandler.GetUsers(a, res, req)
 	})))
@@ -141,8 +129,10 @@ func SetupRoutes(a *app.Application) {
 		websockethandler.SendChatMessage(a, res, req)
 	})))
 
+	// Static file serving
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
 
+	// Group routes
 	http.Handle("/groups/create",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
@@ -152,16 +142,13 @@ func SetupRoutes(a *app.Application) {
 			),
 		),
 	)
-	// get joined groups
 	http.Handle("/groups/joined", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.GetJoinedGroupsHandler(a, w, r)
 	}))))
-	// discover: groups the user hasn't joined
 	http.Handle("/groups/suggested", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.GetSuggestedGroupsHandler(a, w, r)
 	}))))
 
-	// send a join request
 	http.Handle("/groups/request", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.JoinGroupRequestHandler(a, w, r)
 	}))))
@@ -170,7 +157,6 @@ func SetupRoutes(a *app.Application) {
 		groupshandler.GetGroupPendingMembers(a, w, r)
 	}))))
 
-	// send a join request
 	http.Handle("/groups/request/decision", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.AcceptMemberGroup(a, w, r)
 	}))))
@@ -182,12 +168,9 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/groups/posts/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.GetGroupPosts(a, w, r)
 	}))))
-	// to get the members of the groups
 	http.Handle("/groups/joined/members/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.GetGroupMembersHandler(a, w, r)
 	}))))
-	// to create the event
-
 	http.Handle("/groups/joined/event/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.CreateEventHandler(a, w, r)
 	}))))
@@ -201,7 +184,6 @@ func SetupRoutes(a *app.Application) {
 			),
 		),
 	)
-	// get events
 	http.Handle("/groups/joined/events/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
@@ -211,7 +193,6 @@ func SetupRoutes(a *app.Application) {
 			),
 		),
 	)
-	// vote the event
 	http.Handle("/groups/events/vote/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
@@ -221,7 +202,6 @@ func SetupRoutes(a *app.Application) {
 			),
 		),
 	)
-	// get the meesssages of group
 	http.Handle("/chat/messages/group/",
 		rateLimiter.Wrap("api",
 			middleware.AuthMiddleware(a.DB,
@@ -233,7 +213,6 @@ func SetupRoutes(a *app.Application) {
 		),
 	)
 
-	// Group user invitations
 	http.Handle("/groups/invite-user/followers/", rateLimiter.Wrap("api", middleware.AuthMiddleware(a.DB, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		groupshandler.GetInvitableFollowersHandler(a, w, r)
 	}))))
@@ -248,7 +227,8 @@ func SetupRoutes(a *app.Application) {
 	http.Handle("/ws", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		websockethandler.HandleWebSocket(a, w, r)
 	}))
-	http.Handle("/fetchUsers", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// Contacts
+	http.Handle("/fetchUsers", rateLimiter.Wrap("api", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		profile.NewFollowHandler(a).GetContactHandler(a, w, r)
-	}))
+	})))
 }

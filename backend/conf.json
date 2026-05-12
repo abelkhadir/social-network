@@ -1,0 +1,5 @@
+{
+  "database": "database/socialdb.db",
+  "port": "8080",
+  "frontend_origin": "http://localhost:3000"
+}

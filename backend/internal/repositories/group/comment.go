@@ -1,6 +1,7 @@
 package groupsrepos
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -134,7 +135,7 @@ ORDER BY c.created_at DESC;
 	}
 }
 
-func (r *GroupRepository) GetGroupPostComments(postID string) ([]*models.CommentItem, error) {
+func (r *GroupRepository) GetGroupPostComments(postID string, viewerID string) ([]*models.CommentItem, error) {
 	rows, err := r.db.Query(`
 		SELECT
 			c.id,
@@ -145,12 +146,14 @@ func (r *GroupRepository) GetGroupPostComments(postID string) ([]*models.Comment
 			u.nickname,
 			COALESCE(u.avatarURL, ''),
 			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 1),
-			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 0)
+			(SELECT COUNT(*) FROM comment_vote WHERE comment_id = c.id AND vote = 0),
+			(SELECT CASE WHEN vote = 1 THEN 'like' WHEN vote = 0 THEN 'dislike' END
+			 FROM comment_vote WHERE comment_id = c.id AND user_id = ?) AS user_vote
 		FROM group_comments c
 		JOIN user u ON u.id = c.member_id
 		WHERE c.group_post_id = ?
 		ORDER BY c.created_at DESC
-	`, postID)
+	`, viewerID, postID)
 	if err != nil {
 		fmt.Println("ma3amaar waaalo")
 		return nil, err
@@ -160,8 +163,12 @@ func (r *GroupRepository) GetGroupPostComments(postID string) ([]*models.Comment
 	var comments []*models.CommentItem
 	for rows.Next() {
 		var c models.CommentItem
-		if err := rows.Scan(&c.ID, &c.Text, &c.AuthorID, &c.LastCreateDate, &c.Image, &c.AuthorName, &c.AuthorAvatar, &c.Likes, &c.Dislikes); err != nil {
+		var userVote sql.NullString
+		if err := rows.Scan(&c.ID, &c.Text, &c.AuthorID, &c.LastCreateDate, &c.Image, &c.AuthorName, &c.AuthorAvatar, &c.Likes, &c.Dislikes, &userVote); err != nil {
 			return nil, err
+		}
+		if userVote.Valid {
+			c.UserVote = &userVote.String
 		}
 		comments = append(comments, &c)
 	}
