@@ -1,0 +1,6 @@
+fixed : realtime delivery  with message request UI 
+problems : 
+1- tabs problem with logout case ! (close socket)
+2- duplicate followers url in two tabs , tab 1 accept follow request , tab 2 reject !?
+3- Groups rules 
+4- show sending forbiden ui toast
