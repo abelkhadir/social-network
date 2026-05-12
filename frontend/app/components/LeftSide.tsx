@@ -21,7 +21,8 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
   const [activeTab] = useState<"users" | "groups">("users");
 
   useEffect(() => {
-    if (user) {
+    if (user && isChatMode) {
+      setLoading(true);
       Promise.all([
         fetchApi("/chat/users"),
         fetchJoinedGroups().catch(() => []),
@@ -35,7 +36,7 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
         .catch(() => {})
         .finally(() => setLoading(false));
     }
-  }, [user]);
+  }, [user, isChatMode]);
 
   useEffect(() => {
     if (!userStatus?.userID) return;

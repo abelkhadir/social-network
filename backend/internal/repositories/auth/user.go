@@ -111,12 +111,6 @@ func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, erro
 		COALESCE(m.content, '') AS last_message,
 		COALESCE(m.createDate, '') AS last_message_time
 	FROM user u
-	-- Join followers: users I follow OR users who follow me (accepted status)
-	INNER JOIN followers f ON (
-		(u.ID = f.following_id AND f.follower_id = ? AND f.status = 'accepted')
-		OR
-		(u.ID = f.follower_id AND f.following_id = ? AND f.status = 'accepted')
-	)
 	LEFT JOIN (
 		SELECT
 			CASE
@@ -133,7 +127,18 @@ func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, erro
 		AND latestMessages.maxCreateDate = m.createDate
 	)
 	WHERE u.ID != ?
-	ORDER BY 
+	AND (
+		latestMessages.otherUserID IS NOT NULL
+		OR EXISTS (
+			SELECT 1 FROM followers f
+			WHERE f.status = 'accepted'
+			AND (
+				(f.following_id = u.ID AND f.follower_id = ?)
+				OR (f.follower_id = u.ID AND f.following_id = ?)
+			)
+		)
+	)
+	ORDER BY
 		CASE WHEN last_message_time != '' THEN 0 ELSE 1 END,
 		last_message_time DESC,
 		u.nickname

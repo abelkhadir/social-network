@@ -25,6 +25,7 @@ export default function ChatPage() {
   const [talker, setTalker] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
+  const [canSend, setCanSend] = useState(true);
   const [text, setText] = useState("");
   const [isPeerTyping, setIsPeerTyping] = useState(false);
 
@@ -58,6 +59,7 @@ export default function ChatPage() {
         const data = await fetchApi(`/chat/messages/${receiverId}`);
         setMessages(data.messages || []);
         setTalker(data.talker || { Nickname: "Unknown", IsConnected: false });
+        setCanSend(data.can_send !== false);
       } catch (error: any) {
         if (error.message?.includes("follow")) setForbidden(true);
       } finally {
@@ -105,7 +107,7 @@ export default function ChatPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() || !canSend) return;
 
     try {
       await fetchApi(`/chat/new`, {
@@ -113,15 +115,17 @@ export default function ChatPage() {
         body: JSON.stringify({ receiverID: receiverId, text }),
       });
       setText("");
-      
+
       sendTyping(myId, receiverId as string, false);
       didSendTyping.current = false;
       if (typingTimer.current) clearTimeout(typingTimer.current);
 
     } catch (err: any) {
-      showToast(err.message || "Failed to send message", "error");
-      window.location.reload();
-      
+      if (err.message?.includes("follow")) {
+        setCanSend(false);
+      } else {
+        showToast(err.message || "Failed to send message", "error");
+      }
     }
   };
 
@@ -207,6 +211,11 @@ export default function ChatPage() {
 
       {/* Input Area */}
       <div className={styles.chatInputArea}>
+        {!canSend && (
+          <div style={{ padding: "8px 12px", background: "rgba(230,57,70,0.12)", border: "1px solid rgba(230,57,70,0.35)", borderRadius: "8px", marginBottom: "8px", color: "#e63946", fontSize: "0.85rem", textAlign: "center" }}>
+            You don&apos;t follow each other — you can&apos;t send new messages.
+          </div>
+        )}
         <div ref={emojiPickerRef} style={{ position: "relative" }}>
           {showEmojiPicker && (
             <div style={{
@@ -272,15 +281,16 @@ export default function ChatPage() {
             <input
               type="text"
               name="message"
-              placeholder="Type a message..."
+              placeholder={canSend ? "Type a message..." : "You don't follow each other"}
               autoComplete="off"
               required
               value={text}
               onChange={handleInput}
               maxLength={1000}
+              disabled={!canSend}
               className={styles.messageInput}
             />
-            <button type="submit" className={styles.sendBtn}>
+            <button type="submit" disabled={!canSend} className={styles.sendBtn}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>

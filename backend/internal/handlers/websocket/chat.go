@@ -131,14 +131,16 @@ func GetMessages(application *app.Application, res http.ResponseWriter, req *htt
 		utils.HandleError(res, http.StatusInternalServerError, "Failed to check permissions")
 		return
 	}
-	if !canChat {
-		utils.HandleError(res, http.StatusForbidden, "You must follow each other to chat")
-		return
-	}
 
 	messages, err := application.MessageRepo.GetMessagesBetween(currentUser.ID, otherUserID)
 	if err != nil {
 		utils.HandleError(res, http.StatusInternalServerError, "Failed to fetch messages")
+		return
+	}
+
+	// Block access only if there's no history and they don't follow each other
+	if !canChat && len(messages) == 0 {
+		utils.HandleError(res, http.StatusForbidden, "You must follow each other to chat")
 		return
 	}
 
@@ -150,7 +152,8 @@ func GetMessages(application *app.Application, res http.ResponseWriter, req *htt
 	}
 
 	utils.SendJSONResponse(res, http.StatusOK, map[string]any{
-		"message": "messages retrieved successfully",
+		"message":  "messages retrieved successfully",
+		"can_send": canChat,
 		"talker": talkerInfo{
 			ID:          talker.ID,
 			Nickname:    talker.Nickname,
