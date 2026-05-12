@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"social/internal/app"
+	"social/pkg/middleware"
 	"social/pkg/utils"
 )
 
@@ -42,9 +43,12 @@ func GetGroupMessages(app *app.Application, w http.ResponseWriter, r *http.Reque
 	parts := strings.Split(path, "/")
 	groupid := parts[4]
 	groupid = strings.TrimSpace(groupid)
-	// groupIDStr, errId := utils.GetGroupId(r, "members")
 
-	// messages, err := h.service.GetGroupMessagesService(groupid)
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	if !requireMember(app, w, groupid, userID) {
+		return
+	}
+
 	messages, err := app.GroupPostRepo.GetGroupMessagesRepo(groupid)
 	if err != nil {
 		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{

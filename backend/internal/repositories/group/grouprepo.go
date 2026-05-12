@@ -144,16 +144,33 @@ func (r *GroupRepository) SaveMemberToGroup(groupID, userID string) error {
 // remove user form request
 func (r *GroupRepository) CancelGroupRequest(groupId, userID string) error {
 	query := `
-		DELETE FROM group_requests 
+		DELETE FROM group_requests
 		WHERE group_id = ? AND sender_id = ?;
 	`
 
-	_, err := r.db.Exec(query, groupId, userID)
+	result, err := r.db.Exec(query, groupId, userID)
 	if err != nil {
 		return err
 	}
 
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("no pending request found")
+	}
+
 	return nil
+}
+
+func (r *GroupRepository) HasPendingRequest(groupID, userID string) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM group_requests WHERE group_id = ? AND sender_id = ?)`,
+		groupID, userID,
+	).Scan(&exists)
+	return exists, err
 }
 
 func (r *GroupRepository) GetPendingMembers(groupID string) ([]string, error) {

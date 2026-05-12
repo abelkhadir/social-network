@@ -39,6 +39,10 @@ func CreateEventHandler(app *app.Application, w http.ResponseWriter, r *http.Req
 
 	event.UserID = userID
 
+	if !requireMember(app, w, event.GroupId, userID) {
+		return
+	}
+
 	if len(event.Title) > 1000 || len(event.Description) > 1000 {
 		utils.SendJSONResponse(w, 400, map[string]any{
 			"error": "title and description must be under 1000 characters",
@@ -119,6 +123,11 @@ func GetGroupEventsHandler(app *app.Application, w http.ResponseWriter, r *http.
 		return
 	}
 	UserID := r.Context().Value(middleware.UserIDKey).(string)
+
+	if !requireMember(app, w, groupIDStr, UserID) {
+		return
+	}
+
 	events, err := app.GroupPostRepo.GetGroupEvents(UserID, groupIDStr)
 	if err.Code != http.StatusOK {
 		utils.SendJSONResponse(w, err.Code, map[string]any{

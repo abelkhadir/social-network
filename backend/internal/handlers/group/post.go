@@ -10,6 +10,19 @@ import (
 	"social/pkg/utils"
 )
 
+func requireMember(a *app.Application, w http.ResponseWriter, groupID, userID string) bool {
+	ok, err := a.GroupPostRepo.IsMember(groupID, userID)
+	if err != nil {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": "failed to verify membership"})
+		return false
+	}
+	if !ok {
+		utils.SendJSONResponse(w, http.StatusForbidden, map[string]any{"error": "you are not a member of this group"})
+		return false
+	}
+	return true
+}
+
 const maxUpload = 10 << 20
 
 func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) {
@@ -36,6 +49,10 @@ func AddGroupPost(app *app.Application, w http.ResponseWriter, r *http.Request) 
 			"message": "Invalid URL",
 			"status":  http.StatusNotFound,
 		})
+		return
+	}
+
+	if !requireMember(app, w, groupIdstr, userId) {
 		return
 	}
 
@@ -110,6 +127,12 @@ func GetGroupPosts(app *app.Application, w http.ResponseWriter, r *http.Request)
 		})
 		return
 	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	if !requireMember(app, w, groupIdstr, userID) {
+		return
+	}
+
 	posts, postsErr := app.GroupPostRepo.GetGroupPosts(req, groupIdstr)
 	if postsErr.Code != http.StatusOK {
 		utils.SendJSONResponse(w, postsErr.Code, postsErr)

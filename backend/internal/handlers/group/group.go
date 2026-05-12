@@ -253,6 +253,16 @@ func AcceptMemberGroup(app *app.Application, w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	pending, err := app.GroupPostRepo.HasPendingRequest(body.GroupID, body.UserID)
+	if err != nil {
+		utils.SendJSONResponse(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+		return
+	}
+	if !pending {
+		utils.SendJSONResponse(w, http.StatusConflict, map[string]any{"error": "no pending request found"})
+		return
+	}
+
 	if body.DecisionType == "accept" {
 		// save user to groups_members
 		if err = app.GroupPostRepo.SaveMemberToGroup(body.GroupID, body.UserID); err != nil {
@@ -320,6 +330,10 @@ func GetGroupInfo(app *app.Application, w http.ResponseWriter, r *http.Request) 
 		})
 		return
 	}
+	if !requireMember(app, w, groupid, userID) {
+		return
+	}
+
 	info, err := app.GroupPostRepo.GetGroup(groupid, userID)
 	if err != nil {
 		utils.SendJSONResponse(w, http.StatusBadRequest, map[string]any{

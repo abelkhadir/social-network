@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"social/internal/app"
+	"social/pkg/middleware"
 	"social/pkg/utils"
 )
 
@@ -21,6 +22,11 @@ func GetGroupMembersHandler(app *app.Application, w http.ResponseWriter, r *http
 		utils.SendJSONResponse(w, http.StatusNotFound, map[string]any{
 			"error": errId,
 		})
+		return
+	}
+
+	userID := r.Context().Value(middleware.UserIDKey).(string)
+	if !requireMember(app, w, groupIDStr, userID) {
 		return
 	}
 

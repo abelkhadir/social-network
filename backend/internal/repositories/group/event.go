@@ -167,3 +167,11 @@ func (r *GroupRepository) VoteOnEvent(ctx context.Context, vote models.EventVote
 		Code:    http.StatusOK,
 	}
 }
+
+func (r *GroupRepository) GetGroupIDByEvent(eventID string) (string, error) {
+	var groupID string
+	err := r.db.QueryRow(
+		`SELECT group_id FROM group_events WHERE id = ?`, eventID,
+	).Scan(&groupID)
+	return groupID, err
+}

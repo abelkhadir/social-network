@@ -29,6 +29,7 @@ type ProfileUser = {
   age?: number;
   gender?: string;
   aboutMe?: string;
+  avatarURL?: string;
   avatar_url?: string;
 };
 
@@ -55,6 +56,7 @@ type ProfileResponse = {
   isPending: boolean;
   isFollowing: boolean; 
   profile: BackendProfile;
+  avatarURL: string;
 };
 
 type TabType = "posts" | "followers" | "following" | "settings";
@@ -311,7 +313,7 @@ const loadFollowers = async (targetId: string) => {
     return (
       <div className={styles.privateContainer}>
         <img
-          src={resolveApiUrl(user.avatar_url)}
+          src={resolveApiUrl(limitedUser?.avatarURL)}
           alt="avatar"
           className={styles.avatar}
         />
@@ -339,7 +341,7 @@ const loadFollowers = async (targetId: string) => {
   const displayUser = profileData?.user;
   const avatarSrc =
     avatarPreview ||
-    resolveApiUrl(displayUser?.avatar_url ||user.avatar_url) ;
+    resolveApiUrl(displayUser?.avatar_url || user.avatar_url);
 
   const followStatus = getFollowStatus();
 
@@ -493,7 +495,7 @@ const loadFollowers = async (targetId: string) => {
                   style={{ cursor: "pointer" }}
                 >
                   <img
-                  src={resolveApiUrl(`http://localhost:8080/${user.avatar_url}` )}
+                  src={resolveApiUrl(u.avatar)}
                     alt={u.firstname}
                     className={styles.userAvatar}
                   />

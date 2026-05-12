@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
+import { useToast } from "../../context/ToastContext";
 import { timeAgo } from "@/lib/time";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,6 +27,7 @@ export default function Header({ toggleChat, isChatMode, isNotifOpen = false, to
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, loading: notifLoading, refresh, markAllRead, markRead } = useNotifications();
+  const { showToast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
@@ -57,8 +59,8 @@ export default function Header({ toggleChat, isChatMode, isNotifOpen = false, to
       await markRead(notifId);
       refresh();
       if (decision === "accept") router.push(`/groups/${groupId}`);
-    } catch {
-      // silent fail — user can retry
+    } catch (err: any) {
+      showToast(err.message || "Failed to respond to invitation", "error");
     } finally {
       setRespondingInvite(null);
     }
