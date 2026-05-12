@@ -2,7 +2,6 @@ package profile
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"social/internal/app"
@@ -59,8 +58,8 @@ func (h *FollowHandler) FollowUser(w http.ResponseWriter, r *http.Request) {
 	actorName := viewer.ID
 	if viewer.Nickname != "" {
 		actorName = viewer.Nickname
-	}else{
-		actorName=viewer.Firstname
+	} else {
+		actorName = viewer.Firstname
 	}
 
 	if !targetProfile.IsPrivate {
@@ -324,7 +323,8 @@ func (h *FollowHandler) GetContactHandler(application *app.Application, w http.R
 	action := r.URL.Query().Get("action")
 	user, err := application.SessionRepo.GetUserFromSession(r)
 	if err != nil {
-		fmt.Println("get user info err:", err)
+		// fmt.Println("get user info err:", err)
+		utils.HandleError(w, http.StatusAccepted, "Unauthorized")
 		return
 	}
 	data, errorr := h.app.ProfileRepo.GetUserFollowersRepo(action, user.ID)
