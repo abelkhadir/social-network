@@ -311,7 +311,7 @@ const loadFollowers = async (targetId: string) => {
     return (
       <div className={styles.privateContainer}>
         <img
-          src={resolveApiUrl(limitedUser.avatarURL)}
+          src={resolveApiUrl(user.avatar_url)}
           alt="avatar"
           className={styles.avatar}
         />
