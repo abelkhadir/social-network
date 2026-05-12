@@ -80,9 +80,9 @@ func ValidateRequest(req *http.Request, res http.ResponseWriter, url, method str
 		_urlSplit := strings.Split(req.URL.Path, "/")
 		url = url[:len(url)-1]
 		url += _urlSplit[len(_urlSplit)-1]
+
 	}
 	if req.URL.Path != url {
-		res.WriteHeader(http.StatusNotFound)
 		HandleError(res, http.StatusNotFound, "Page not found")
 		log.Println("404 ❌ - Page not found ", url)
 		return false
@@ -90,7 +90,6 @@ func ValidateRequest(req *http.Request, res http.ResponseWriter, url, method str
 
 	if req.Method != method {
 		res.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(res, "%s", "Error - Method not allowed")
 		log.Printf("405 ❌ - Method not allowed %s - %s on URL : %s\n", req.Method, method, url)
 		return false
 	}

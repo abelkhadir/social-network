@@ -135,6 +135,7 @@ export default function RegisterPage() {
                 value={formData.date} 
                 onChange={handleChange} 
                 className={styles.input}
+                required
               />
             </div>
           </div>

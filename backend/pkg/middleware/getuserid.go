@@ -20,7 +20,7 @@ func GetUserIDFromToken(r *http.Request, name string, db *sql.DB) (string, error
 	var userID string
 
 	err = db.QueryRow(`
-		SELECT user_id FROM sessions WHERE token = ?
+		SELECT user_id FROM sessions WHERE token = ? AND expired_at > NOW()
 	`, cookie.Value).Scan(&userID)
 
 	if err == sql.ErrNoRows {

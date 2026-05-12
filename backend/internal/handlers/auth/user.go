@@ -15,11 +15,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"social/internal/app"
 	websockethandler "social/internal/handlers/websocket"
 	"social/internal/models"
 	"social/pkg/utils"
+
+	"github.com/gofrs/uuid"
 )
 
 // SignUp registers a new user
@@ -31,7 +32,7 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	contentType := req.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "multipart/form-data") {
 		if err := req.ParseMultipartForm(20 * 1024 * 1024); err != nil {
-			utils.HandleError(res, http.StatusBadRequest, "Invalid multipart form")
+			utils.HandleError(res, http.StatusBadRequest, "Failed to process uploaded data")
 			log.Printf("Error parsing multipart form: %v", err)
 			return
 		}
@@ -112,6 +113,10 @@ func SignUp(app *app.Application, res http.ResponseWriter, req *http.Request) {
 	}
 	if user.Password != user.ConfirmPassword {
 		utils.HandleError(res, http.StatusBadRequest, "Passwords do not match")
+		return
+	}
+	if user.DateOfBirth == "" {
+		utils.HandleError(res, http.StatusBadRequest, "Date of birth is required")
 		return
 	}
 	if user.DateOfBirth != "" {
@@ -213,7 +218,12 @@ func SignIn(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	app.SessionRepo.NewSessionToken(res, user.ID)
+	err := app.SessionRepo.NewSessionToken(res, user.ID)
+	if err != nil {
+		utils.HandleError(res, http.StatusInternalServerError, "something went wrong")
+		log.Printf("Error creating session token: %v", err)
+		return
+	}
 	loginNotification := models.Notification{
 		UserID:  user.ID,
 		Type:    "login",
@@ -249,12 +259,28 @@ func Logout(app *app.Application, res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if app.SessionRepo.ValidSession(req) {
-		app.SessionRepo.DeleteSession(req)
-		utils.SendJSONResponse(res, http.StatusOK, map[string]string{"message": "Logout successful"})
-	} else {
+	if !app.SessionRepo.ValidSession(req) {
 		utils.HandleError(res, http.StatusUnauthorized, "No active session")
+		return
 	}
+
+	if err := app.SessionRepo.DeleteSession(req); err != nil {
+		utils.HandleError(res, http.StatusInternalServerError, "Failed to delete session")
+		return
+	}
+
+	http.SetCookie(res, &http.Cookie{
+		Name:     "auth_session",
+		Value:    "",
+		MaxAge:   -1,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+	})
+
+	utils.SendJSONResponse(res, http.StatusOK, map[string]string{
+		"message": "Logout successful",
+	})
 }
 
 // Me returns the currently logged-in user's info

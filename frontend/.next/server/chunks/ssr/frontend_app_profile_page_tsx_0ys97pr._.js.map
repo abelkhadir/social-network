@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../../frontend/app/profile/page.tsx"],"sourcesContent":["\"use client\";\n\nimport ProfileView from \"./ProfileView\";\n\nexport default function ProfilePage() {\n  return <ProfileView />;\n}\n"],"names":["ProfilePage"],"mappings":"wDAEA,EAAA,EAAA,CAAA,CAAA,wBAEe,SAASA,EACtB,MAAO,CAAA,EAAA,EAAA,GAAA,EAAC,EAAA,OAAW,CAAA,CAAA,EACrB"}
