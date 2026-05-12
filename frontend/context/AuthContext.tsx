@@ -3,6 +3,13 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { fetchApi } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
+import {
+  acquirePrivateRealtimeWorker,
+  hasPrivateRealtimeWorker,
+  postPrivateRealtimeWorker,
+  releasePrivateRealtimeWorker,
+  subscribePrivateRealtimeWorker,
+} from "@/lib/privateRealtimeWorker";
 
 interface AuthContextType {
   user: any | null;
@@ -76,11 +83,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
+    const currentUserID = user?.id || user?.ID || "";
+
     try {
       await fetchApi("/logout", { method: "DELETE" });
     } catch (err) {
       console.warn("Error during logout:", err);
     } finally {
+      if (currentUserID && hasPrivateRealtimeWorker()) {
+        postPrivateRealtimeWorker({
+          type: "LOGOUT",
+          userID: currentUserID,
+        });
+      }
       setUser(null);
       router.push("/login");
     }
@@ -101,6 +116,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
   }, [user, loading, pathname, router]);
+
+  useEffect(() => {
+    const userID = user?.id || user?.ID || "";
+    if (!userID) return;
+
+    acquirePrivateRealtimeWorker(userID);
+    const unsubscribe = subscribePrivateRealtimeWorker((message) => {
+      if (message.type !== "LOGOUT_SYNC") return;
+      if (message.userID !== userID) return;
+
+      setUser(null);
+      router.push("/login");
+    });
+
+    return () => {
+      unsubscribe();
+      releasePrivateRealtimeWorker(userID);
+    };
+  }, [router, user]);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>

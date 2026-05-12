@@ -12,6 +12,13 @@ import {
 import { usePathname } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { NOTIFICATION_FETCH_THROTTLE_MS } from "@/lib/notifications";
+import {
+  acquirePrivateRealtimeWorker,
+  hasPrivateRealtimeWorker,
+  postPrivateRealtimeWorker,
+  releasePrivateRealtimeWorker,
+  subscribePrivateRealtimeWorker,
+} from "@/lib/privateRealtimeWorker";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "./SocketContext";
 
@@ -111,6 +118,13 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
           method: "POST",
           body: JSON.stringify({ actor_id: userId }),
         });
+        if (hasPrivateRealtimeWorker()) {
+          postPrivateRealtimeWorker({
+            type: "THREAD_READ",
+            userID: user.id || user.ID || "",
+            actorId: userId,
+          });
+        }
       } catch (err) {
         console.error("Failed to mark chat notifications", err);
         lastFetchedAtRef.current = 0;
@@ -152,6 +166,29 @@ export const ChatNotificationProvider = ({ children }: { children: React.ReactNo
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const userID = user?.id || user?.ID || "";
+    if (!userID) return;
+
+    acquirePrivateRealtimeWorker(userID);
+    const unsubscribe = subscribePrivateRealtimeWorker((message) => {
+      if (message.type !== "THREAD_READ_SYNC") return;
+      if (!message.actorId) return;
+
+      setUnreadByUser((prev) => {
+        if (!prev[message.actorId]) return prev;
+        const next = { ...prev };
+        delete next[message.actorId];
+        return next;
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      releasePrivateRealtimeWorker(userID);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!activeChatUserId) return;

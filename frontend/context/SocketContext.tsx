@@ -2,6 +2,13 @@
 
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useAuth } from "./AuthContext";
+import {
+  acquirePrivateRealtimeWorker,
+  hasPrivateRealtimeWorker,
+  postPrivateRealtimeWorker,
+  releasePrivateRealtimeWorker,
+  subscribePrivateRealtimeWorker,
+} from "@/lib/privateRealtimeWorker";
 
 interface SocketContextType {
   socket: WebSocket | null;
@@ -57,6 +64,46 @@ function normalizeSocketMessage(payload: any) {
   };
 }
 
+function applyRealtimeEvent(
+  eventType: string,
+  payload: any,
+  myId: string,
+  setLatestMessage: (value: any) => void,
+  setLatestNotification: (value: any) => void,
+  setTypingStatus: (value: any) => void,
+  setUserStatus: (value: any) => void,
+  playSendSound: () => void,
+  playReceiveSound: () => void
+) {
+  if (eventType === "message" || eventType === "group_message") {
+    if (!payload || !payload.text) {
+      return;
+    }
+
+    setLatestMessage(payload);
+    if (payload.senderID && payload.senderID !== myId) {
+      playReceiveSound();
+    } else {
+      playSendSound();
+    }
+    return;
+  }
+
+  if (eventType === "notification") {
+    setLatestNotification(payload);
+    return;
+  }
+
+  if (eventType === "status") {
+    setUserStatus(payload);
+    return;
+  }
+
+  if (eventType === "typing") {
+    setTypingStatus(payload);
+  }
+}
+
 export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -78,13 +125,40 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const apiUrl = "http://localhost:8080";
     const wsUrl = apiUrl.replace("http", "ws") + "/ws";
+    const userID = user.id || user.ID;
 
     let active = true;
+    acquirePrivateRealtimeWorker(userID);
+
     const ws = new WebSocket(wsUrl);
     setSocket(ws);
 
+    const unsubscribeWorker = subscribePrivateRealtimeWorker((data) => {
+      if (!active) return;
+
+      if (data.type === "WORKER_EVENT") {
+        applyRealtimeEvent(
+          data.eventType,
+          data.payload,
+          userID,
+          setLatestMessage,
+          setLatestNotification,
+          setTypingStatus,
+          setUserStatus,
+          playSendSound,
+          playReceiveSound
+        );
+        return;
+      }
+
+      if (data.type === "SEND_TYPING") {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "typing", data: data.data }));
+        }
+      }
+    });
+
     ws.onopen = () => {
-      const userID = user.id || user.ID;
       ws.send(JSON.stringify({ type: "login", data: { userID } }));
     };
 
@@ -92,6 +166,8 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       if (!active) return;
       try {
         const data = JSON.parse(event.data);
+        const canUseWorker = hasPrivateRealtimeWorker();
+
         if (data.type === "message" || data.type === "group_message") {
           const msg = normalizeSocketMessage(data);
           if (!msg || !msg.text) {
@@ -99,19 +175,93 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
             return;
           }
 
-          const myId = user.id || user.ID;
-          setLatestMessage(msg);
-          if (msg.senderID && msg.senderID !== myId) {
-            playReceiveSound();
-          } else {
-            playSendSound();
+          if (data.type === "message" && canUseWorker) {
+            postPrivateRealtimeWorker({
+              type: "PRIVATE_SOCKET_EVENT",
+              userID,
+              eventType: "message",
+              payload: msg,
+            });
+            return;
           }
+
+          applyRealtimeEvent(
+            data.type,
+            msg,
+            userID,
+            setLatestMessage,
+            setLatestNotification,
+            setTypingStatus,
+            setUserStatus,
+            playSendSound,
+            playReceiveSound
+          );
         } else if (data.type === "notification") {
-          setLatestNotification(data.notification);
+          if ((data.notification?.type || "") === "message" && canUseWorker) {
+            postPrivateRealtimeWorker({
+              type: "PRIVATE_SOCKET_EVENT",
+              userID,
+              eventType: "notification",
+              payload: data.notification,
+            });
+            return;
+          }
+
+          applyRealtimeEvent(
+            data.type,
+            data.notification,
+            userID,
+            setLatestMessage,
+            setLatestNotification,
+            setTypingStatus,
+            setUserStatus,
+            playSendSound,
+            playReceiveSound
+          );
         } else if (data.type === "status") {
-          setUserStatus(data);
+          if (canUseWorker) {
+            postPrivateRealtimeWorker({
+              type: "PRIVATE_SOCKET_EVENT",
+              userID,
+              eventType: "status",
+              payload: data,
+            });
+            return;
+          }
+
+          applyRealtimeEvent(
+            data.type,
+            data,
+            userID,
+            setLatestMessage,
+            setLatestNotification,
+            setTypingStatus,
+            setUserStatus,
+            playSendSound,
+            playReceiveSound
+          );
         } else if (data.type === "typing") {
-          setTypingStatus(data);
+          if (canUseWorker) {
+            postPrivateRealtimeWorker({
+              type: "PRIVATE_SOCKET_EVENT",
+              userID,
+              eventType: "typing",
+              payload: data,
+            });
+            return;
+          }
+
+          applyRealtimeEvent(
+            data.type,
+            data,
+            userID,
+            setLatestMessage,
+            setLatestNotification,
+            setTypingStatus,
+            setUserStatus,
+            playSendSound,
+            playReceiveSound
+          );
         }
       } catch (err) {
         console.error("WebSocket message parsing error", err);
@@ -125,11 +275,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       active = false;
       setSocket(null);
+      unsubscribeWorker();
+      releasePrivateRealtimeWorker(userID);
       if (ws.readyState === WebSocket.CONNECTING) {
         // wait for connection then immediately close — avoids the "closed before established" browser error
         ws.onopen = () => ws.close();
       } else if (ws.readyState === WebSocket.OPEN) {
-        const userID = user?.id || user?.ID;
         ws.send(JSON.stringify({ type: "logout", data: { userID } }));
         ws.close();
       }
@@ -137,6 +288,15 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   }, [user]);
 
   const sendTyping = (from: string, to: string, isTyping: boolean) => {
+    if (hasPrivateRealtimeWorker()) {
+      postPrivateRealtimeWorker({
+        type: "TYPING_REQUEST",
+        userID: user?.id || user?.ID || "",
+        data: { from, to, isTyping },
+      });
+      return;
+    }
+
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify({ type: "typing", data: { from, to, isTyping } }));
     }

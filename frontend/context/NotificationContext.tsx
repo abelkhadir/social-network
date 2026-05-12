@@ -9,6 +9,11 @@ import {
   prependBellNotification,
   shouldShowBellNotification,
 } from "@/lib/notifications";
+import {
+  acquirePrivateRealtimeWorker,
+  releasePrivateRealtimeWorker,
+  subscribePrivateRealtimeWorker,
+} from "@/lib/privateRealtimeWorker";
 import { useAuth } from "./AuthContext";
 import { useSocket } from "./SocketContext";
 
@@ -87,6 +92,32 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const userID = user?.id || user?.ID || "";
+    if (!userID) return;
+
+    acquirePrivateRealtimeWorker(userID);
+    const unsubscribe = subscribePrivateRealtimeWorker((message) => {
+      if (message.type !== "THREAD_READ_SYNC") return;
+      if (!message.actorId) return;
+
+      setNotifications((prev) =>
+        prev.filter(
+          (notification) =>
+            !(
+              notification.type === "message" &&
+              (notification.actor_id || "") === message.actorId
+            )
+        )
+      );
+    });
+
+    return () => {
+      unsubscribe();
+      releasePrivateRealtimeWorker(userID);
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!latestNotification || !user) return;

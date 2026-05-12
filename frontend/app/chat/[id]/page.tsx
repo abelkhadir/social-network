@@ -23,6 +23,7 @@ export default function ChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<NodeJS.Timeout | null>(null);
+  const peerTypingTimer = useRef<NodeJS.Timeout | null>(null);
   const didSendTyping = useRef(false);
 
   const myId = user?.ID || user?.id || "me";
@@ -69,10 +70,35 @@ export default function ChatPage() {
   }, [latestMessage, receiverId]);
 
   useEffect(() => {
-    if (typingStatus && typingStatus.data?.from === receiverId) {
-      setIsPeerTyping(!!typingStatus.data.isTyping);
+    const from = typingStatus?.data?.from || typingStatus?.from;
+    const isTyping = typingStatus?.data?.isTyping ?? typingStatus?.isTyping;
+
+    if (typingStatus && from === receiverId) {
+      if (peerTypingTimer.current) {
+        clearTimeout(peerTypingTimer.current);
+      }
+
+      setIsPeerTyping(!!isTyping);
+
+      if (isTyping) {
+        peerTypingTimer.current = setTimeout(() => {
+          setIsPeerTyping(false);
+        }, 2000);
+      }
     }
   }, [typingStatus, receiverId]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      if (peerTypingTimer.current) clearTimeout(peerTypingTimer.current);
+
+      if (didSendTyping.current && receiverId) {
+        sendTyping(myId, receiverId as string, false);
+        didSendTyping.current = false;
+      }
+    };
+  }, [myId, receiverId, sendTyping]);
 
   useEffect(() => {
     if (userStatus && talker && userStatus.userID === receiverId) {
@@ -119,6 +145,15 @@ export default function ChatPage() {
       sendTyping(myId, receiverId as string, false);
       didSendTyping.current = false;
     }, 1500);
+  };
+
+  const handleInputBlur = () => {
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+
+    if (didSendTyping.current && receiverId) {
+      sendTyping(myId, receiverId as string, false);
+      didSendTyping.current = false;
+    }
   };
 
   if (loading) {
@@ -233,6 +268,7 @@ export default function ChatPage() {
             required
             value={text}
             onChange={handleInput}
+            onBlur={handleInputBlur}
             maxLength={1000}
             className={styles.messageInput}
           />

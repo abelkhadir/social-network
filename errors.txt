@@ -1,6 +1,7 @@
-fixed : realtime delivery  with message request UI 
+1-fixed : realtime delivery  with message request UI 
 problems : 
-1- tabs problem with logout case ! (close socket)
-2- duplicate followers url in two tabs , tab 1 accept follow request , tab 2 reject !?
-3- Groups rules 
-4- show sending forbiden ui toast
+2-fixed : tabs problem with logout case ! (close socket)
+3- duplicate followers url in two tabs , tab 1 accept follow request , tab 2 reject !?
+4- Groups rules 
+5- show sending forbiden ui toast
+6- we need the backend truth (auth) not  frontend (client) ""websocket part""
