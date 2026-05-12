@@ -19,6 +19,8 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
   const { unreadByUser, totalUnread, totalGroupUnread, markThreadRead } = useChatNotifications();
 
   const [activeTab] = useState<"users" | "groups">("users");
+  const requestUsers = users.filter((u) => !!u.is_request);
+  const normalUsers = users.filter((u) => !u.is_request);
 
   useEffect(() => {
     if (user) {
@@ -127,12 +129,45 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
         <div className="chat-users-list" style={{ display: "flex", flexDirection: "column", gap: "10px", maxHeight: "65vh", overflowY: "auto", paddingRight: "5px" }}>
 
           {activeTab === "users" && (
-            users.length > 0 ? users.map((u) => {
+            users.length > 0 ? (
+              <>
+                {requestUsers.length > 0 && (
+                  <div style={{ marginBottom: "14px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <h3 style={{ margin: 0, color: "var(--color-primary)", fontSize: "0.9rem", letterSpacing: "0.02em" }}>
+                        Message Requests
+                      </h3>
+                      <span style={{ background: "rgba(230, 57, 70, 0.18)", color: "#ff9aa2", borderRadius: "999px", minWidth: "20px", height: "20px", display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 6px", fontSize: "0.72rem", fontWeight: "bold" }}>
+                        {requestUsers.length}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {requestUsers.map((u) => {
+                        const userID = u.ID || u.id;
+                        const preview = u.last_message || "Open this request to view the conversation.";
+
+                        return (
+                          <Link href={`/chat/${userID}`} key={`request-${userID}`} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "rgba(255, 183, 3, 0.08)", borderRadius: "8px", alignItems: "center", border: "1px solid rgba(255, 183, 3, 0.22)", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "rgba(255, 183, 3, 0.22)"} onClick={() => void markThreadRead(userID)}>
+                            <img src={resolveApiUrl(u.avatar_url)} alt="avatar" style={{ width: "40px", height: "40px", borderRadius: "50%", objectFit: "cover" }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: "bold", color: "var(--text-main)" }}>{u.Nickname || u.nickname || u.username}</div>
+                              <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                {preview}
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {normalUsers.length > 0 ? normalUsers.map((u) => {
               const userID = u.ID || u.id;
               const isConnected = u.IsConnected ?? u.is_connected ?? false;
               const count = unreadByUser[userID] || 0;
               const lastMessage = lastMessages[userID];
-              const name = u.nickname;
+              const preview = lastMessage?.text || u.last_message || "Start chatting";
 
               return (
                 <Link href={`/chat/${userID}`} key={userID} className="chat-user-item" style={{ textDecoration: "none", display: "flex", gap: "10px", padding: "10px", background: "var(--bg-card)", borderRadius: "8px", alignItems: "center", border: "1px solid var(--border-default)", transition: "0.2s" }} onMouseOver={(e) => e.currentTarget.style.borderColor = "var(--color-primary)"} onMouseOut={(e) => e.currentTarget.style.borderColor = "var(--border-default)"} onClick={() => void markThreadRead(userID)}>
@@ -142,14 +177,20 @@ export default function LeftSide({ isChatMode, toggleChat, toggleNotif }: { isCh
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: "bold", color: "var(--text-main)" }}>{u.Nickname || u.username}</div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                      {name}
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {preview}
                     </div>
                   </div>
                   {count > 0 && <div style={{ backgroundColor: "#e63946", color: "white", fontSize: "0.75rem", borderRadius: "50%", padding: "2px 6px", fontWeight: "bold" }}>{count}</div>}
                 </Link>
               );
             }) : (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "10px", lineHeight: "1.5" }}>
+                    Your accepted chats will appear here.
+                  </p>
+                )}
+              </>
+            ) : (
               <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "10px", lineHeight: "1.5" }}>
                 You have no friends. <br /><br />
                 <Link href="/followers" style={{ color: "var(--color-primary)", textDecoration: "none", fontWeight: "bold" }}>Get some friends ➔</Link>

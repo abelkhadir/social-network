@@ -109,14 +109,14 @@ func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, erro
 		u.nickname,
 		COALESCE(u.avatarURL, '') AS avatar_url,
 		COALESCE(m.content, '') AS last_message,
-		COALESCE(m.createDate, '') AS last_message_time
+		COALESCE(m.createDate, '') AS last_message_time,
+		COALESCE(viewer.is_private, 0) AS viewer_is_private,
+		EXISTS (
+			SELECT 1 FROM followers f2
+			WHERE f2.follower_id = ? AND f2.following_id = u.id AND f2.status = 'accepted'
+		) AS viewer_follows_user
 	FROM user u
-	-- Join followers: users I follow OR users who follow me (accepted status)
-	INNER JOIN followers f ON (
-		(u.ID = f.following_id AND f.follower_id = ? AND f.status = 'accepted')
-		OR
-		(u.ID = f.follower_id AND f.following_id = ? AND f.status = 'accepted')
-	)
+	INNER JOIN user viewer ON viewer.id = ?
 	LEFT JOIN (
 		SELECT
 			CASE
@@ -133,11 +133,21 @@ func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, erro
 		AND latestMessages.maxCreateDate = m.createDate
 	)
 	WHERE u.ID != ?
+		AND (
+			EXISTS (
+				SELECT 1 FROM followers f
+				WHERE
+					(u.ID = f.following_id AND f.follower_id = ? AND f.status = 'accepted')
+					OR
+					(u.ID = f.follower_id AND f.following_id = ? AND f.status = 'accepted')
+			)
+			OR latestMessages.otherUserID IS NOT NULL
+		)
 	ORDER BY 
 		CASE WHEN last_message_time != '' THEN 0 ELSE 1 END,
 		last_message_time DESC,
 		u.nickname
-	`, userID, userID, userID, userID, userID, userID, userID)
+	`, userID, userID, userID, userID, userID, userID, userID, userID, userID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -145,8 +155,10 @@ func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, erro
 
 	for rows.Next() {
 		var ID, nickname, avatarURL, lastMessage, lastMessageTime string
+		var viewerIsPrivate int
+		var viewerFollowsUser bool
 
-		err = rows.Scan(&ID, &nickname, &avatarURL, &lastMessage, &lastMessageTime)
+		err = rows.Scan(&ID, &nickname, &avatarURL, &lastMessage, &lastMessageTime, &viewerIsPrivate, &viewerFollowsUser)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -157,6 +169,7 @@ func (ur *UserRepository) SelectAllUsers(userID string) ([]models.UserItem, erro
 			AvatarURL:       avatarURL,
 			LastMessage:     lastMessage,
 			LastMessageTime: lastMessageTime,
+			IsRequest:       viewerIsPrivate == 1 && !viewerFollowsUser && lastMessage != "",
 		}
 
 		if user.LastMessageTime != "" {

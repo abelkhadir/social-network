@@ -46,6 +46,7 @@ type UserItem struct {
 	IsConnected     bool   `json:"is_connected"`
 	LastMessage     string `json:"last_message"`
 	LastMessageTime string `json:"last_message_time"`
+	IsRequest       bool   `json:"is_request"`
 }
 type UserError struct {
 	Nickname    string

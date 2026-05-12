@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { fetchApi, resolveApiUrl } from "@/lib/api";
@@ -18,6 +19,7 @@ export default function ChatPage() {
   const [forbidden, setForbidden] = useState(false);
   const [text, setText] = useState("");
   const [isPeerTyping, setIsPeerTyping] = useState(false);
+  const [isRequestChat, setIsRequestChat] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimer = useRef<NodeJS.Timeout | null>(null);
@@ -34,9 +36,11 @@ export default function ChatPage() {
         const data = await fetchApi(`/chat/messages/${receiverId}`);
         setMessages(data.messages || []);
         setTalker(data.talker || { Nickname: "Unknown", IsConnected: false });
+        setIsRequestChat(!!data.isRequestChat);
       } catch (error: any) {
         if (error.message?.includes("follow")) setForbidden(true);
         console.error("Chat Error:", error);
+        setIsRequestChat(false);
       } finally {
         setLoading(false);
       }
@@ -154,6 +158,42 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className={styles.chatHistory}>
+        {isRequestChat && (
+          <div
+            style={{
+              marginBottom: "14px",
+              padding: "12px 14px",
+              borderRadius: "12px",
+              background: "rgba(255, 183, 3, 0.1)",
+              border: "1px solid rgba(255, 183, 3, 0.24)",
+              color: "var(--text-main)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ fontSize: "0.92rem", lineHeight: 1.4 }}>
+              Follow this user to receive future messages instantly.
+            </span>
+            <Link
+              href={`/profile/${receiverId}`}
+              style={{
+                color: "#000",
+                background: "var(--color-primary)",
+                textDecoration: "none",
+                padding: "8px 12px",
+                borderRadius: "999px",
+                fontWeight: "bold",
+                fontSize: "0.82rem",
+              }}
+            >
+              View Profile
+            </Link>
+          </div>
+        )}
+
         {messages.length > 0 ? (
           messages.map((msg, idx) => {
             const senderID = msg.senderID || msg.SenderID;

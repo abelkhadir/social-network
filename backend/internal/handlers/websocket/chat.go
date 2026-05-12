@@ -13,6 +13,8 @@ import (
 	"social/internal/app"
 	"social/internal/models"
 	"social/pkg/utils"
+
+	"github.com/gorilla/websocket"
 )
 
 var (
@@ -57,6 +59,37 @@ func randomProfileAvatar() string {
 	return avatarChoices[idx]
 }
 
+func shouldDeliverPrivateMessageRealtime(application *app.Application, senderID, receiverID string) (bool, error) {
+	receiver, err := application.UserRepo.GetUserByID(receiverID)
+	if err != nil {
+		return false, err
+	}
+	if receiver == nil {
+		return false, nil
+	}
+
+	if receiver.IsPrivate != 1 {
+		return true, nil
+	}
+
+	return application.ProfileRepo.IsFollowing(receiverID, senderID)
+}
+
+func sendPrivateMessageToTargets(message models.Message, targets map[string]bool) {
+	data := models.NewMessageEvent{Type: "message", Message: message}
+	output, _ := json.Marshal(data)
+
+	UserConnections.Range(func(key, value interface{}) bool {
+		conn := key.(*websocket.Conn)
+		connectedUser := value.(string)
+
+		if targets[connectedUser] {
+			conn.WriteMessage(websocket.TextMessage, output)
+		}
+		return true
+	})
+}
+
 func GetUsers(application *app.Application, res http.ResponseWriter, req *http.Request) {
 	if !utils.ValidateRequest(req, res, "/chat/users", http.MethodGet) {
 		return
@@ -76,10 +109,13 @@ func GetUsers(application *app.Application, res http.ResponseWriter, req *http.R
 	}
 
 	type chatUser struct {
-		ID          string `json:"id"`
-		Nickname    string `json:"nickname"`
-		AvatarURL   string `json:"avatar_url"`
-		IsConnected bool   `json:"is_connected"`
+		ID              string `json:"id"`
+		Nickname        string `json:"nickname"`
+		AvatarURL       string `json:"avatar_url"`
+		IsConnected     bool   `json:"is_connected"`
+		LastMessage     string `json:"last_message"`
+		LastMessageTime string `json:"last_message_time"`
+		IsRequest       bool   `json:"is_request"`
 	}
 
 	var response []chatUser
@@ -89,10 +125,13 @@ func GetUsers(application *app.Application, res http.ResponseWriter, req *http.R
 			avatarURL = randomProfileAvatar()
 		}
 		response = append(response, chatUser{
-			ID:          u.ID,
-			Nickname:    u.Nickname,
-			AvatarURL:   avatarURL,
-			IsConnected: IsUserConnected(u.ID),
+			ID:              u.ID,
+			Nickname:        u.Nickname,
+			AvatarURL:       avatarURL,
+			IsConnected:     IsUserConnected(u.ID),
+			LastMessage:     u.LastMessage,
+			LastMessageTime: u.LastMessageTime,
+			IsRequest:       u.IsRequest,
 		})
 	}
 
@@ -141,6 +180,12 @@ func GetMessages(application *app.Application, res http.ResponseWriter, req *htt
 		utils.HandleError(res, http.StatusInternalServerError, "Failed to fetch messages")
 		return
 	}
+	isFollowingTalker, err := application.ProfileRepo.IsFollowing(currentUser.ID, otherUserID)
+	if err != nil {
+		utils.HandleError(res, http.StatusInternalServerError, "Failed to inspect relationship")
+		return
+	}
+	isRequestChat := currentUser.IsPrivate == 1 && !isFollowingTalker && len(messages) > 0
 
 	type talkerInfo struct {
 		ID          string `json:"id"`
@@ -157,7 +202,8 @@ func GetMessages(application *app.Application, res http.ResponseWriter, req *htt
 			AvatarURL:   talker.AvatarURL,
 			IsConnected: IsUserConnected(talker.ID),
 		},
-		"messages": messages,
+		"messages":        messages,
+		"isRequestChat": isRequestChat,
 	})
 }
 
@@ -219,9 +265,21 @@ func SendChatMessage(application *app.Application, res http.ResponseWriter, req 
 		return
 	}
 
-	SendMessage(*saved)
+	deliverToReceiverRealtime, err := shouldDeliverPrivateMessageRealtime(application, currentUser.ID, payload.ReceiverID)
+	if err != nil {
+		utils.HandleError(res, http.StatusInternalServerError, "Failed to evaluate realtime delivery")
+		return
+	}
 
-	if payload.ReceiverID != currentUser.ID {
+	if deliverToReceiverRealtime {
+		SendMessage(*saved)
+	} else {
+		sendPrivateMessageToTargets(*saved, map[string]bool{
+			currentUser.ID: true,
+		})
+	}
+
+	if payload.ReceiverID != currentUser.ID && deliverToReceiverRealtime {
 		notification := models.Notification{
 			UserID:     payload.ReceiverID,
 			ActorID:    currentUser.ID,
